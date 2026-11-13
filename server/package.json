@@ -1,0 +1,16 @@
+{
+  "name": "konveksi-backend",
+  "version": "1.0.0",
+  "description": "Backend API SQLite untuk Sistem Manajemen Konveksi",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "seed": "node db/seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

@@ -4,14 +4,14 @@ import db from '../db/database.js';
 const router = Router();
 
 // GET all products
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM products ORDER BY id ASC').all();
+    const rows = await db.all('SELECT * FROM products ORDER BY id ASC');
     res.json(rows.map(r => {
       const hargaJual = Number(r.harga || 0);
       const hppValue = r.hpp !== undefined && r.hpp !== null && Number(r.hpp) > 0
         ? Number(r.hpp)
-        : Math.round(hargaJual * 0.70); // Estimasi HPP 70% dari harga jual
+        : Math.round(hargaJual * 0.70);
 
       return {
         id: r.id,
@@ -22,7 +22,7 @@ router.get('/', (req, res) => {
         varian: r.varian,
         warnaHex: r.warna_hex,
         ukuran: r.ukuran,
-        stok: r.stok,
+        stok: Number(r.stok || 0),
         status: r.status,
         harga: hargaJual,
         hpp: hppValue,
@@ -36,26 +36,25 @@ router.get('/', (req, res) => {
 });
 
 // POST create product
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { sku, skuBahan, namaProduk, kategori, varian, warnaHex, ukuran, stok, status, harga, hpp, hargaPotong } = req.body;
   const hppValue = hpp !== undefined && hpp !== null && Number(hpp) > 0
     ? Number(hpp)
     : Math.round(Number(harga || 0) * 0.70);
 
   try {
-    const stmt = db.prepare(`
+    const info = await db.run(`
       INSERT INTO products (sku, sku_bahan, nama_produk, kategori, varian, warna_hex, ukuran, stok, status, harga, hpp, harga_potong)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const info = stmt.run(sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, stok || 0, status || 'Aktif', harga || 0, hppValue, Number(hargaPotong || 0));
-    res.status(201).json({ id: Number(info.lastInsertRowid), ...req.body, hpp: hppValue, hargaPotong: Number(hargaPotong || 0) });
+    `, [sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, Number(stok || 0), status || 'Aktif', Number(harga || 0), hppValue, Number(hargaPotong || 0)]);
+    res.status(201).json({ id: Number(info.insertId), ...req.body, hpp: hppValue, hargaPotong: Number(hargaPotong || 0) });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // PUT update product
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { sku, skuBahan, namaProduk, kategori, varian, warnaHex, ukuran, stok, status, harga, hpp, hargaPotong } = req.body;
   const hppValue = hpp !== undefined && hpp !== null && Number(hpp) > 0
@@ -63,11 +62,11 @@ router.put('/:id', (req, res) => {
     : Math.round(Number(harga || 0) * 0.70);
 
   try {
-    db.prepare(`
+    await db.run(`
       UPDATE products
-      SET sku = ?, sku_bahan = ?, nama_produk = ?, kategori = ?, varian = ?, warna_hex = ?, ukuran = ?, stok = ?, status = ?, harga = ?, hpp = ?, harga_potong = ?, tanggal_update = datetime('now', 'localtime')
+      SET sku = ?, sku_bahan = ?, nama_produk = ?, kategori = ?, varian = ?, warna_hex = ?, ukuran = ?, stok = ?, status = ?, harga = ?, hpp = ?, harga_potong = ?
       WHERE id = ?
-    `).run(sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, stok || 0, status || 'Aktif', harga || 0, hppValue, Number(hargaPotong || 0), id);
+    `, [sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, Number(stok || 0), status || 'Aktif', Number(harga || 0), hppValue, Number(hargaPotong || 0), id]);
     res.json({ success: true, id: Number(id), hpp: hppValue, hargaPotong: Number(hargaPotong || 0) });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -75,9 +74,9 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE product
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
+    await db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -85,4 +84,3 @@ router.delete('/:id', (req, res) => {
 });
 
 export default router;
-

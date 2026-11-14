@@ -1,4 +1,4 @@
-import { DatabaseSync } from "node:sqlite";
+import mysql from "mysql2/promise";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -6,130 +6,106 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.resolve(__dirname, "../../konveksi.db");
-const db = new DatabaseSync(dbPath);
+// Konfigurasi Koneksi MySQL Server
+export const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "konveksi",
+  password: process.env.DB_PASSWORD || "Jazman@271998",
+  database: process.env.DB_NAME || "konveksi",
+  port: Number(process.env.DB_PORT || 3306),
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
-// Enable WAL mode & foreign keys
-db.exec("PRAGMA foreign_keys = ON;");
-db.exec("PRAGMA journal_mode = WAL;");
+// Helper normalisasi SQL query dari SQLite ke MySQL
+function normalizeSql(sql) {
+  return sql
+    .replace(/datetime\('now',\s*'localtime'\)/gi, "NOW()")
+    .replace(/datetime\('now'\)/gi, "NOW()")
+    .replace(/date\('now'\)/gi, "CURRENT_DATE")
+    .replace(/INSERT\s+OR\s+IGNORE/gi, "INSERT IGNORE");
+}
 
-// Init schema
-const schemaPath = path.resolve(__dirname, "schema.sql");
-const schema = fs.readFileSync(schemaPath, "utf8");
-db.exec(schema);
+// Wrapper DB Helper yang kompatibel dengan async/await
+const db = {
+  pool,
 
-// Drop SPK & Tahapan tables per user request
-db.exec("DROP TABLE IF EXISTS spk_item;");
-db.exec("DROP TABLE IF EXISTS spk;");
-db.exec("DROP TABLE IF EXISTS tahapan;");
+  async query(sql, params = []) {
+    const cleanSql = normalizeSql(sql);
+    const [results] = await pool.query(cleanSql, params);
+    return results;
+  },
 
-// Ensure Antrean table exists
-db.exec(`
-  CREATE TABLE IF NOT EXISTS antrean (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    no_antrian TEXT NOT NULL UNIQUE,
-    tgl_masuk TEXT NOT NULL,
-    sumber_permintaan TEXT NOT NULL,
-    no_reff TEXT,
-    sku TEXT NOT NULL,
-    qty INTEGER NOT NULL DEFAULT 1,
-    prioritas TEXT DEFAULT 'Normal',
-    deadline TEXT NOT NULL,
-    status TEXT DEFAULT 'Menunggu Cutting',
-    catatan TEXT,
-    tgl_serah_cutting TEXT,
-    tim_cutting TEXT,
-    tarif_cutting REAL DEFAULT 0,
-    total_biaya_cutting REAL DEFAULT 0,
-    catatan_cutting TEXT,
-    created_at TEXT DEFAULT (datetime('now', 'localtime'))
-  );
-  CREATE INDEX IF NOT EXISTS idx_antrean_no ON antrean(no_antrian);
-  CREATE INDEX IF NOT EXISTS idx_antrean_sku ON antrean(sku);
+  async all(sql, params = []) {
+    const cleanSql = normalizeSql(sql);
+    const [rows] = await pool.query(cleanSql, params);
+    return Array.isArray(rows) ? rows : [];
+  },
 
-  CREATE TABLE IF NOT EXISTS sumber_permintaan (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nama TEXT NOT NULL UNIQUE
-  );
-`);
+  async get(sql, params = []) {
+    const cleanSql = normalizeSql(sql);
+    const [rows] = await pool.query(cleanSql, params);
+    return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+  },
 
-// Migrasi kolom tambahan secara aman
-try { db.exec("ALTER TABLE antrean ADD COLUMN tgl_serah_cutting TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tim_cutting TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tarif_cutting REAL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN total_biaya_cutting REAL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN catatan_cutting TEXT;"); } catch (e) {}
+  async run(sql, params = []) {
+    const cleanSql = normalizeSql(sql);
+    const [result] = await pool.query(cleanSql, params);
+    return {
+      lastInsertRowid: result.insertId,
+      insertId: result.insertId,
+      changes: result.affectedRows,
+      affectedRows: result.affectedRows,
+    };
+  },
 
-// Migrasi kolom tahap Jahit
-try { db.exec("ALTER TABLE antrean ADD COLUMN tgl_serah_jahit TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tim_jahit TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tarif_jahit REAL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN total_biaya_jahit REAL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN catatan_jahit TEXT;"); } catch (e) {}
+  prepare(sql) {
+    const cleanSql = normalizeSql(sql);
+    return {
+      all: (...args) => db.all(cleanSql, args.flat()),
+      get: (...args) => db.get(cleanSql, args.flat()),
+      run: (...args) => db.run(cleanSql, args.flat()),
+    };
+  },
+};
 
-// Migrasi kolom tahap QC (Quality Control)
-try { db.exec("ALTER TABLE antrean ADD COLUMN tgl_serah_qc TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tim_qc TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN catatan_qc TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN status_qc TEXT DEFAULT 'Pemeriksaan';"); } catch (e) {}
+// Inisialisasi skema tabel MySQL dan data awal saat server start
+async function initMysql() {
+  try {
+    const connection = await pool.getConnection();
+    console.log("✅ Terhubung ke MySQL Database (konveksi@localhost)");
 
-// Migrasi kolom hasil QC & tahap Finishing
-try { db.exec("ALTER TABLE antrean ADD COLUMN qty_pass_qc INTEGER DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN qty_reject_qc INTEGER DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN catatan_reject_qc TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tgl_serah_finishing TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tim_finishing TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN catatan_finishing TEXT;"); } catch (e) {}
+    const schemaPath = path.resolve(__dirname, "schema.mysql.sql");
+    if (fs.existsSync(schemaPath)) {
+      const schemaSql = fs.readFileSync(schemaPath, "utf8");
+      const statements = schemaSql
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
 
-// Migrasi kolom HPP & Harga Potong produk
-try { db.exec("ALTER TABLE products ADD COLUMN hpp REAL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE products ADD COLUMN harga_potong REAL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE categories ADD COLUMN harga_potong REAL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE bahan ADD COLUMN supplier TEXT;"); } catch (e) {}
+      for (const statement of statements) {
+        await connection.query(statement);
+      }
+      console.log("✅ Skema tabel MySQL konveksi berhasil diverifikasi");
+    }
 
-// Ensure table Mutasi Gudang Jadi exists
-db.exec(`
-  CREATE TABLE IF NOT EXISTS mutasi_gudang_jadi (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    no_mutasi TEXT NOT NULL UNIQUE,
-    tgl_mutasi TEXT NOT NULL,
-    jenis_mutasi TEXT NOT NULL DEFAULT 'MASUK',
-    sumber TEXT NOT NULL,
-    no_antrian TEXT,
-    no_reff TEXT,
-    sku TEXT NOT NULL,
-    nama_produk TEXT NOT NULL,
-    varian TEXT,
-    ukuran TEXT,
-    qty INTEGER NOT NULL DEFAULT 1,
-    satuan TEXT DEFAULT 'Pcs',
-    lokasi_rak TEXT,
-    petugas TEXT,
-    catatan TEXT,
-    tgl_diserahkan TEXT,
-    petugas_serah TEXT,
-    tgl_diterima TEXT,
-    petugas_terima TEXT,
-    status_penerimaan TEXT DEFAULT 'Diterima',
-    created_at TEXT DEFAULT (datetime('now', 'localtime'))
-  );
-  CREATE INDEX IF NOT EXISTS idx_mgj_no ON mutasi_gudang_jadi(no_mutasi);
-  CREATE INDEX IF NOT EXISTS idx_mgj_sku ON mutasi_gudang_jadi(sku);
-  CREATE INDEX IF NOT EXISTS idx_mgj_antrean ON mutasi_gudang_jadi(no_antrian);
-`);
+    // Pastikan nilai default sumber_permintaan tersedia
+    const [sumberRows] = await connection.query(
+      "SELECT COUNT(*) as cnt FROM sumber_permintaan",
+    );
+    if (sumberRows[0].cnt === 0) {
+      await connection.query(
+        "INSERT IGNORE INTO sumber_permintaan (nama) VALUES ('PO Pelanggan'), ('Marketplace / Toko'), ('Rencana Internal')",
+      );
+    }
 
-// Migrasi kolom serah terima Gudang Jadi jika tabel sudah ada sebelumnya
-try { db.exec("ALTER TABLE mutasi_gudang_jadi ADD COLUMN tgl_diserahkan TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE mutasi_gudang_jadi ADD COLUMN petugas_serah TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE mutasi_gudang_jadi ADD COLUMN tgl_diterima TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE mutasi_gudang_jadi ADD COLUMN petugas_terima TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE mutasi_gudang_jadi ADD COLUMN status_penerimaan TEXT DEFAULT 'Diterima';"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tgl_serah_gudang TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE antrean ADD COLUMN tgl_selesai TEXT;"); } catch (e) {}
+    connection.release();
+  } catch (err) {
+    console.error("❌ Gagal inisialisasi MySQL Database:", err.message);
+  }
+}
 
-// Update status lama 'Sedang Diproses' menjadi 'Proses Cutting'
-try { db.exec("UPDATE antrean SET status = 'Proses Cutting' WHERE status = 'Sedang Diproses';"); } catch (e) {}
-// Pastikan antrean yang diserahkan ke gudang berstatus 'Selesai'
-try { db.exec("UPDATE antrean SET status = 'Selesai' WHERE status = 'Menunggu Penerimaan Gudang';"); } catch (e) {}
+initMysql();
 
 export default db;

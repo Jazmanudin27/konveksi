@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import db from '../db/database.js';
+import db, { pool } from '../db/database.js';
 
 const router = Router();
 
 // 1. GET all mutasi gudang jadi
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const rows = db.prepare(`
+    const rows = await db.all(`
       SELECT 
         id,
         no_mutasi as noMutasi,
@@ -32,7 +32,7 @@ router.get('/', (req, res) => {
         created_at as createdAt
       FROM mutasi_gudang_jadi
       ORDER BY id DESC
-    `).all();
+    `);
     res.json(rows);
   } catch (err) {
     console.error('❌ Error GET /api/mutasi-gudang-jadi:', err);
@@ -41,7 +41,7 @@ router.get('/', (req, res) => {
 });
 
 // 2. POST create manual mutasi gudang jadi
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const {
     noMutasi,
     tglMutasi,
@@ -66,7 +66,7 @@ router.post('/', (req, res) => {
     if (!finalNo) {
       let rand = Math.floor(100 + Math.random() * 900);
       finalNo = `MGJ-${today}-${rand}`;
-      while (db.prepare('SELECT id FROM mutasi_gudang_jadi WHERE no_mutasi = ?').get(finalNo)) {
+      while (await db.get('SELECT id FROM mutasi_gudang_jadi WHERE no_mutasi = ?', [finalNo])) {
         rand = Math.floor(100 + Math.random() * 900);
         finalNo = `MGJ-${today}-${rand}`;
       }
@@ -76,13 +76,13 @@ router.post('/', (req, res) => {
     const qtyNum = Number(qty) || 1;
     const jenis = (jenisMutasi || 'MASUK').toUpperCase();
 
-    const result = db.prepare(`
+    const result = await db.run(`
       INSERT INTO mutasi_gudang_jadi (
         no_mutasi, tgl_mutasi, jenis_mutasi, sumber, no_antrian, no_reff,
         sku, nama_produk, varian, ukuran, qty, satuan, lokasi_rak, petugas, catatan,
         tgl_diterima, petugas_terima, status_penerimaan
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Diterima')
-    `).run(
+    `, [
       finalNo,
       tglNow,
       jenis,
@@ -100,18 +100,18 @@ router.post('/', (req, res) => {
       catatan || null,
       tglNow,
       petugas || 'Staff Gudang'
-    );
+    ]);
 
     // Update stok produk
     try {
       if (jenis === 'MASUK') {
-        db.prepare('UPDATE products SET stok = COALESCE(stok, 0) + ? WHERE sku = ?').run(qtyNum, sku);
+        await db.run('UPDATE products SET stok = COALESCE(stok, 0) + ? WHERE sku = ?', [qtyNum, sku]);
       } else if (jenis === 'KELUAR') {
-        db.prepare('UPDATE products SET stok = MAX(0, COALESCE(stok, 0) - ?) WHERE sku = ?').run(qtyNum, sku);
+        await db.run('UPDATE products SET stok = GREATEST(0, COALESCE(stok, 0) - ?) WHERE sku = ?', [qtyNum, sku]);
       }
     } catch (_) {}
 
-    const inserted = db.prepare('SELECT * FROM mutasi_gudang_jadi WHERE id = ?').get(result.lastInsertRowid);
+    const inserted = await db.get('SELECT * FROM mutasi_gudang_jadi WHERE id = ?', [result.insertId]);
     res.json(inserted);
   } catch (err) {
     console.error('❌ Error POST /api/mutasi-gudang-jadi:', err);
@@ -120,70 +120,63 @@ router.post('/', (req, res) => {
 });
 
 // 3. POST approve penerimaan barang jadi ke rak gudang
-router.post('/approve', (req, res) => {
+router.post('/approve', async (req, res) => {
   const { id, tglDiterima, petugasTerima, lokasiRak, catatan } = req.body;
   if (!id) return res.status(400).json({ error: 'ID mutasi wajib diisi.' });
 
+  const connection = await pool.getConnection();
   try {
-    const row = db.prepare('SELECT * FROM mutasi_gudang_jadi WHERE id = ?').get(id);
+    const [rows] = await connection.query('SELECT * FROM mutasi_gudang_jadi WHERE id = ?', [id]);
+    const row = rows[0];
     if (!row) return res.status(404).json({ error: 'Data mutasi gudang jadi tidak ditemukan.' });
 
     const finalTglDiterima = tglDiterima || new Date().toISOString().slice(0, 10);
     const finalPetugas = petugasTerima || 'Staff Gudang Jadi';
     const finalRak = lokasiRak || 'Gudang Utama - Rak A1';
 
-    db.exec('BEGIN');
-    try {
-      // 1. Update mutasi_gudang_jadi
-      db.prepare(`
-        UPDATE mutasi_gudang_jadi
-        SET 
-          status_penerimaan = 'Diterima',
-          tgl_diterima = ?,
-          petugas_terima = ?,
-          petugas = ?,
-          lokasi_rak = ?,
-          tgl_mutasi = ?,
-          catatan = CASE 
-            WHEN ? IS NOT NULL AND ? != '' THEN ? 
-            ELSE catatan 
-          END
-        WHERE id = ?
-      `).run(
-        finalTglDiterima,
-        finalPetugas,
-        finalPetugas,
-        finalRak,
-        finalTglDiterima,
-        catatan,
-        catatan,
-        catatan,
-        id
-      );
+    await connection.beginTransaction();
 
-      // 2. Update status antrean -> 'Selesai'
-      if (row.no_antrian) {
-        db.prepare(`
-          UPDATE antrean
-          SET status = 'Selesai'
-          WHERE no_antrian = ?
-        `).run(row.no_antrian);
-      }
+    await connection.query(`
+      UPDATE mutasi_gudang_jadi
+      SET 
+        status_penerimaan = 'Diterima',
+        tgl_diterima = ?,
+        petugas_terima = ?,
+        petugas = ?,
+        lokasi_rak = ?,
+        tgl_mutasi = ?,
+        catatan = CASE 
+          WHEN ? IS NOT NULL AND ? != '' THEN ? 
+          ELSE catatan 
+        END
+      WHERE id = ?
+    `, [
+      finalTglDiterima,
+      finalPetugas,
+      finalPetugas,
+      finalRak,
+      finalTglDiterima,
+      catatan,
+      catatan,
+      catatan,
+      id
+    ]);
 
-      // 3. Tambah stok produk
-      if (row.jenis_mutasi === 'MASUK') {
-        try {
-          db.prepare('UPDATE products SET stok = COALESCE(stok, 0) + ? WHERE sku = ?').run(row.qty, row.sku);
-        } catch (_) {}
-      }
-
-      db.exec('COMMIT');
-    } catch (txErr) {
-      db.exec('ROLLBACK');
-      throw txErr;
+    // Update status antrean -> 'Selesai'
+    if (row.no_antrian) {
+      await connection.query("UPDATE antrean SET status = 'Selesai' WHERE no_antrian = ?", [row.no_antrian]);
     }
 
-    const updated = db.prepare(`
+    // Tambah stok produk
+    if (row.jenis_mutasi === 'MASUK') {
+      try {
+        await connection.query('UPDATE products SET stok = COALESCE(stok, 0) + ? WHERE sku = ?', [row.qty, row.sku]);
+      } catch (_) {}
+    }
+
+    await connection.commit();
+
+    const [updatedRows] = await pool.query(`
       SELECT 
         id,
         no_mutasi as noMutasi,
@@ -209,19 +202,22 @@ router.post('/approve', (req, res) => {
         created_at as createdAt
       FROM mutasi_gudang_jadi
       WHERE id = ?
-    `).get(id);
+    `, [id]);
 
-    res.json({ success: true, updated });
+    res.json({ success: true, updated: updatedRows[0] });
   } catch (err) {
+    await connection.rollback();
     console.error('❌ Error POST /api/mutasi-gudang-jadi/approve:', err);
     res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
 // 4. DELETE mutasi gudang jadi
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    db.prepare('DELETE FROM mutasi_gudang_jadi WHERE id = ?').run(req.params.id);
+    await db.run('DELETE FROM mutasi_gudang_jadi WHERE id = ?', [req.params.id]);
     res.json({ success: true, id: Number(req.params.id) });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -229,4 +225,3 @@ router.delete('/:id', (req, res) => {
 });
 
 export default router;
-

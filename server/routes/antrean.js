@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import db from '../db/database.js';
+import db, { pool } from '../db/database.js';
 
 const router = Router();
 
 // Helper SELECT antrean with joined products
-function getAntreanSelect(whereClause = '', params = []) {
+async function getAntreanSelect(whereClause = '', params = []) {
   const sql = `
     SELECT 
       a.id,
@@ -49,13 +49,13 @@ function getAntreanSelect(whereClause = '', params = []) {
     LEFT JOIN products p ON a.sku = p.sku
     ${whereClause}
   `;
-  return db.prepare(sql).all(...params);
+  return await db.all(sql, params);
 }
 
 // 1. GET all antrean
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const rows = getAntreanSelect('ORDER BY a.id DESC');
+    const rows = await getAntreanSelect('ORDER BY a.id DESC');
     res.json(rows);
   } catch (err) {
     console.error('❌ Error GET /api/antrean:', err);
@@ -63,14 +63,15 @@ router.get('/', (req, res) => {
   }
 });
 
-// 1a. Sumber Permintaan Management (SQLite Persisted)
-router.get('/sumber-permintaan', (req, res) => {
+// 1a. Sumber Permintaan Management (MySQL Persisted)
+router.get('/sumber-permintaan', async (req, res) => {
   try {
-    const rows = db.prepare("SELECT nama FROM sumber_permintaan ORDER BY id ASC").all();
+    const rows = await db.all('SELECT nama FROM sumber_permintaan ORDER BY id ASC');
     if (rows.length === 0) {
-      const defaults = ["PO Pelanggan", "Marketplace / Toko", "Rencana Internal"];
-      const insertStmt = db.prepare("INSERT OR IGNORE INTO sumber_permintaan (nama) VALUES (?)");
-      defaults.forEach(d => insertStmt.run(d));
+      const defaults = ['PO Pelanggan', 'Marketplace / Toko', 'Rencana Internal'];
+      for (const d of defaults) {
+        await db.run('INSERT IGNORE INTO sumber_permintaan (nama) VALUES (?)', [d]);
+      }
       return res.json(defaults);
     }
     res.json(rows.map(r => r.nama));
@@ -79,21 +80,21 @@ router.get('/sumber-permintaan', (req, res) => {
   }
 });
 
-router.post('/sumber-permintaan', (req, res) => {
+router.post('/sumber-permintaan', async (req, res) => {
   try {
     const { nama } = req.body;
     if (!nama || !nama.trim()) return res.status(400).json({ error: 'Nama sumber wajib diisi' });
-    db.prepare("INSERT OR IGNORE INTO sumber_permintaan (nama) VALUES (?)").run(nama.trim());
+    await db.run('INSERT IGNORE INTO sumber_permintaan (nama) VALUES (?)', [nama.trim()]);
     res.json({ success: true, nama: nama.trim() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.delete('/sumber-permintaan/:nama', (req, res) => {
+router.delete('/sumber-permintaan/:nama', async (req, res) => {
   try {
     const nama = decodeURIComponent(req.params.nama);
-    db.prepare("DELETE FROM sumber_permintaan WHERE nama = ?").run(nama);
+    await db.run('DELETE FROM sumber_permintaan WHERE nama = ?', [nama]);
     res.json({ success: true, nama });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -101,9 +102,9 @@ router.delete('/sumber-permintaan/:nama', (req, res) => {
 });
 
 // 1b. GET antrean by id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const rows = getAntreanSelect('WHERE a.id = ?', [req.params.id]);
+    const rows = await getAntreanSelect('WHERE a.id = ?', [req.params.id]);
     if (!rows || rows.length === 0) {
       return res.status(404).json({ error: 'Antrean tidak ditemukan' });
     }
@@ -115,7 +116,7 @@ router.get('/:id', (req, res) => {
 });
 
 // 2. POST create antrean
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const {
     noAntrian,
     tglMasuk,
@@ -142,25 +143,23 @@ router.post('/', (req, res) => {
     let finalNo = noAntrian ? String(noAntrian).trim() : '';
     if (!finalNo) {
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const countRow = db.prepare('SELECT COUNT(*) as cnt FROM antrean').get();
+      const countRow = await db.get('SELECT COUNT(*) as cnt FROM antrean');
       const seq = String((countRow ? countRow.cnt : 0) + 1).padStart(3, '0');
       finalNo = `ANT-${today}-${seq}`;
     }
 
-    const existing = db.prepare('SELECT id FROM antrean WHERE no_antrian = ?').get(finalNo);
+    const existing = await db.get('SELECT id FROM antrean WHERE no_antrian = ?', [finalNo]);
     if (existing) {
       const seqSuffix = Math.floor(Math.random() * 899 + 100);
       finalNo = `${finalNo}-${seqSuffix}`;
     }
 
-    const stmt = db.prepare(`
+    const info = await db.run(`
       INSERT INTO antrean (
         no_antrian, tgl_masuk, sumber_permintaan, no_reff, sku, qty, prioritas, deadline, status, catatan,
         tgl_serah_cutting, tim_cutting, tarif_cutting, total_biaya_cutting, catatan_cutting
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const info = stmt.run(
+    `, [
       finalNo,
       tglMasuk || new Date().toISOString().slice(0, 10),
       sumberPermintaan || 'Rencana Internal',
@@ -176,10 +175,10 @@ router.post('/', (req, res) => {
       Number(tarifCutting) || 0,
       Number(totalBiayaCutting) || 0,
       catatanCutting || null
-    );
+    ]);
 
     res.status(201).json({
-      id: Number(info.lastInsertRowid),
+      id: Number(info.insertId),
       noAntrian: finalNo,
       ...req.body
     });
@@ -190,11 +189,11 @@ router.post('/', (req, res) => {
 });
 
 // 3. PUT update antrean
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existing = db.prepare('SELECT * FROM antrean WHERE id = ?').get(id);
+    const existing = await db.get('SELECT * FROM antrean WHERE id = ?', [id]);
     if (!existing) {
       return res.status(404).json({ error: 'Antrean tidak ditemukan' });
     }
@@ -222,7 +221,7 @@ router.put('/:id', (req, res) => {
       catatanJahit = existing.catatan_jahit
     } = req.body || {};
 
-    db.prepare(`
+    await db.run(`
       UPDATE antrean
       SET 
         no_antrian = ?,
@@ -246,7 +245,7 @@ router.put('/:id', (req, res) => {
         total_biaya_jahit = ?,
         catatan_jahit = ?
       WHERE id = ?
-    `).run(
+    `, [
       noAntrian,
       tglMasuk,
       sumberPermintaan,
@@ -268,9 +267,9 @@ router.put('/:id', (req, res) => {
       totalBiayaJahit !== undefined ? Number(totalBiayaJahit) : null,
       catatanJahit,
       id
-    );
+    ]);
 
-    const rows = getAntreanSelect('WHERE a.id = ?', [id]);
+    const rows = await getAntreanSelect('WHERE a.id = ?', [id]);
     res.json(rows[0] || { success: true, id: Number(id) });
   } catch (err) {
     console.error('❌ Error PUT /api/antrean/:id:', err);
@@ -279,146 +278,143 @@ router.put('/:id', (req, res) => {
 });
 
 // 4. POST serah-cutting
-router.post('/serah-cutting', (req, res) => {
+router.post('/serah-cutting', async (req, res) => {
   const { ids, tglSerahCutting, timCutting, tarifCutting, catatanCutting } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Daftar antrean wajib dipilih.' });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const updateStmt = db.prepare(`
-      UPDATE antrean
-      SET 
-        status = 'Proses Cutting',
-        tgl_serah_cutting = ?,
-        tim_cutting = ?,
-        tarif_cutting = ?,
-        total_biaya_cutting = (qty * ?),
-        catatan_cutting = ?
-      WHERE id = ?
-    `);
+    await connection.beginTransaction();
 
-    db.exec('BEGIN');
-    try {
-      for (const id of ids) {
-        updateStmt.run(
-          tglSerahCutting || new Date().toISOString().slice(0, 10),
-          timCutting || 'Tim Cutting',
-          Number(tarifCutting) || 0,
-          Number(tarifCutting) || 0,
-          catatanCutting || null,
-          id
-        );
-      }
-      db.exec('COMMIT');
-    } catch (txErr) {
-      db.exec('ROLLBACK');
-      throw txErr;
+    for (const id of ids) {
+      await connection.query(`
+        UPDATE antrean
+        SET 
+          status = 'Proses Cutting',
+          tgl_serah_cutting = ?,
+          tim_cutting = ?,
+          tarif_cutting = ?,
+          total_biaya_cutting = (qty * ?),
+          catatan_cutting = ?
+        WHERE id = ?
+      `, [
+        tglSerahCutting || new Date().toISOString().slice(0, 10),
+        timCutting || 'Tim Cutting',
+        Number(tarifCutting) || 0,
+        Number(tarifCutting) || 0,
+        catatanCutting || null,
+        id
+      ]);
     }
 
+    await connection.commit();
+
     const placeholders = ids.map(() => '?').join(',');
-    const updatedRows = getAntreanSelect(`WHERE a.id IN (${placeholders})`, ids);
+    const updatedRows = await getAntreanSelect(`WHERE a.id IN (${placeholders})`, ids);
     res.json({ success: true, count: ids.length, updated: updatedRows });
   } catch (err) {
+    await connection.rollback();
     console.error('❌ Error POST /api/antrean/serah-cutting:', err);
     res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
 // 5. POST serah-jahit
-router.post('/serah-jahit', (req, res) => {
+router.post('/serah-jahit', async (req, res) => {
   const { ids, tglSerahJahit, timJahit, tarifJahit, catatanJahit } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Daftar antrean wajib dipilih.' });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const updateStmt = db.prepare(`
-      UPDATE antrean
-      SET 
-        status = 'Proses Jahit',
-        tgl_serah_jahit = ?,
-        tim_jahit = ?,
-        tarif_jahit = ?,
-        total_biaya_jahit = (qty * ?),
-        catatan_jahit = ?
-      WHERE id = ?
-    `);
+    await connection.beginTransaction();
 
-    db.exec('BEGIN');
-    try {
-      for (const id of ids) {
-        updateStmt.run(
-          tglSerahJahit || new Date().toISOString().slice(0, 10),
-          timJahit || 'Tim Jahit',
-          Number(tarifJahit) || 0,
-          Number(tarifJahit) || 0,
-          catatanJahit || null,
-          id
-        );
-      }
-      db.exec('COMMIT');
-    } catch (txErr) {
-      db.exec('ROLLBACK');
-      throw txErr;
+    for (const id of ids) {
+      await connection.query(`
+        UPDATE antrean
+        SET 
+          status = 'Proses Jahit',
+          tgl_serah_jahit = ?,
+          tim_jahit = ?,
+          tarif_jahit = ?,
+          total_biaya_jahit = (qty * ?),
+          catatan_jahit = ?
+        WHERE id = ?
+      `, [
+        tglSerahJahit || new Date().toISOString().slice(0, 10),
+        timJahit || 'Tim Jahit',
+        Number(tarifJahit) || 0,
+        Number(tarifJahit) || 0,
+        catatanJahit || null,
+        id
+      ]);
     }
 
+    await connection.commit();
+
     const placeholders = ids.map(() => '?').join(',');
-    const updatedRows = getAntreanSelect(`WHERE a.id IN (${placeholders})`, ids);
+    const updatedRows = await getAntreanSelect(`WHERE a.id IN (${placeholders})`, ids);
     res.json({ success: true, count: ids.length, updated: updatedRows });
   } catch (err) {
+    await connection.rollback();
     console.error('❌ Error POST /api/antrean/serah-jahit:', err);
     res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
 // 6. POST serah-qc
-router.post('/serah-qc', (req, res) => {
+router.post('/serah-qc', async (req, res) => {
   const { ids, tglSerahQc, timQc, catatanQc, statusQc } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Daftar antrean wajib dipilih.' });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const updateStmt = db.prepare(`
-      UPDATE antrean
-      SET 
-        status = 'Proses QC',
-        tgl_serah_qc = ?,
-        tim_qc = ?,
-        catatan_qc = ?,
-        status_qc = ?
-      WHERE id = ?
-    `);
+    await connection.beginTransaction();
 
-    db.exec('BEGIN');
-    try {
-      for (const id of ids) {
-        updateStmt.run(
-          tglSerahQc || new Date().toISOString().slice(0, 10),
-          timQc || 'Tim QC (Pemeriksaan)',
-          catatanQc || null,
-          statusQc || 'Pemeriksaan',
-          id
-        );
-      }
-      db.exec('COMMIT');
-    } catch (txErr) {
-      db.exec('ROLLBACK');
-      throw txErr;
+    for (const id of ids) {
+      await connection.query(`
+        UPDATE antrean
+        SET 
+          status = 'Proses QC',
+          tgl_serah_qc = ?,
+          tim_qc = ?,
+          catatan_qc = ?,
+          status_qc = ?
+        WHERE id = ?
+      `, [
+        tglSerahQc || new Date().toISOString().slice(0, 10),
+        timQc || 'Tim QC (Pemeriksaan)',
+        catatanQc || null,
+        statusQc || 'Pemeriksaan',
+        id
+      ]);
     }
 
+    await connection.commit();
+
     const placeholders = ids.map(() => '?').join(',');
-    const updatedRows = getAntreanSelect(`WHERE a.id IN (${placeholders})`, ids);
+    const updatedRows = await getAntreanSelect(`WHERE a.id IN (${placeholders})`, ids);
     res.json({ success: true, count: ids.length, updated: updatedRows });
   } catch (err) {
+    await connection.rollback();
     console.error('❌ Error POST /api/antrean/serah-qc:', err);
     res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
 // 7. POST serah-finishing (Hasil QC: Lolos vs Reject Retur Jahit)
-router.post('/serah-finishing', (req, res) => {
+router.post('/serah-finishing', async (req, res) => {
   const {
     ids,
     qtyPassQc,
@@ -433,167 +429,168 @@ router.post('/serah-finishing', (req, res) => {
     return res.status(400).json({ error: 'Daftar antrean wajib dipilih.' });
   }
 
+  const connection = await pool.getConnection();
   try {
     const pass = Math.max(0, Number(qtyPassQc) || 0);
     const reject = Math.max(0, Number(qtyRejectQc) || 0);
     const affectedIds = [];
     const returItems = [];
 
-    db.exec('BEGIN');
-    try {
-      for (const id of ids) {
-        const orig = db.prepare('SELECT * FROM antrean WHERE id = ?').get(id);
-        if (!orig) continue;
+    await connection.beginTransaction();
 
-        const origQty = Number(orig.qty) || 0;
-        const itemPass = ids.length === 1 ? pass : Math.round((origQty / (pass + reject || origQty)) * pass);
-        const itemReject = ids.length === 1 ? reject : (origQty - itemPass);
+    for (const id of ids) {
+      const [origRows] = await connection.query('SELECT * FROM antrean WHERE id = ?', [id]);
+      const orig = origRows[0];
+      if (!orig) continue;
 
-        if (itemReject > 0 && itemPass === 0) {
-          // 100% Reject -> Kembali Jahit
-          db.prepare(`
-            UPDATE antrean
-            SET 
-              status = 'Proses Jahit',
-              status_qc = 'Reject (Kembali Jahit)',
-              qty_pass_qc = 0,
-              qty_reject_qc = ?,
-              catatan_reject_qc = ?,
-              catatan = CASE 
-                WHEN catatan IS NULL OR catatan = '' THEN ? 
-                ELSE catatan || ' | ' || ? 
-              END,
-              catatan_jahit = CASE 
-                WHEN catatan_jahit IS NULL OR catatan_jahit = '' THEN ? 
-                ELSE catatan_jahit || ' | ' || ? 
-              END
-            WHERE id = ?
-          `).run(
-            itemReject,
-            catatanRejectQc || null,
-            `[RETUR QC REPAIR]: ${catatanRejectQc || 'Cacat jahit'}`,
-            `[RETUR QC REPAIR]: ${catatanRejectQc || 'Cacat jahit'}`,
-            `[PERBAIKAN QC]: ${catatanRejectQc || 'Cacat jahit'}`,
-            `[PERBAIKAN QC]: ${catatanRejectQc || 'Cacat jahit'}`,
-            id
-          );
-          affectedIds.push(id);
-        } else if (itemReject > 0 && itemPass > 0) {
-          // Split: Sebagian lolos ke finishing, sebagian retur perbaikan jahit
-          db.prepare(`
-            UPDATE antrean
-            SET 
-              qty = ?,
-              status = 'Proses Finishing',
-              status_qc = 'Selesai QC (Lolos Sebagian)',
-              qty_pass_qc = ?,
-              qty_reject_qc = ?,
-              catatan_reject_qc = ?,
-              tgl_serah_finishing = ?,
-              tim_finishing = ?,
-              catatan_finishing = ?,
-              total_biaya_cutting = (? * COALESCE(tarif_cutting, 0)),
-              total_biaya_jahit = (? * COALESCE(tarif_jahit, 0))
-            WHERE id = ?
-          `).run(
-            itemPass,
-            itemPass,
-            itemReject,
-            catatanRejectQc || null,
-            tglSerahFinishing || new Date().toISOString().slice(0, 10),
-            timFinishing || 'Tim Finishing & Packing',
-            catatanFinishing || null,
-            itemPass,
-            itemPass,
-            id
-          );
-          affectedIds.push(id);
+      const origQty = Number(orig.qty) || 0;
+      const itemPass = ids.length === 1 ? pass : Math.round((origQty / (pass + reject || origQty)) * pass);
+      const itemReject = ids.length === 1 ? reject : (origQty - itemPass);
 
-          // Pecahan antrean retur
-          let baseNo = `${orig.no_antrian}-R`;
-          let candidateNo = baseNo;
-          let counter = 1;
-          while (db.prepare('SELECT id FROM antrean WHERE no_antrian = ?').get(candidateNo)) {
-            counter++;
-            candidateNo = `${baseNo}${counter}`;
-          }
+      if (itemReject > 0 && itemPass === 0) {
+        // 100% Reject -> Kembali Jahit
+        await connection.query(`
+          UPDATE antrean
+          SET 
+            status = 'Proses Jahit',
+            status_qc = 'Reject (Kembali Jahit)',
+            qty_pass_qc = 0,
+            qty_reject_qc = ?,
+            catatan_reject_qc = ?,
+            catatan = CASE 
+              WHEN catatan IS NULL OR catatan = '' THEN ? 
+              ELSE CONCAT(catatan, ' | ', ?) 
+            END,
+            catatan_jahit = CASE 
+              WHEN catatan_jahit IS NULL OR catatan_jahit = '' THEN ? 
+              ELSE CONCAT(catatan_jahit, ' | ', ?) 
+            END
+          WHERE id = ?
+        `, [
+          itemReject,
+          catatanRejectQc || null,
+          `[RETUR QC REPAIR]: ${catatanRejectQc || 'Cacat jahit'}`,
+          `[RETUR QC REPAIR]: ${catatanRejectQc || 'Cacat jahit'}`,
+          `[PERBAIKAN QC]: ${catatanRejectQc || 'Cacat jahit'}`,
+          `[PERBAIKAN QC]: ${catatanRejectQc || 'Cacat jahit'}`,
+          id
+        ]);
+        affectedIds.push(id);
+      } else if (itemReject > 0 && itemPass > 0) {
+        // Split: Sebagian lolos ke finishing, sebagian retur perbaikan jahit
+        await connection.query(`
+          UPDATE antrean
+          SET 
+            qty = ?,
+            status = 'Proses Finishing',
+            status_qc = 'Selesai QC (Lolos Sebagian)',
+            qty_pass_qc = ?,
+            qty_reject_qc = ?,
+            catatan_reject_qc = ?,
+            tgl_serah_finishing = ?,
+            tim_finishing = ?,
+            catatan_finishing = ?,
+            total_biaya_cutting = (? * COALESCE(tarif_cutting, 0)),
+            total_biaya_jahit = (? * COALESCE(tarif_jahit, 0))
+          WHERE id = ?
+        `, [
+          itemPass,
+          itemPass,
+          itemReject,
+          catatanRejectQc || null,
+          tglSerahFinishing || new Date().toISOString().slice(0, 10),
+          timFinishing || 'Tim Finishing & Packing',
+          catatanFinishing || null,
+          itemPass,
+          itemPass,
+          id
+        ]);
+        affectedIds.push(id);
 
-          const insertRetur = db.prepare(`
-            INSERT INTO antrean (
-              no_antrian, tgl_masuk, sumber_permintaan, no_reff, sku, qty, prioritas, deadline, status, catatan,
-              tgl_serah_cutting, tim_cutting, tarif_cutting, total_biaya_cutting, catatan_cutting,
-              tgl_serah_jahit, tim_jahit, tarif_jahit, total_biaya_jahit, catatan_jahit,
-              tgl_serah_qc, tim_qc, catatan_qc, status_qc, qty_pass_qc, qty_reject_qc, catatan_reject_qc
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            candidateNo,
-            orig.tgl_masuk || new Date().toISOString().slice(0, 10),
-            orig.sumber_permintaan || 'PO Pelanggan',
-            orig.no_reff ? `${orig.no_reff} (Retur QC)` : 'Retur QC',
-            orig.sku,
-            itemReject,
-            'Urgent',
-            orig.deadline,
-            'Proses Jahit',
-            `[RETUR REVISI QC]: ${catatanRejectQc || 'Perbaikan cacat jahit'}`,
-            orig.tgl_serah_cutting,
-            orig.tim_cutting,
-            0,
-            0,
-            `Pecahan retur reject dari ${orig.no_antrian}`,
-            new Date().toISOString().slice(0, 10),
-            orig.tim_jahit || 'Tim Jahit',
-            0,
-            0,
-            `[PERBAIKAN REJECT QC]: ${catatanRejectQc || 'Perbaiki jahitan yang meleset'}`,
-            orig.tgl_serah_qc,
-            orig.tim_qc,
-            orig.catatan_qc,
-            'Perbaikan Jahit',
-            0,
-            itemReject,
-            catatanRejectQc || null
-          );
-
-          affectedIds.push(insertRetur.lastInsertRowid);
-          returItems.push({
-            id: insertRetur.lastInsertRowid,
-            noAntrian: candidateNo,
-            qty: itemReject,
-            timJahit: orig.tim_jahit || 'Tim Jahit'
-          });
-        } else {
-          // 100% Lolos
-          db.prepare(`
-            UPDATE antrean
-            SET 
-              status = 'Proses Finishing',
-              status_qc = 'Selesai QC',
-              qty_pass_qc = ?,
-              qty_reject_qc = 0,
-              catatan_reject_qc = NULL,
-              tgl_serah_finishing = ?,
-              tim_finishing = ?,
-              catatan_finishing = ?
-            WHERE id = ?
-          `).run(
-            origQty,
-            tglSerahFinishing || new Date().toISOString().slice(0, 10),
-            timFinishing || 'Tim Finishing & Packing',
-            catatanFinishing || null,
-            id
-          );
-          affectedIds.push(id);
+        // Pecahan antrean retur
+        let baseNo = `${orig.no_antrian}-R`;
+        let candidateNo = baseNo;
+        let counter = 1;
+        while (true) {
+          const [chk] = await connection.query('SELECT id FROM antrean WHERE no_antrian = ?', [candidateNo]);
+          if (!chk || chk.length === 0) break;
+          counter++;
+          candidateNo = `${baseNo}${counter}`;
         }
+
+        const [insertRetur] = await connection.query(`
+          INSERT INTO antrean (
+            no_antrian, tgl_masuk, sumber_permintaan, no_reff, sku, qty, prioritas, deadline, status, catatan,
+            tgl_serah_cutting, tim_cutting, tarif_cutting, total_biaya_cutting, catatan_cutting,
+            tgl_serah_jahit, tim_jahit, tarif_jahit, total_biaya_jahit, catatan_jahit,
+            tgl_serah_qc, tim_qc, catatan_qc, status_qc, qty_pass_qc, qty_reject_qc, catatan_reject_qc
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          candidateNo,
+          orig.tgl_masuk || new Date().toISOString().slice(0, 10),
+          orig.sumber_permintaan || 'PO Pelanggan',
+          orig.no_reff ? `${orig.no_reff} (Retur QC)` : 'Retur QC',
+          orig.sku,
+          itemReject,
+          'Urgent',
+          orig.deadline,
+          'Proses Jahit',
+          `[RETUR REVISI QC]: ${catatanRejectQc || 'Perbaikan cacat jahit'}`,
+          orig.tgl_serah_cutting,
+          orig.tim_cutting,
+          0,
+          0,
+          `Pecahan retur reject dari ${orig.no_antrian}`,
+          new Date().toISOString().slice(0, 10),
+          orig.tim_jahit || 'Tim Jahit',
+          0,
+          0,
+          `[PERBAIKAN REJECT QC]: ${catatanRejectQc || 'Perbaiki jahitan yang meleset'}`,
+          orig.tgl_serah_qc,
+          orig.tim_qc,
+          orig.catatan_qc,
+          'Perbaikan Jahit',
+          0,
+          itemReject,
+          catatanRejectQc || null
+        ]);
+
+        affectedIds.push(insertRetur.insertId);
+        returItems.push({
+          id: insertRetur.insertId,
+          noAntrian: candidateNo,
+          qty: itemReject,
+          timJahit: orig.tim_jahit || 'Tim Jahit'
+        });
+      } else {
+        // 100% Lolos
+        await connection.query(`
+          UPDATE antrean
+          SET 
+            status = 'Proses Finishing',
+            status_qc = 'Selesai QC',
+            qty_pass_qc = ?,
+            qty_reject_qc = 0,
+            catatan_reject_qc = NULL,
+            tgl_serah_finishing = ?,
+            tim_finishing = ?,
+            catatan_finishing = ?
+          WHERE id = ?
+        `, [
+          origQty,
+          tglSerahFinishing || new Date().toISOString().slice(0, 10),
+          timFinishing || 'Tim Finishing & Packing',
+          catatanFinishing || null,
+          id
+        ]);
+        affectedIds.push(id);
       }
-      db.exec('COMMIT');
-    } catch (txErr) {
-      db.exec('ROLLBACK');
-      throw txErr;
     }
 
+    await connection.commit();
+
     const placeholders = affectedIds.map(() => '?').join(',');
-    const updatedRows = getAntreanSelect(`WHERE a.id IN (${placeholders})`, affectedIds);
+    const updatedRows = await getAntreanSelect(`WHERE a.id IN (${placeholders})`, affectedIds);
 
     res.json({
       success: true,
@@ -602,94 +599,98 @@ router.post('/serah-finishing', (req, res) => {
       returItems
     });
   } catch (err) {
+    await connection.rollback();
     console.error('❌ Error POST /api/antrean/serah-finishing:', err);
     res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
 // 8. POST selesai-finishing (Serahkan ke Gudang Jadi)
-router.post('/selesai-finishing', (req, res) => {
+router.post('/selesai-finishing', async (req, res) => {
   const { ids, tglDiserahkan, tglSelesai, petugasSerah, timFinishing, catatan } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Daftar antrean wajib dipilih.' });
   }
 
+  const connection = await pool.getConnection();
   try {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const tglSerah = tglDiserahkan || tglSelesai || new Date().toISOString().slice(0, 10);
     const results = [];
 
-    db.exec('BEGIN');
-    try {
-      for (const id of ids) {
-        const item = db.prepare(`
-          SELECT a.*, p.nama_produk, p.varian, p.ukuran 
-          FROM antrean a 
-          LEFT JOIN products p ON a.sku = p.sku 
-          WHERE a.id = ?
-        `).get(id);
-        if (!item) continue;
+    await connection.beginTransaction();
 
-        const finalPetugasSerah = petugasSerah || timFinishing || item.tim_finishing || 'Tim Finishing';
+    for (const id of ids) {
+      const [itemRows] = await connection.query(`
+        SELECT a.*, p.nama_produk, p.varian, p.ukuran 
+        FROM antrean a 
+        LEFT JOIN products p ON a.sku = p.sku 
+        WHERE a.id = ?
+      `, [id]);
+      const item = itemRows[0];
+      if (!item) continue;
 
-        // 1. Update status antrean -> 'Selesai' (masuk status Selesai di Antrean Produksi)
-        db.prepare(`
-          UPDATE antrean 
-          SET status = 'Selesai',
-              tgl_serah_gudang = ?
-          WHERE id = ?
-        `).run(tglSerah, id);
+      const finalPetugasSerah = petugasSerah || timFinishing || item.tim_finishing || 'Tim Finishing';
 
-        // 2. Generate No Mutasi unik
-        let rand = Math.floor(100 + Math.random() * 900);
-        let candidateNo = `MGJ-${today}-${rand}`;
-        while (db.prepare('SELECT id FROM mutasi_gudang_jadi WHERE no_mutasi = ?').get(candidateNo)) {
-          rand = Math.floor(100 + Math.random() * 900);
-          candidateNo = `MGJ-${today}-${rand}`;
-        }
+      // 1. Update status antrean -> 'Selesai'
+      await connection.query(`
+        UPDATE antrean 
+        SET status = 'Selesai',
+            tgl_serah_gudang = ?
+        WHERE id = ?
+      `, [tglSerah, id]);
 
-        const qtyFinal = Number(item.qty) || 1;
-        const prodName = item.nama_produk || item.sku;
-        const prodVarian = item.varian || 'Polos';
-        const prodUkuran = item.ukuran || 'All Size';
-        const finalCatatan = catatan || `Diserahkan dari ${finalPetugasSerah} (Menunggu Approval Gudang Jadi)`;
-
-        // 3. Masukkan ke mutasi_gudang_jadi
-        db.prepare(`
-          INSERT INTO mutasi_gudang_jadi (
-            no_mutasi, tgl_mutasi, jenis_mutasi, sumber, no_antrian, no_reff,
-            sku, nama_produk, varian, ukuran, qty, satuan, lokasi_rak,
-            petugas, catatan, tgl_diserahkan, petugas_serah, tgl_diterima, petugas_terima, status_penerimaan
-          ) VALUES (?, ?, 'MASUK', 'Produksi Finishing', ?, ?, ?, ?, ?, ?, ?, 'Pcs', NULL, ?, ?, ?, ?, NULL, NULL, 'Menunggu Penerimaan')
-        `).run(
-          candidateNo,
-          tglSerah,
-          item.no_antrian,
-          item.no_reff || '-',
-          item.sku,
-          prodName,
-          prodVarian,
-          prodUkuran,
-          qtyFinal,
-          finalPetugasSerah,
-          finalCatatan,
-          tglSerah,
-          finalPetugasSerah
-        );
-
-        results.push({
-          antreanId: id,
-          noAntrian: item.no_antrian,
-          noMutasi: candidateNo,
-          qty: qtyFinal,
-          status: 'Menunggu Penerimaan Gudang'
-        });
+      // 2. Generate No Mutasi unik
+      let rand = Math.floor(100 + Math.random() * 900);
+      let candidateNo = `MGJ-${today}-${rand}`;
+      while (true) {
+        const [chk] = await connection.query('SELECT id FROM mutasi_gudang_jadi WHERE no_mutasi = ?', [candidateNo]);
+        if (!chk || chk.length === 0) break;
+        rand = Math.floor(100 + Math.random() * 900);
+        candidateNo = `MGJ-${today}-${rand}`;
       }
-      db.exec('COMMIT');
-    } catch (txErr) {
-      db.exec('ROLLBACK');
-      throw txErr;
+
+      const qtyFinal = Number(item.qty) || 1;
+      const prodName = item.nama_produk || item.sku;
+      const prodVarian = item.varian || 'Polos';
+      const prodUkuran = item.ukuran || 'All Size';
+      const finalCatatan = catatan || `Diserahkan dari ${finalPetugasSerah} (Menunggu Approval Gudang Jadi)`;
+
+      // 3. Masukkan ke mutasi_gudang_jadi
+      await connection.query(`
+        INSERT INTO mutasi_gudang_jadi (
+          no_mutasi, tgl_mutasi, jenis_mutasi, sumber, no_antrian, no_reff,
+          sku, nama_produk, varian, ukuran, qty, satuan, lokasi_rak,
+          petugas, catatan, tgl_diserahkan, petugas_serah, tgl_diterima, petugas_terima, status_penerimaan
+        ) VALUES (?, ?, 'MASUK', 'Produksi Finishing', ?, ?, ?, ?, ?, ?, ?, 'Pcs', NULL, ?, ?, ?, ?, NULL, NULL, 'Menunggu Penerimaan')
+      `, [
+        candidateNo,
+        tglSerah,
+        item.no_antrian,
+        item.no_reff || '-',
+        item.sku,
+        prodName,
+        prodVarian,
+        prodUkuran,
+        qtyFinal,
+        finalPetugasSerah,
+        finalCatatan,
+        tglSerah,
+        finalPetugasSerah
+      ]);
+
+      results.push({
+        antreanId: id,
+        noAntrian: item.no_antrian,
+        noMutasi: candidateNo,
+        qty: qtyFinal,
+        status: 'Menunggu Penerimaan Gudang'
+      });
     }
+
+    await connection.commit();
 
     res.json({
       success: true,
@@ -697,18 +698,21 @@ router.post('/selesai-finishing', (req, res) => {
       data: results
     });
   } catch (err) {
+    await connection.rollback();
     console.error('❌ Error POST /api/antrean/selesai-finishing:', err);
     res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
 // 9. POST rollback tahap (Undo jika salah proses)
-router.post('/rollback', (req, res) => {
+router.post('/rollback', async (req, res) => {
   const { id } = req.body;
   if (!id) return res.status(400).json({ error: 'ID antrean wajib ada.' });
 
   try {
-    const row = db.prepare('SELECT * FROM antrean WHERE id = ?').get(id);
+    const row = await db.get('SELECT * FROM antrean WHERE id = ?', [id]);
     if (!row) return res.status(404).json({ error: 'Antrean tidak ditemukan.' });
 
     let newStatus = 'Menunggu Cutting';
@@ -758,7 +762,7 @@ router.post('/rollback', (req, res) => {
         WHERE id = ?
       `;
       try {
-        db.prepare("DELETE FROM mutasi_gudang_jadi WHERE no_antrian = ?").run(row.no_antrian);
+        await db.run('DELETE FROM mutasi_gudang_jadi WHERE no_antrian = ?', [row.no_antrian]);
       } catch (_) {}
     } else if (row.status === 'Proses Finishing') {
       newStatus = 'Proses QC';
@@ -777,10 +781,10 @@ router.post('/rollback', (req, res) => {
     }
 
     if (sqlUpdate) {
-      db.prepare(sqlUpdate).run(id);
+      await db.run(sqlUpdate, [id]);
     }
 
-    const rows = getAntreanSelect('WHERE a.id = ?', [id]);
+    const rows = await getAntreanSelect('WHERE a.id = ?', [id]);
     res.json({ success: true, previousStatus: row.status, newStatus, updated: rows[0] });
   } catch (err) {
     console.error('❌ Error rollback antrean:', err);
@@ -789,15 +793,15 @@ router.post('/rollback', (req, res) => {
 });
 
 // 10. DELETE antrean
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const item = db.prepare('SELECT no_antrian FROM antrean WHERE id = ?').get(req.params.id);
+    const item = await db.get('SELECT no_antrian FROM antrean WHERE id = ?', [req.params.id]);
     if (item && item.no_antrian) {
       try {
-        db.prepare('DELETE FROM mutasi_gudang_jadi WHERE no_antrian = ?').run(item.no_antrian);
+        await db.run('DELETE FROM mutasi_gudang_jadi WHERE no_antrian = ?', [item.no_antrian]);
       } catch (_) {}
     }
-    db.prepare('DELETE FROM antrean WHERE id = ?').run(req.params.id);
+    await db.run('DELETE FROM antrean WHERE id = ?', [req.params.id]);
     res.json({ success: true, id: Number(req.params.id) });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -805,4 +809,3 @@ router.delete('/:id', (req, res) => {
 });
 
 export default router;
-

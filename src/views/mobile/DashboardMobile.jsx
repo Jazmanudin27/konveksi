@@ -101,7 +101,7 @@ export default function DashboardMobile({
   }, [antreanList, products]);
 
   return (
-    <div className="space-y-4 -mt-10 pb-6 relative z-20">
+    <div className="space-y-4 -mt-5 pb-6 relative z-20">
       {/* 1. KARTU PROFIL ADMIN PRODUKSI & 4 STATUS PIPELINE KONVEKSI */}
       <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100/90">
         <div className="flex items-center justify-between">

@@ -4,9 +4,9 @@ import db from '../db/database.js';
 const router = Router();
 
 // GET all employees
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM employees ORDER BY id ASC').all();
+    const rows = await db.all('SELECT * FROM employees ORDER BY id ASC');
     res.json(rows.map(r => ({
       id: r.id,
       nik: r.nik,
@@ -23,30 +23,28 @@ router.get('/', (req, res) => {
 });
 
 // POST create employee
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { nik, nama, kategori, bagian, status, telepon, tanggalMasuk } = req.body;
   try {
-    const stmt = db.prepare(`
-      INSERT INTO employees (nik, nama, kategori, bagian, status, telepon, tanggal_masuk)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    const info = stmt.run(nik, nama, kategori, bagian, status || 'Aktif', telepon || null, tanggalMasuk || null);
-    res.status(201).json({ id: Number(info.lastInsertRowid), ...req.body });
+    const info = await db.run(
+      'INSERT INTO employees (nik, nama, kategori, bagian, status, telepon, tanggal_masuk) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [nik, nama, kategori, bagian, status || 'Aktif', telepon || null, tanggalMasuk || null]
+    );
+    res.status(201).json({ id: Number(info.insertId), ...req.body });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // PUT update employee
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { nik, nama, kategori, bagian, status, telepon, tanggalMasuk } = req.body;
   try {
-    db.prepare(`
-      UPDATE employees
-      SET nik = ?, nama = ?, kategori = ?, bagian = ?, status = ?, telepon = ?, tanggal_masuk = ?
-      WHERE id = ?
-    `).run(nik, nama, kategori, bagian, status || 'Aktif', telepon || null, tanggalMasuk || null, id);
+    await db.run(
+      'UPDATE employees SET nik = ?, nama = ?, kategori = ?, bagian = ?, status = ?, telepon = ?, tanggal_masuk = ? WHERE id = ?',
+      [nik, nama, kategori, bagian, status || 'Aktif', telepon || null, tanggalMasuk || null, id]
+    );
     res.json({ success: true, id: Number(id) });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -54,9 +52,9 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE employee
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    db.prepare('DELETE FROM employees WHERE id = ?').run(req.params.id);
+    await db.run('DELETE FROM employees WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -64,4 +62,3 @@ router.delete('/:id', (req, res) => {
 });
 
 export default router;
-

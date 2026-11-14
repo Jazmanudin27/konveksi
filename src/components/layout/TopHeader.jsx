@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useClock } from '../../hooks/useClock';
 
-export default function TopHeader({ onToggleSidebar, dbConnected }) {
+export default function TopHeader({ onToggleSidebar, dbConnected, onSwitchToMobile }) {
   const timeStr = useClock();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -90,11 +90,15 @@ export default function TopHeader({ onToggleSidebar, dbConnected }) {
           <span>{dbConnected ? 'SQLite Online' : 'SQLite Offline'}</span>
         </div>
 
-        {/* Status Mobile */}
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/60 text-slate-300 border border-slate-700/60 text-[11px] font-semibold">
-          <Smartphone className="w-3 h-3 text-cyan-400" />
-          <span>Konveksi Mobile</span>
-        </div>
+        {/* Tombol Beralih ke Versi Mobile */}
+        <button
+          onClick={onSwitchToMobile}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-cyan-300 hover:text-white border border-slate-700/80 text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+          title="Beralih ke Tampilan Mobile Smartphone"
+        >
+          <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Versi Mobile</span>
+        </button>
 
         {/* Jam Real-time */}
         <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/60 text-slate-300 border border-slate-700/60 text-[11px] font-medium font-mono">

@@ -10,12 +10,32 @@ import MutasiGudangJadi from './views/desktop/MutasiGudangJadi';
 import Antrean from './views/desktop/Antrean';
 import LaporanStokGudang from './views/desktop/LaporanStokGudang';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
+import MobileApp from './views/mobile/MobileApp';
 import { api } from './services/api';
 import { HARGA_POTONG_MAP } from './constants/appConstants';
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dbConnected, setDbConnected] = useState(false);
+
+  // Mode Tampilan: Mobile vs Desktop (Auto-detect layar smartphone < 768px atau pilihan manual)
+  const [isMobileView, setIsMobileView] = useState(() => {
+    try {
+      const saved = localStorage.getItem('konveksi_view_mode');
+      if (saved) return saved === 'mobile';
+      return typeof window !== 'undefined' && window.innerWidth < 768;
+    } catch (_) {
+      return false;
+    }
+  });
+
+  const toggleViewMode = (mobile) => {
+    setIsMobileView(mobile);
+    try {
+      localStorage.setItem('konveksi_view_mode', mobile ? 'mobile' : 'desktop');
+    } catch (_) {}
+  };
+
   // Daftar menu navigasi yang valid
   const VALID_MENUS = [
     'dashboard',
@@ -199,6 +219,29 @@ export default function App() {
     api.deleteCategory(catId).catch((e) => console.warn('Gagal hapus kategori dari API SQLite:', e));
   };
 
+  if (isMobileView) {
+    return (
+      <MobileApp
+        products={products}
+        setProducts={setProducts}
+        categories={categories}
+        setCategories={setCategories}
+        employees={employees}
+        setEmployees={setEmployees}
+        bahan={bahan}
+        setBahan={setBahan}
+        antreanList={antreanList}
+        setAntreanList={setAntreanList}
+        mutasiList={mutasiList}
+        setMutasiList={setMutasiList}
+        mutasiGudangJadiList={mutasiGudangJadiList}
+        setMutasiGudangJadiList={setMutasiGudangJadiList}
+        dbConnected={dbConnected}
+        onSwitchToDesktop={() => toggleViewMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#edf1f7] font-sans text-slate-800">
       {/* Sidebar Drawer Navigasi (Slide-over, Fullscreen default) */}
@@ -214,6 +257,7 @@ export default function App() {
         <TopHeader
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           dbConnected={dbConnected}
+          onSwitchToMobile={() => toggleViewMode(true)}
         />
 
         <main className="flex-1 p-2.5 sm:p-3 overflow-y-auto overflow-x-hidden scrollbar-thin">

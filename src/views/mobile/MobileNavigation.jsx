@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, CreditCard, Wallet, User, Fingerprint } from 'lucide-react';
+import { Home, Scissors, ArrowLeftRight, User, Fingerprint } from 'lucide-react';
 
 export default function MobileNavigation({
   activeTab,
@@ -21,43 +21,43 @@ export default function MobileNavigation({
         <span className="text-[10.5px] font-bold tracking-tight">Beranda</span>
       </button>
 
-      {/* 2. Tab Tagihan (Antrean) */}
+      {/* 2. Tab Antrean */}
       <button
         onClick={() => onSelectTab('antrean')}
         className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-colors relative cursor-pointer ${
           activeTab === 'antrean' ? 'text-white font-bold' : 'hover:text-white'
         }`}
       >
-        <CreditCard className={`w-5 h-5 ${activeTab === 'antrean' ? 'text-emerald-300 stroke-[2.5]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10.5px] font-bold tracking-tight">Tagihan</span>
+        <Scissors className={`w-5 h-5 ${activeTab === 'antrean' ? 'text-emerald-300 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10.5px] font-bold tracking-tight">Antrean</span>
         {activeOrderCount > 0 && (
-          <span className="absolute top-1 right-2.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#054338]" />
+          <span className="absolute top-1 right-2.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-[#054338] animate-pulse" />
         )}
       </button>
 
-      {/* 3. TOMBOL TENGAH FLOATING BESAR DENGAN BORDER PUTIH (PERSIS FINGERPRINT DI GAMBAR) */}
+      {/* 3. TOMBOL TENGAH FLOATING BESAR DENGAN BORDER PUTIH TEBAL */}
       <div className="-mt-7 relative flex flex-col items-center">
         <button
           onClick={onOpenAddAntrean}
           className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-400 text-white flex items-center justify-center border-[2.5px] border-white shadow-xl shadow-emerald-950/50 active:scale-95 transition-all cursor-pointer"
-          title="Fingerprint / Quick Action"
+          title="Tambah Antrean Produksi Baru"
         >
           <Fingerprint className="w-8 h-8 text-white stroke-[2.2]" />
         </button>
       </div>
 
-      {/* 4. Tab Tabungan (Mutasi) */}
+      {/* 4. Tab Mutasi */}
       <button
         onClick={() => onSelectTab('mutasi')}
         className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-colors cursor-pointer ${
           activeTab === 'mutasi' ? 'text-white font-bold' : 'hover:text-white'
         }`}
       >
-        <Wallet className={`w-5 h-5 ${activeTab === 'mutasi' ? 'text-emerald-300 stroke-[2.5]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10.5px] font-bold tracking-tight">Tabungan</span>
+        <ArrowLeftRight className={`w-5 h-5 ${activeTab === 'mutasi' ? 'text-emerald-300 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10.5px] font-bold tracking-tight">Mutasi</span>
       </button>
 
-      {/* 5. Tab Profil */}
+      {/* 5. Tab Profil / Menu */}
       <button
         onClick={onOpenMenu}
         className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-colors cursor-pointer ${

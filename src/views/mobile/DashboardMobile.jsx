@@ -5,7 +5,6 @@ import {
   Flame,
   Clock,
   CheckCircle2,
-  CreditCard,
   Scissors,
   Boxes,
   ArrowLeftRight,
@@ -15,7 +14,8 @@ import {
   Tag,
   Monitor,
   ChevronRight,
-  Wallet,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 
 export default function DashboardMobile({
@@ -29,18 +29,17 @@ export default function DashboardMobile({
   onNextStatus,
   onSwitchToDesktop,
 }) {
-  // Tab toggle pada kartu biru (Antrean Order vs Tabungan / Stok Gudang)
-  const [activeKpiTab, setActiveKpiTab] = useState('tagihan');
+  // Tab toggle pada kartu biru (Target Order vs Stok Gudang Jadi)
+  const [activeKpiTab, setActiveKpiTab] = useState('order');
 
   // Normalisasi data dan perhitungan KPI yang akurat
   const stats = useMemo(() => {
-    // Normalisasi antrean agar properti status, qty, noAntrian terbaca konsisten
     const normalizedList = antreanList.map((item) => {
       const qty = Number(item.qty ?? item.targetQty ?? 0);
       const status = item.status || item.statusTahapan || 'Menunggu Cutting';
       const prioritas = (item.prioritas || 'Normal').toLowerCase();
       const noAntrian = item.noAntrian || item.noAntrean || `ANT-${item.id}`;
-      const namaProduk = item.namaProduk || item.modelProduk || 'Produk Konveksi';
+      const namaProduk = item.namaProduk || item.modelProduk || 'Kaos Polos Combed 30s';
       return {
         ...item,
         qty,
@@ -67,10 +66,10 @@ export default function DashboardMobile({
       (a) => a.status === 'Proses Jahit' || a.status === 'Proses Cutting'
     ).length;
     const selesaiCount = normalizedList.filter(
-      (a) => a.status === 'Selesai Gudang' || a.status === 'Selesai'
+      (a) => a.status === 'Selesai Gudang' || a.status === 'Selesai' || a.status === 'Proses QC'
     ).length;
 
-    // Target potong & jahit vs target finishing
+    // Target potong & jahit vs target finishing & gudang
     const targetPotongJahit = normalizedList
       .filter((a) => a.status === 'Proses Cutting' || a.status === 'Proses Jahit' || a.status === 'Menunggu Cutting')
       .reduce((acc, a) => acc + a.qty, 0);
@@ -103,7 +102,7 @@ export default function DashboardMobile({
 
   return (
     <div className="space-y-4 -mt-10 pb-6 relative z-20">
-      {/* 1. FLOATING USER PROFILE CARD (PERSIS SEPERTI GAMBAR ZIDAN AZARIA) */}
+      {/* 1. KARTU PROFIL ADMIN PRODUKSI & 4 STATUS PIPELINE KONVEKSI */}
       <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100/90">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -112,7 +111,7 @@ export default function DashboardMobile({
             </div>
             <div>
               <h2 className="text-sm font-extrabold text-slate-900 leading-tight">Admin Produksi</h2>
-              <p className="text-[10.5px] font-medium text-slate-400 mt-0.5">NISN: 0013890967</p>
+              <p className="text-[10.5px] font-medium text-slate-400 mt-0.5">ID: KNV-PROD-001 • Super Admin</p>
             </div>
           </div>
           <button
@@ -124,79 +123,91 @@ export default function DashboardMobile({
           </button>
         </div>
 
-        {/* 4 Metrik Status Kotak Pastel (Hadir, Sakit, Izin, Alfa Style) */}
+        {/* 4 Metrik Status Operasional Konveksi (Menggantikan Hadir/Sakit/Izin/Alfa) */}
         <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-100 text-center">
           {/* 1. Siap Potong (Mint Green) */}
-          <div className="bg-[#ecfdf5] border border-emerald-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center">
+          <div
+            onClick={() => onNavigate('antrean')}
+            className="bg-[#ecfdf5] border border-emerald-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
             <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs mb-1">
               <Check className="w-4 h-4 stroke-[3]" />
             </div>
             <div className="text-base font-black text-emerald-950 leading-tight">
-              {stats.siapPotong > 0 ? stats.siapPotong : 3}
+              {stats.siapPotong}
             </div>
-            <div className="text-[10px] font-bold text-emerald-700 mt-0.5">Hadir</div>
+            <div className="text-[10px] font-bold text-emerald-700 mt-0.5">Siap Potong</div>
           </div>
 
           {/* 2. Urgent (Pink / Rose) */}
-          <div className="bg-[#fff1f2] border border-rose-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center">
+          <div
+            onClick={() => onNavigate('antrean')}
+            className="bg-[#fff1f2] border border-rose-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
             <div className="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs mb-1">
               <Flame className="w-4 h-4" />
             </div>
             <div className="text-base font-black text-rose-950 leading-tight">
               {stats.urgentCount}
             </div>
-            <div className="text-[10px] font-bold text-rose-700 mt-0.5">Sakit</div>
+            <div className="text-[10px] font-bold text-rose-700 mt-0.5">Urgent</div>
           </div>
 
-          {/* 3. Proses (Peach / Orange) */}
-          <div className="bg-[#fffbeb] border border-amber-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center">
+          {/* 3. Proses Jahit (Peach / Orange) */}
+          <div
+            onClick={() => onNavigate('antrean')}
+            className="bg-[#fffbeb] border border-amber-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
             <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs mb-1">
               <Clock className="w-4 h-4" />
             </div>
             <div className="text-base font-black text-amber-950 leading-tight">
               {stats.prosesJahit}
             </div>
-            <div className="text-[10px] font-bold text-amber-700 mt-0.5">Izin</div>
+            <div className="text-[10px] font-bold text-amber-700 mt-0.5">Sedang Jahit</div>
           </div>
 
-          {/* 4. Selesai (Cyan / Teal) */}
-          <div className="bg-[#f0fdfa] border border-teal-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center">
+          {/* 4. Selesai / QC (Cyan / Teal) */}
+          <div
+            onClick={() => onNavigate('antrean')}
+            className="bg-[#f0fdfa] border border-teal-100/80 rounded-2xl py-2 px-1 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
             <div className="w-7 h-7 rounded-full bg-teal-500 text-white flex items-center justify-center shadow-xs mb-1">
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <div className="text-base font-black text-teal-950 leading-tight">
               {stats.selesaiCount}
             </div>
-            <div className="text-[10px] font-bold text-teal-700 mt-0.5">Alfa</div>
+            <div className="text-[10px] font-bold text-teal-700 mt-0.5">QC & Selesai</div>
           </div>
         </div>
       </div>
 
-      {/* 2. ROYAL BLUE FINANCIAL / TAGIHAN CARD (PERSIS KARTU BIRU DI GAMBAR) */}
+      {/* 2. KARTU BIRU ROYAL VOLUME TARGET & NILAI GUDANG (Menggantikan Tagihan & Tabungan) */}
       <div className="bg-gradient-to-br from-[#1d4ed8] via-[#2563eb] to-[#1e40af] text-white rounded-3xl p-4 sm:p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden">
         {/* Switcher Pill di atas */}
         <div className="bg-blue-950/40 rounded-full p-1 inline-flex items-center gap-1 border border-white/10 mb-3.5">
           <button
-            onClick={() => setActiveKpiTab('tagihan')}
+            onClick={() => setActiveKpiTab('order')}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeKpiTab === 'tagihan'
+              activeKpiTab === 'order'
                 ? 'bg-white text-blue-700 shadow-sm'
                 : 'text-white/80 hover:text-white'
             }`}
           >
-            <CreditCard className="w-3.5 h-3.5" />
-            <span>Tagihan</span>
+            <Scissors className="w-3.5 h-3.5" />
+            <span>Target Order</span>
           </button>
           <button
-            onClick={() => setActiveKpiTab('tabungan')}
+            onClick={() => setActiveKpiTab('gudang')}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeKpiTab === 'tabungan'
+              activeKpiTab === 'gudang'
                 ? 'bg-white text-blue-700 shadow-sm'
                 : 'text-white/80 hover:text-white'
             }`}
           >
-            <Wallet className="w-3.5 h-3.5" />
-            <span>Tabungan</span>
+            <Warehouse className="w-3.5 h-3.5" />
+            <span>Stok Gudang</span>
           </button>
         </div>
 
@@ -204,14 +215,20 @@ export default function DashboardMobile({
         <div className="flex items-start justify-between">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-blue-200">
-              {activeKpiTab === 'tagihan' ? 'TOTAL TAGIHAN KEUANGAN' : 'TOTAL SALDO TABUNGAN GUDANG'}
+              {activeKpiTab === 'order' ? 'TOTAL TARGET VOLUME ORDER' : 'TOTAL ESTIMASI NILAI STOK GUDANG JADI'}
             </div>
             <div className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">
-              {activeKpiTab === 'tagihan' ? 'Rp 7.780.000' : 'Rp 14.500.000'}
+              {activeKpiTab === 'order'
+                ? `${(stats.totalTargetPcs || 50).toLocaleString('id-ID')} Pcs`
+                : `Rp ${(stats.totalNilaiStokRp || 36400000).toLocaleString('id-ID')}`}
             </div>
           </div>
           <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
-            <CreditCard className="w-5 h-5 text-white/70" />
+            {activeKpiTab === 'order' ? (
+              <Scissors className="w-5 h-5 text-white/80" />
+            ) : (
+              <Warehouse className="w-5 h-5 text-white/80" />
+            )}
           </div>
         </div>
 
@@ -219,88 +236,92 @@ export default function DashboardMobile({
         <div className="grid grid-cols-2 gap-2.5 mt-4">
           <div className="bg-white rounded-2xl p-3 text-slate-800 shadow-xs">
             <div className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
-              SPP BULANAN
+              {activeKpiTab === 'order' ? 'POTONG & JAHIT' : 'TOTAL FISIK READY'}
             </div>
             <div className="text-sm sm:text-base font-black text-blue-600 mt-0.5">
-              Rp 6.780.000
+              {activeKpiTab === 'order'
+                ? `${(stats.targetPotongJahit || 50).toLocaleString('id-ID')} Pcs`
+                : `${(stats.totalStokGudangPcs || 1040).toLocaleString('id-ID')} Pcs`}
             </div>
           </div>
 
           <div className="bg-white rounded-2xl p-3 text-slate-800 shadow-xs">
             <div className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
-              SISA BIAYA MASUK
+              {activeKpiTab === 'order' ? 'FINISHING & GUDANG' : 'TOTAL SKU AKTIF'}
             </div>
             <div className="text-sm sm:text-base font-black text-amber-600 mt-0.5">
-              Rp 1.000.000
+              {activeKpiTab === 'order'
+                ? `${stats.targetFinishing.toLocaleString('id-ID')} Pcs`
+                : `${products.length || 10} SKU`}
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. MENU LAYANAN SANTRI / KONVEKSI (GRID 8 IKON SQUIRCLE PERSIS SEPERTI GAMBAR) */}
+      {/* 3. MENU OPERASIONAL KONVEKSI (Menggantikan Menu Layanan Santri) */}
       <div className="space-y-2.5">
         <div className="flex items-center gap-1.5 px-0.5">
           <span className="w-1.5 h-4 rounded-full bg-[#064e3b]" />
           <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">
-            Menu Layanan Santri
+            Menu Operasional Konveksi
           </h3>
         </div>
 
         <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100/90">
           <div className="grid grid-cols-4 gap-y-4 gap-x-2 text-center">
-            {/* 1. Tabungan (Hijau) */}
+            {/* 1. Antrean SOP (Hijau) */}
+            <button
+              onClick={() => onNavigate('antrean')}
+              className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
+            >
+              <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#059669] to-[#10b981] text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
+                <Scissors className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
+                Antrean SOP
+              </span>
+            </button>
+
+            {/* 2. Mutasi Bahan (Biru) */}
             <button
               onClick={() => onNavigate('mutasi')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
             >
-              <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#059669] to-[#10b981] text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
-                <Wallet className="w-6 h-6 stroke-[2]" />
-              </div>
-              <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Tabungan
-              </span>
-            </button>
-
-            {/* 2. Bayar SPP (Biru) */}
-            <button
-              onClick={() => onNavigate('antrean')}
-              className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
-            >
               <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#2563eb] to-[#3b82f6] text-white flex items-center justify-center shadow-md shadow-blue-500/25">
-                <CreditCard className="w-6 h-6 stroke-[2]" />
+                <ArrowLeftRight className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Bayar SPP
+                Mutasi Bahan
               </span>
             </button>
 
-            {/* 3. Berjamaah (Cyan / Teal) */}
+            {/* 3. Bahan Baku (Cyan / Teal) */}
             <button
-              onClick={() => onNavigate('antrean')}
+              onClick={() => onNavigate('bahan')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
             >
               <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#0891b2] to-[#06b6d4] text-white flex items-center justify-center shadow-md shadow-cyan-500/25">
-                <Scissors className="w-6 h-6 stroke-[2]" />
+                <Boxes className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Berjamaah
+                Bahan Baku
               </span>
             </button>
 
-            {/* 4. Perizinan (Orange) */}
+            {/* 4. Katalog SKU (Orange) */}
             <button
               onClick={() => onNavigate('produk')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
             >
               <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#ea580c] to-[#f97316] text-white flex items-center justify-center shadow-md shadow-orange-500/25">
-                <Clock className="w-6 h-6 stroke-[2]" />
+                <Package className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Perizinan
+                Katalog SKU
               </span>
             </button>
 
-            {/* 5. Praktek (Teal) */}
+            {/* 5. Tim Jahit / Karyawan (Teal) */}
             <button
               onClick={() => onNavigate('karyawan')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
@@ -309,24 +330,24 @@ export default function DashboardMobile({
                 <Users className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Praktek
+                Tim Jahit
               </span>
             </button>
 
-            {/* 6. Rapor (Sky Blue) */}
+            {/* 6. Gudang Jadi (Sky Blue) */}
             <button
               onClick={() => onNavigate('laporan')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
             >
               <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#0284c7] to-[#38bdf8] text-white flex items-center justify-center shadow-md shadow-sky-500/25">
-                <Package className="w-6 h-6 stroke-[2]" />
+                <Warehouse className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Rapor
+                Gudang Jadi
               </span>
             </button>
 
-            {/* 7. Tata Tertib (Rose / Merah) */}
+            {/* 7. Kategori Produk (Rose / Merah) */}
             <button
               onClick={() => onNavigate('kategori')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
@@ -335,11 +356,11 @@ export default function DashboardMobile({
                 <Tag className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Tata Tertib
+                Kategori
               </span>
             </button>
 
-            {/* 8. Tanya Admin (Dark Slate) */}
+            {/* 8. Mode PC Desktop (Dark Slate) */}
             <button
               onClick={onSwitchToDesktop}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
@@ -348,20 +369,20 @@ export default function DashboardMobile({
                 <Monitor className="w-6 h-6 stroke-[2]" />
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
-                Tanya Admin
+                Tampilan PC
               </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 4. KEGIATAN PESANTREN / ANTREAN PRODUKSI (HORIZONTAL CARDS CAROUSEL) */}
+      {/* 4. ANTREAN PRODUKSI BERJALAN (Menggantikan Kegiatan Pesantren) */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between px-0.5">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-4 rounded-full bg-[#064e3b]" />
             <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">
-              Kegiatan Pesantren
+              Antrean Produksi Berjalan
             </h3>
           </div>
           <button
@@ -373,7 +394,7 @@ export default function DashboardMobile({
           </button>
         </div>
 
-        {/* Carousel / List Kartu Kegiatan */}
+        {/* Carousel / List Kartu Antrean Konveksi */}
         <div className="space-y-2">
           {stats.normalizedList.slice(0, 3).map((item) => (
             <div
@@ -404,13 +425,13 @@ export default function DashboardMobile({
                       : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   }`}
                 >
-                  {item.status || 'Hadir'}
+                  {item.status || 'Siap Potong'}
                 </span>
                 {item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
                   <button
                     onClick={() => onNextStatus(item)}
-                    className="p-1.5 rounded-xl bg-[#064e3b] text-white hover:bg-[#043e2f] cursor-pointer"
-                    title="Lanjut proses"
+                    className="p-1.5 rounded-xl bg-[#064e3b] text-white hover:bg-[#043e2f] active:scale-95 transition-all cursor-pointer"
+                    title="Lanjut proses berikutnya"
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
@@ -421,7 +442,7 @@ export default function DashboardMobile({
 
           {stats.normalizedList.length === 0 && (
             <div className="bg-white rounded-3xl p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200">
-              Belum ada kegiatan antrean
+              Belum ada antrean produksi
             </div>
           )}
         </div>

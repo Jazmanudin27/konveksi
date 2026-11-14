@@ -40,7 +40,7 @@ export default function ProdukMobile({
           onClick={() => setProductCatFilter('SEMUA')}
           className={`px-3 py-1 rounded-full whitespace-nowrap cursor-pointer transition-colors ${
             productCatFilter === 'SEMUA'
-              ? 'bg-[#0b1329] text-white shadow-xs'
+              ? 'bg-[#064e3b] text-white shadow-xs'
               : 'bg-white text-slate-600 border border-slate-200'
           }`}
         >
@@ -52,7 +52,7 @@ export default function ProdukMobile({
             onClick={() => setProductCatFilter(c.nama)}
             className={`px-3 py-1 rounded-full whitespace-nowrap cursor-pointer transition-colors ${
               productCatFilter === c.nama
-                ? 'bg-[#0b1329] text-white shadow-xs'
+                ? 'bg-[#064e3b] text-white shadow-xs'
                 : 'bg-white text-slate-600 border border-slate-200'
             }`}
           >

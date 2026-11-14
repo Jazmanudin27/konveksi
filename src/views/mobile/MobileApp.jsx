@@ -155,9 +155,9 @@ export default function MobileApp({
                 rightAction={
                   <button
                     onClick={() => setIsAddAntreanOpen(true)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 active:scale-95 text-[#064e3b] text-xs font-black shadow-md transition-all cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
                     <span>Tambah</span>
                   </button>
                 }

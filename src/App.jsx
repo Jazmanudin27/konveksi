@@ -227,6 +227,8 @@ export default function App() {
               employees={employees}
               bahan={bahan}
               antreanList={antreanList}
+              mutasiList={mutasiList}
+              mutasiGudangJadiList={mutasiGudangJadiList}
               onNavigate={(menu) => setActiveMenu(menu)}
             />
           )}

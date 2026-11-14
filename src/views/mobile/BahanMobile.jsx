@@ -3,7 +3,6 @@ import React from 'react';
 export default function BahanMobile({ bahan = [] }) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-bold text-slate-700">Stok Bahan Baku Kain & Benang ({bahan.length})</div>
       {bahan.map((b) => (
         <div key={b.id} className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">

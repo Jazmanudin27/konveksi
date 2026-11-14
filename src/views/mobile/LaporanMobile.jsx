@@ -3,7 +3,6 @@ import React from 'react';
 export default function LaporanMobile({ products = [] }) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-bold text-slate-700">Laporan Stok Gudang Jadi</div>
       {products.map((p) => (
         <div
           key={p.id}

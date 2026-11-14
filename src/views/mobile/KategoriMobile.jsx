@@ -3,7 +3,6 @@ import React from 'react';
 export default function KategoriMobile({ categories = [] }) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-bold text-slate-700">Kategori Produk ({categories.length})</div>
       {categories.map((c) => (
         <div
           key={c.id}

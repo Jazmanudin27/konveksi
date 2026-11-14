@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
 import { api } from '../../services/api';
+import {
+  Scissors,
+  ArrowLeftRight,
+  Package,
+  Users,
+  Boxes,
+  Tag,
+  Warehouse,
+  Plus,
+} from 'lucide-react';
 
 // Komponen modular terpisah untuk setiap menu & fitur Mobile
 import MobileHeader from './MobileHeader';
+import MobileSubHeader from './MobileSubHeader';
 import MobileNavigation from './MobileNavigation';
 import DashboardMobile from './DashboardMobile';
 import AntreanMobile from './AntreanMobile';
@@ -87,30 +98,107 @@ export default function MobileApp({
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
-      {/* 1. TOP BAR MOBILE (EMERALD GREEN CURVED PERSIS GAMBAR) */}
-      <MobileHeader
-        dbConnected={dbConnected}
-        onSwitchToDesktop={onSwitchToDesktop}
-        activeUrgentCount={activeUrgentCount}
-      />
+      {/* 1. HEADER LOGIC: HANYA BERANDA YANG PAKAI HEADER HIJAU LENGKUNG */}
+      {mobileTab === 'home' && !activeSubView ? (
+        <MobileHeader
+          dbConnected={dbConnected}
+          onSwitchToDesktop={onSwitchToDesktop}
+          activeUrgentCount={activeUrgentCount}
+        />
+      ) : activeSubView ? (
+        /* HEADER ELEGAN UNTUK SUB-VIEW (KARYAWAN, BAHAN, KATEGORI, LAPORAN) */
+        <MobileSubHeader
+          title={
+            activeSubView === 'karyawan'
+              ? 'Tim & Penjahit'
+              : activeSubView === 'bahan'
+              ? 'Stok Bahan Baku'
+              : activeSubView === 'kategori'
+              ? 'Kategori Produk'
+              : 'Laporan Gudang Jadi'
+          }
+          subtitle={
+            activeSubView === 'karyawan'
+              ? 'Tenaga Kerja Produksi'
+              : activeSubView === 'bahan'
+              ? 'Kain, Benang & Material'
+              : activeSubView === 'kategori'
+              ? 'Master Kelompok & Ongkos'
+              : 'Stok Fisik Siap Jual'
+          }
+          icon={
+            activeSubView === 'karyawan'
+              ? Users
+              : activeSubView === 'bahan'
+              ? Boxes
+              : activeSubView === 'kategori'
+              ? Tag
+              : Warehouse
+          }
+          badgeText={
+            activeSubView === 'karyawan'
+              ? `${employees.length} Orang`
+              : activeSubView === 'bahan'
+              ? `${bahan.length} Jenis`
+              : activeSubView === 'kategori'
+              ? `${categories.length} Kategori`
+              : `${products.length} SKU`
+          }
+          onBack={() => setActiveSubView(null)}
+          onSwitchToDesktop={onSwitchToDesktop}
+        />
+      ) : (
+        /* HEADER ELEGAN UNTUK MENU UTAMA LAIN (ANTREAN, MUTASI, PRODUK) */
+        <>
+          {mobileTab === 'antrean' && (
+            <MobileSubHeader
+              title="Antrean Produksi"
+              subtitle={`${activeOrderCount} order aktif sedang berjalan`}
+              icon={Scissors}
+              badgeText={`${antreanList.length} Total`}
+              onBack={() => setMobileTab('home')}
+              onSwitchToDesktop={onSwitchToDesktop}
+              rightAction={
+                <button
+                  onClick={() => setIsAddAntreanOpen(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Tambah</span>
+                </button>
+              }
+            />
+          )}
+
+          {mobileTab === 'mutasi' && (
+            <MobileSubHeader
+              title="Mutasi Stok"
+              subtitle="Keluar & Masuk Bahan & Gudang Jadi"
+              icon={ArrowLeftRight}
+              badgeText={`${mutasiList.length + mutasiGudangJadiList.length} Mutasi`}
+              onBack={() => setMobileTab('home')}
+              onSwitchToDesktop={onSwitchToDesktop}
+            />
+          )}
+
+          {mobileTab === 'produk' && (
+            <MobileSubHeader
+              title="Katalog Produk"
+              subtitle="Master SKU, Varian Warna & Ukuran"
+              icon={Package}
+              badgeText={`${products.length} SKU`}
+              onBack={() => setMobileTab('home')}
+              onSwitchToDesktop={onSwitchToDesktop}
+            />
+          )}
+        </>
+      )}
 
       {/* 2. BODY KONTEN (SCROLL MANDIRI) */}
       <main className="flex-1 overflow-y-auto px-3.5 pb-24 scrollbar-thin">
         {/* SUB VIEW JIKA DIPILIH DARI MENU SHEET / GRID */}
         {activeSubView ? (
           <div className="space-y-3 pt-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-              <button
-                onClick={() => setActiveSubView(null)}
-                className="flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950 cursor-pointer"
-              >
-                ← Kembali ke Beranda
-              </button>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {activeSubView}
-              </span>
-            </div>
-
             {activeSubView === 'karyawan' && <KaryawanMobile employees={employees} />}
             {activeSubView === 'bahan' && <BahanMobile bahan={bahan} />}
             {activeSubView === 'kategori' && <KategoriMobile categories={categories} />}
@@ -174,7 +262,7 @@ export default function MobileApp({
         )}
       </main>
 
-      {/* 3. BOTTOM NAVIGATION BAR DENGAN TOMBOL TENGAH FLOATING BESAR */}
+      {/* 3. BOTTOM NAVIGATION BAR */}
       <MobileNavigation
         activeTab={activeSubView ? 'menu' : mobileTab}
         onSelectTab={(tab) => {

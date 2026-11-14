@@ -3,7 +3,6 @@ import React from 'react';
 export default function KaryawanMobile({ employees = [] }) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-bold text-slate-700">Daftar Tim & Penjahit ({employees.length})</div>
       {employees.map((emp) => (
         <div
           key={emp.id}

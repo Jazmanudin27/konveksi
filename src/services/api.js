@@ -89,6 +89,12 @@ export const api = {
   createMutasiGudangJadi: (data) => request('/mutasi-gudang-jadi', { method: 'POST', body: JSON.stringify(data) }),
   approveMutasiGudangJadi: (data) => request('/mutasi-gudang-jadi/approve', { method: 'POST', body: JSON.stringify(data) }),
   deleteMutasiGudangJadi: (id) => request(`/mutasi-gudang-jadi/${id}`, { method: 'DELETE' }),
+
+  // Master Ukuran / Sizes (Dinamis Tambah, Edit, Hapus)
+  getSizes: () => request('/sizes'),
+  createSize: (data) => request('/sizes', { method: 'POST', body: JSON.stringify(data) }),
+  updateSize: (id, data) => request(`/sizes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSize: (id) => request(`/sizes/${id}`, { method: 'DELETE' }),
 };
 
 

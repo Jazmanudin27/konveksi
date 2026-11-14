@@ -159,3 +159,11 @@ CREATE TABLE IF NOT EXISTS mutasi_gudang_jadi (
   INDEX idx_mgj_antrean (no_antrian)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS sizes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(60) NOT NULL UNIQUE,
+  urutan INT DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+

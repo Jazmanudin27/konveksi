@@ -16,7 +16,7 @@ import { api } from './services/api';
 import { HARGA_POTONG_MAP } from './constants/appConstants';
 
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dbConnected, setDbConnected] = useState(false);
   // Daftar menu navigasi yang valid
   const VALID_MENUS = [
@@ -205,9 +205,10 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#edf1f7] font-sans text-slate-800">
-      {/* Sidebar Navigasi (Fixed/Terkunci tidak ikut scroll body) */}
+      {/* Sidebar Drawer Navigasi (Slide-over, Fullscreen default) */}
       <Sidebar
         isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         activeMenu={activeMenu}
         onSelectMenu={(menuKey) => setActiveMenu(menuKey)}
       />

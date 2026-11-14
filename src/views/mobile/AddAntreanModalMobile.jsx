@@ -63,14 +63,14 @@ export default function AddAntreanModalMobile({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/70 backdrop-blur-xs select-none">
       <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
-        <div className="bg-[#0b1329] text-white p-3.5 flex items-center justify-between">
+        <div className="bg-[#064e3b] text-white p-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Scissors className="w-4 h-4 text-cyan-400" />
+            <Scissors className="w-4 h-4 text-emerald-300" />
             <h3 className="font-bold text-xs">Tambah Antrean Produksi</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white cursor-pointer"
+            className="text-emerald-200 hover:text-white cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -152,7 +152,7 @@ export default function AddAntreanModalMobile({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-xs cursor-pointer transition-colors disabled:opacity-50"
+              className="px-4 py-1.5 rounded-lg bg-[#064e3b] hover:bg-[#043e2f] text-white font-bold shadow-xs cursor-pointer transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Menyimpan...' : 'Simpan Antrean'}
             </button>

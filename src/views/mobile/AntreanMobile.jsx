@@ -61,7 +61,7 @@ export default function AntreanMobile({
         </div>
         <button
           onClick={onOpenAddAntrean}
-          className="p-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl shadow-xs shrink-0 cursor-pointer transition-colors"
+          className="p-2 bg-[#064e3b] hover:bg-[#043e2f] text-white rounded-xl shadow-xs shrink-0 cursor-pointer transition-colors"
           title="Tambah Antrean Baru"
         >
           <Plus className="w-4 h-4" />
@@ -130,7 +130,7 @@ export default function AntreanMobile({
                 {item.statusTahapan !== 'Selesai Gudang' && item.statusTahapan !== 'Selesai' && (
                   <button
                     onClick={() => onNextStatus(item)}
-                    className="text-[10.5px] font-bold text-white bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 px-2.5 py-1 rounded-md shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                    className="text-[10.5px] font-bold text-white bg-[#064e3b] hover:bg-[#043e2f] px-2.5 py-1 rounded-lg shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <span>Lanjut Tahap</span>
                     <span>→</span>

@@ -1,54 +1,66 @@
 import React from 'react';
-import { Shirt, Sparkles, Monitor } from 'lucide-react';
+import { Shirt, Bell, Megaphone, LogOut, Monitor } from 'lucide-react';
 
-export default function MobileHeader({ dbConnected, onSwitchToDesktop }) {
+export default function MobileHeader({
+  dbConnected,
+  onSwitchToDesktop,
+  activeUrgentCount = 0,
+}) {
   return (
-    <header className="h-14 bg-[#0b1329] text-white px-3 flex items-center justify-between border-b border-slate-800 shrink-0 z-30 shadow-md">
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-sky-600 p-0.5 shadow-sm shrink-0 flex items-center justify-center">
-          <div className="w-full h-full rounded-[6px] bg-[#0b1329]/50 flex items-center justify-center">
-            <Shirt className="w-4 h-4 text-cyan-200" />
+    <header className="bg-gradient-to-b from-[#064e3b] to-[#043e2f] text-white px-4 pt-4 pb-12 rounded-b-[2rem] shadow-lg relative select-none">
+      <div className="flex items-center justify-between">
+        {/* Logo & Judul Brand */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-11 h-11 rounded-2xl bg-white/10 p-1 border border-white/20 shadow-inner flex items-center justify-center shrink-0">
+            <div className="w-full h-full rounded-xl bg-white flex items-center justify-center shadow-xs">
+              <Shirt className="w-6 h-6 text-[#064e3b]" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="font-extrabold text-base tracking-wide text-white leading-tight">
+                RK <span className="font-medium italic text-emerald-300">Mobile</span>
+              </h1>
+            </div>
+            <p className="text-[10px] font-semibold text-emerald-100/90 tracking-wider uppercase">
+              SISTEM PRODUKSI KONVEKSI
+            </p>
           </div>
         </div>
-        <div>
-          <div className="flex items-center gap-1">
-            <h1 className="font-extrabold text-sm tracking-wide text-white leading-tight">RUANG KONVEKSI</h1>
-            <Sparkles className="w-3 h-3 text-cyan-400" />
+
+        {/* Action Icons Kanan (Pengumuman, Notifikasi, Switch Desktop) */}
+        <div className="flex items-center gap-2">
+          {/* Status SQLite */}
+          <div
+            className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center relative cursor-pointer"
+            title={dbConnected ? 'Database SQLite Online' : 'Database Offline'}
+          >
+            <Megaphone className="w-4 h-4 text-emerald-200" />
+            <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#064e3b]">
+              {dbConnected ? '✓' : '!'}
+            </span>
           </div>
-          <p className="text-[9.5px] font-semibold text-cyan-400/90 uppercase tracking-wider leading-none">
-            Mobile Edition
-          </p>
-        </div>
-      </div>
 
-      <div className="flex items-center gap-1.5">
-        {/* Status Database */}
-        <div
-          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-            dbConnected
-              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/80'
-              : 'bg-amber-950/60 text-amber-300 border-amber-800/80'
-          }`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              dbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
-            }`}
-          />
-          <span className="hidden xs:inline">{dbConnected ? 'Online' : 'Offline'}</span>
-        </div>
+          {/* Notifikasi Lonceng */}
+          <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center relative cursor-pointer">
+            <Bell className="w-4 h-4 text-emerald-200" />
+            {activeUrgentCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#064e3b]">
+                {activeUrgentCount}
+              </span>
+            )}
+          </div>
 
-        {/* Tombol Switch ke Mode Desktop */}
-        <button
-          onClick={onSwitchToDesktop}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700/80 transition-colors cursor-pointer"
-          title="Beralih ke Tampilan Desktop Layar Lebar"
-        >
-          <Monitor className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="text-[11px]">Desktop</span>
-        </button>
+          {/* Tombol Beralih ke Desktop */}
+          <button
+            onClick={onSwitchToDesktop}
+            className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center text-white transition-all cursor-pointer shadow-xs"
+            title="Beralih ke Tampilan Desktop"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </header>
   );
 }
-

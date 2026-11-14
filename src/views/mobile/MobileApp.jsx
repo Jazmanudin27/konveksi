@@ -33,7 +33,7 @@ export default function MobileApp({
   dbConnected,
   onSwitchToDesktop,
 }) {
-  // Tab Navigasi Aktif Mobile: 'home' | 'antrean' | 'mutasi' | 'produk'
+  // Tab Navigasi Aktif Mobile: 'home' | 'antrean' | 'mutasi' | 'produk' | 'menu'
   const [mobileTab, setMobileTab] = useState('home');
 
   // Sub-view untuk Menu Tambahan (misal: 'karyawan', 'bahan', 'kategori', 'laporan')
@@ -43,9 +43,13 @@ export default function MobileApp({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddAntreanOpen, setIsAddAntreanOpen] = useState(false);
 
-  // Hitung jumlah order aktif untuk badge di tab Antrean
+  // Hitung jumlah order aktif & urgent
   const activeOrderCount = antreanList.filter(
     (a) => a.statusTahapan !== 'Selesai Gudang' && a.statusTahapan !== 'Selesai'
+  ).length;
+
+  const activeUrgentCount = antreanList.filter(
+    (a) => (a.prioritas || '').toLowerCase() === 'urgent' && a.statusTahapan !== 'Selesai Gudang'
   ).length;
 
   // Handler Geser Status Antrean Cepat di HP
@@ -82,22 +86,23 @@ export default function MobileApp({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#f1f5f9] text-slate-800 overflow-hidden font-sans select-none">
-      {/* 1. TOP BAR MOBILE */}
+    <div className="flex flex-col h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
+      {/* 1. TOP BAR MOBILE (EMERALD GREEN CURVED PERSIS GAMBAR) */}
       <MobileHeader
         dbConnected={dbConnected}
         onSwitchToDesktop={onSwitchToDesktop}
+        activeUrgentCount={activeUrgentCount}
       />
 
       {/* 2. BODY KONTEN (SCROLL MANDIRI) */}
-      <main className="flex-1 overflow-y-auto px-3 py-3 pb-20 scrollbar-thin">
-        {/* SUB VIEW JIKA DIPILIH DARI MENU SHEET (KARYAWAN, BAHAN, KATEGORI, LAPORAN) */}
+      <main className="flex-1 overflow-y-auto px-3.5 pb-24 scrollbar-thin">
+        {/* SUB VIEW JIKA DIPILIH DARI MENU SHEET / GRID */}
         {activeSubView ? (
-          <div className="space-y-3">
+          <div className="space-y-3 pt-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
               <button
                 onClick={() => setActiveSubView(null)}
-                className="flex items-center gap-1 text-xs font-bold text-cyan-700 hover:text-cyan-800 cursor-pointer"
+                className="flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950 cursor-pointer"
               >
                 ← Kembali ke Beranda
               </button>
@@ -120,59 +125,75 @@ export default function MobileApp({
                 products={products}
                 bahan={bahan}
                 employees={employees}
+                categories={categories}
                 onNavigate={(tab) => {
-                  setActiveSubView(null);
-                  setMobileTab(tab);
+                  if (['karyawan', 'bahan', 'kategori', 'laporan'].includes(tab)) {
+                    setActiveSubView(tab);
+                  } else {
+                    setActiveSubView(null);
+                    setMobileTab(tab);
+                  }
                 }}
                 onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
                 onNextStatus={handleNextStatus}
+                onSwitchToDesktop={onSwitchToDesktop}
               />
             )}
 
             {/* TAB UTAMA ANTREAN PRODUKSI */}
             {mobileTab === 'antrean' && (
-              <AntreanMobile
-                antreanList={antreanList}
-                onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
-                onNextStatus={handleNextStatus}
-              />
+              <div className="pt-3">
+                <AntreanMobile
+                  antreanList={antreanList}
+                  onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
+                  onNextStatus={handleNextStatus}
+                />
+              </div>
             )}
 
             {/* TAB UTAMA MUTASI */}
             {mobileTab === 'mutasi' && (
-              <MutasiMobile
-                mutasiList={mutasiList}
-                mutasiGudangJadiList={mutasiGudangJadiList}
-              />
+              <div className="pt-3">
+                <MutasiMobile
+                  mutasiList={mutasiList}
+                  mutasiGudangJadiList={mutasiGudangJadiList}
+                />
+              </div>
             )}
 
             {/* TAB UTAMA KATALOG SKU */}
             {mobileTab === 'produk' && (
-              <ProdukMobile
-                products={products}
-                categories={categories}
-              />
+              <div className="pt-3">
+                <ProdukMobile
+                  products={products}
+                  categories={categories}
+                />
+              </div>
             )}
           </>
         )}
       </main>
 
-      {/* 3. BOTTOM NAVIGATION BAR */}
+      {/* 3. BOTTOM NAVIGATION BAR DENGAN TOMBOL TENGAH FLOATING BESAR */}
       <MobileNavigation
         activeTab={activeSubView ? 'menu' : mobileTab}
         onSelectTab={(tab) => {
           setActiveSubView(null);
           setMobileTab(tab);
         }}
+        onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
         onOpenMenu={() => setIsMenuOpen(true)}
         activeOrderCount={activeOrderCount}
       />
 
-      {/* 4. MODAL DRAWER MENU SELENGKAPNYA */}
+      {/* 4. MODAL BOTTOM SHEET PROFIL & MENU LENGKAP */}
       <MobileMenuSheet
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        onSelectSubView={(sub) => setActiveSubView(sub)}
+        onSelectSubView={(sub) => {
+          setActiveSubView(sub);
+          setIsMenuOpen(false);
+        }}
         onSwitchToDesktop={onSwitchToDesktop}
         employeeCount={employees.length}
         bahanCount={bahan.length}

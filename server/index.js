@@ -38,19 +38,21 @@ app.use("/api/categories", categoriesRouter);
 app.use("/api/bahan", bahanRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/employees", employeesRouter);
-app.all("/api/tahapan*", (req, res) => res.json([]));
+app.use("/api/tahapan", (req, res) => res.json([]));
 app.use("/api/jasa", jasaRouter);
 app.use("/api/mutasi-bahan", mutasiBahanRouter);
 app.use("/api/antrean", antreanRouter);
 app.use("/api/mutasi-gudang-jadi", mutasiGudangJadiRouter);
 
-// Static Frontend Serve & SPA Fallback (Produksi VPS)
+// Static Frontend Serve & SPA Fallback (Produksi VPS - Express 4 & 5 Compatible)
 app.use(express.static(distPath));
-app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api")) return next();
-  res.sendFile(path.join(distPath, "index.html"), (err) => {
-    if (err) next();
-  });
+app.use((req, res, next) => {
+  if (req.method === "GET" && !req.path.startsWith("/api")) {
+    return res.sendFile(path.join(distPath, "index.html"), (err) => {
+      if (err) next();
+    });
+  }
+  next();
 });
 
 // Global Error Handler

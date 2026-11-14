@@ -56,32 +56,33 @@ export default function MobileApp({
 
   // Hitung jumlah order aktif & urgent
   const activeOrderCount = antreanList.filter(
-    (a) => a.statusTahapan !== 'Selesai Gudang' && a.statusTahapan !== 'Selesai'
+    (a) => (a.status || a.statusTahapan) !== 'Selesai Gudang' && (a.status || a.statusTahapan) !== 'Selesai'
   ).length;
 
   const activeUrgentCount = antreanList.filter(
-    (a) => (a.prioritas || '').toLowerCase() === 'urgent' && a.statusTahapan !== 'Selesai Gudang'
+    (a) => (a.prioritas || '').toLowerCase() === 'urgent' && (a.status || a.statusTahapan) !== 'Selesai Gudang'
   ).length;
 
   // Handler Geser Status Antrean Cepat di HP
   const handleNextStatus = async (item) => {
+    const curStatus = item.status || item.statusTahapan || 'Menunggu Cutting';
     let nextStatus = '';
-    if (!item.statusTahapan || item.statusTahapan === 'Menunggu Cutting') {
+    if (curStatus === 'Menunggu Cutting' || curStatus === 'Draft') {
       nextStatus = 'Proses Cutting';
-    } else if (item.statusTahapan === 'Proses Cutting') {
+    } else if (curStatus === 'Proses Cutting') {
       nextStatus = 'Proses Jahit';
-    } else if (item.statusTahapan === 'Proses Jahit') {
+    } else if (curStatus === 'Proses Jahit') {
       nextStatus = 'Proses QC';
-    } else if (item.statusTahapan === 'Proses QC') {
+    } else if (curStatus === 'Proses QC') {
       nextStatus = 'Proses Finishing';
-    } else if (item.statusTahapan === 'Proses Finishing') {
+    } else if (curStatus === 'Proses Finishing') {
       nextStatus = 'Selesai Gudang';
     } else {
       return;
     }
 
     try {
-      const updated = { ...item, statusTahapan: nextStatus };
+      const updated = { ...item, status: nextStatus, statusTahapan: nextStatus };
       await api.updateAntrean(item.id, updated);
       setAntreanList((prev) => prev.map((a) => (a.id === item.id ? updated : a)));
     } catch (err) {
@@ -97,16 +98,9 @@ export default function MobileApp({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-sans select-none">
-      {/* 1. HEADER LOGIC: HANYA BERANDA YANG PAKAI HEADER HIJAU LENGKUNG */}
-      {mobileTab === 'home' && !activeSubView ? (
-        <MobileHeader
-          dbConnected={dbConnected}
-          onSwitchToDesktop={onSwitchToDesktop}
-          activeUrgentCount={activeUrgentCount}
-        />
-      ) : activeSubView ? (
-        /* HEADER ELEGAN UNTUK SUB-VIEW (KARYAWAN, BAHAN, KATEGORI, LAPORAN) */
+    <div className="flex flex-col h-screen w-full bg-[#f1f5f9] text-slate-800 overflow-hidden font-sans select-none">
+      {/* 1. STICKY SUB-HEADER HANYA UNTUK MENU NON-BERANDA */}
+      {activeSubView ? (
         <MobileSubHeader
           title={
             activeSubView === 'karyawan'
@@ -148,57 +142,58 @@ export default function MobileApp({
           onSwitchToDesktop={onSwitchToDesktop}
         />
       ) : (
-        /* HEADER ELEGAN UNTUK MENU UTAMA LAIN (ANTREAN, MUTASI, PRODUK) */
-        <>
-          {mobileTab === 'antrean' && (
-            <MobileSubHeader
-              title="Antrean Produksi"
-              subtitle={`${activeOrderCount} order aktif sedang berjalan`}
-              icon={Scissors}
-              badgeText={`${antreanList.length} Total`}
-              onBack={() => setMobileTab('home')}
-              onSwitchToDesktop={onSwitchToDesktop}
-              rightAction={
-                <button
-                  onClick={() => setIsAddAntreanOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Tambah</span>
-                </button>
-              }
-            />
-          )}
+        mobileTab !== 'home' && (
+          <>
+            {mobileTab === 'antrean' && (
+              <MobileSubHeader
+                title="Antrean Produksi"
+                subtitle={`${activeOrderCount} order aktif berjalan`}
+                icon={Scissors}
+                badgeText={`${antreanList.length} Total`}
+                onBack={() => setMobileTab('home')}
+                onSwitchToDesktop={onSwitchToDesktop}
+                rightAction={
+                  <button
+                    onClick={() => setIsAddAntreanOpen(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Tambah</span>
+                  </button>
+                }
+              />
+            )}
 
-          {mobileTab === 'mutasi' && (
-            <MobileSubHeader
-              title="Mutasi Stok"
-              subtitle="Keluar & Masuk Bahan & Gudang Jadi"
-              icon={ArrowLeftRight}
-              badgeText={`${mutasiList.length + mutasiGudangJadiList.length} Mutasi`}
-              onBack={() => setMobileTab('home')}
-              onSwitchToDesktop={onSwitchToDesktop}
-            />
-          )}
+            {mobileTab === 'mutasi' && (
+              <MobileSubHeader
+                title="Mutasi Stok"
+                subtitle="Riwayat Keluar & Masuk Fisik"
+                icon={ArrowLeftRight}
+                badgeText={`${mutasiList.length + mutasiGudangJadiList.length} Mutasi`}
+                onBack={() => setMobileTab('home')}
+                onSwitchToDesktop={onSwitchToDesktop}
+              />
+            )}
 
-          {mobileTab === 'produk' && (
-            <MobileSubHeader
-              title="Katalog Produk"
-              subtitle="Master SKU, Varian Warna & Ukuran"
-              icon={Package}
-              badgeText={`${products.length} SKU`}
-              onBack={() => setMobileTab('home')}
-              onSwitchToDesktop={onSwitchToDesktop}
-            />
-          )}
-        </>
+            {mobileTab === 'produk' && (
+              <MobileSubHeader
+                title="Katalog Produk"
+                subtitle="Master SKU, Varian & Ukuran"
+                icon={Package}
+                badgeText={`${products.length} SKU`}
+                onBack={() => setMobileTab('home')}
+                onSwitchToDesktop={onSwitchToDesktop}
+              />
+            )}
+          </>
+        )
       )}
 
       {/* 2. BODY KONTEN (SCROLL MANDIRI) */}
-      <main className="flex-1 overflow-y-auto px-3.5 pb-24 scrollbar-thin">
+      <main className="flex-1 overflow-y-auto pb-24 scrollbar-thin">
         {/* SUB VIEW JIKA DIPILIH DARI MENU SHEET / GRID */}
         {activeSubView ? (
-          <div className="space-y-3 pt-3">
+          <div className="space-y-3 p-3.5">
             {activeSubView === 'karyawan' && <KaryawanMobile employees={employees} />}
             {activeSubView === 'bahan' && <BahanMobile bahan={bahan} />}
             {activeSubView === 'kategori' && <KategoriMobile categories={categories} />}
@@ -206,31 +201,40 @@ export default function MobileApp({
           </div>
         ) : (
           <>
-            {/* TAB UTAMA BERANDA */}
+            {/* TAB UTAMA BERANDA: HEADER MENYATU DI ATAS DENGAN LENGKUNG SEMPURNA */}
             {mobileTab === 'home' && (
-              <DashboardMobile
-                antreanList={antreanList}
-                products={products}
-                bahan={bahan}
-                employees={employees}
-                categories={categories}
-                onNavigate={(tab) => {
-                  if (['karyawan', 'bahan', 'kategori', 'laporan'].includes(tab)) {
-                    setActiveSubView(tab);
-                  } else {
-                    setActiveSubView(null);
-                    setMobileTab(tab);
-                  }
-                }}
-                onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
-                onNextStatus={handleNextStatus}
-                onSwitchToDesktop={onSwitchToDesktop}
-              />
+              <div>
+                <MobileHeader
+                  dbConnected={dbConnected}
+                  onSwitchToDesktop={onSwitchToDesktop}
+                  activeUrgentCount={activeUrgentCount}
+                />
+                <div className="px-3.5">
+                  <DashboardMobile
+                    antreanList={antreanList}
+                    products={products}
+                    bahan={bahan}
+                    employees={employees}
+                    categories={categories}
+                    onNavigate={(tab) => {
+                      if (['karyawan', 'bahan', 'kategori', 'laporan'].includes(tab)) {
+                        setActiveSubView(tab);
+                      } else {
+                        setActiveSubView(null);
+                        setMobileTab(tab);
+                      }
+                    }}
+                    onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
+                    onNextStatus={handleNextStatus}
+                    onSwitchToDesktop={onSwitchToDesktop}
+                  />
+                </div>
+              </div>
             )}
 
             {/* TAB UTAMA ANTREAN PRODUKSI */}
             {mobileTab === 'antrean' && (
-              <div className="pt-3">
+              <div className="p-3.5">
                 <AntreanMobile
                   antreanList={antreanList}
                   onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
@@ -241,7 +245,7 @@ export default function MobileApp({
 
             {/* TAB UTAMA MUTASI */}
             {mobileTab === 'mutasi' && (
-              <div className="pt-3">
+              <div className="p-3.5">
                 <MutasiMobile
                   mutasiList={mutasiList}
                   mutasiGudangJadiList={mutasiGudangJadiList}
@@ -251,7 +255,7 @@ export default function MobileApp({
 
             {/* TAB UTAMA KATALOG SKU */}
             {mobileTab === 'produk' && (
-              <div className="pt-3">
+              <div className="p-3.5">
                 <ProdukMobile
                   products={products}
                   categories={categories}
@@ -262,7 +266,7 @@ export default function MobileApp({
         )}
       </main>
 
-      {/* 3. BOTTOM NAVIGATION BAR */}
+      {/* 3. BOTTOM NAVIGATION BAR DENGAN TOMBOL FINGERPRINT BESAR */}
       <MobileNavigation
         activeTab={activeSubView ? 'menu' : mobileTab}
         onSelectTab={(tab) => {

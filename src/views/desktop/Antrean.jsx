@@ -74,7 +74,7 @@ export default function Antrean({
   const [filterPrioritas, setFilterPrioritas] = useState('');
   const [activeTab, setActiveTab] = useState('Semua Antrean'); // 'Semua Antrean' | 'Menunggu Cutting' | 'Proses Cutting' | 'Proses Jahit' | 'Proses QC' | 'Proses Finishing' | 'Selesai'
 
-  // State Manajemen List Sumber Permintaan (Tersimpan di LocalStorage)
+  // State Manajemen List Sumber Permintaan (Tersinkron ke Database SQLite)
   const [sumberOptions, setSumberOptions] = useState(() => {
     try {
       const cached = localStorage.getItem('konveksi_sumber_permintaan');
@@ -83,6 +83,21 @@ export default function Antrean({
       return SUMBER_PERMINTAAN_OPTIONS;
     }
   });
+
+  // Ambil list sumber permintaan real dari database SQLite
+  useEffect(() => {
+    api.getSumberPermintaan()
+      .then(list => {
+        if (Array.isArray(list) && list.length > 0) {
+          setSumberOptions(list);
+          try {
+            localStorage.setItem('konveksi_sumber_permintaan', JSON.stringify(list));
+          } catch (_) {}
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [isSumberModalOpen, setIsSumberModalOpen] = useState(false);
   const [editingSumberIndex, setEditingSumberIndex] = useState(null);
   const [sumberInputText, setSumberInputText] = useState('');
@@ -104,6 +119,7 @@ export default function Antrean({
       const oldVal = updated[editingSumberIndex];
       updated[editingSumberIndex] = val;
       saveSumberOptions(updated);
+      api.deleteSumberPermintaan(oldVal).then(() => api.addSumberPermintaan(val)).catch(() => {});
       if (formData.sumberPermintaan === oldVal) {
         setFormData(prev => ({ ...prev, sumberPermintaan: val }));
       }
@@ -114,6 +130,7 @@ export default function Antrean({
         return;
       }
       saveSumberOptions([...sumberOptions, val]);
+      api.addSumberPermintaan(val).catch(() => {});
       setFormData(prev => ({ ...prev, sumberPermintaan: val }));
     }
     setSumberInputText('');
@@ -127,6 +144,7 @@ export default function Antrean({
     }
     const updated = sumberOptions.filter((_, i) => i !== idxToDelete);
     saveSumberOptions(updated);
+    api.deleteSumberPermintaan(target).catch(() => {});
     if (formData.sumberPermintaan === target) {
       setFormData(prev => ({ ...prev, sumberPermintaan: updated[0] }));
     }

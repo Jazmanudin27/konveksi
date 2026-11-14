@@ -63,6 +63,43 @@ router.get('/', (req, res) => {
   }
 });
 
+// 1a. Sumber Permintaan Management (SQLite Persisted)
+router.get('/sumber-permintaan', (req, res) => {
+  try {
+    const rows = db.prepare("SELECT nama FROM sumber_permintaan ORDER BY id ASC").all();
+    if (rows.length === 0) {
+      const defaults = ["PO Pelanggan", "Marketplace / Toko", "Rencana Internal"];
+      const insertStmt = db.prepare("INSERT OR IGNORE INTO sumber_permintaan (nama) VALUES (?)");
+      defaults.forEach(d => insertStmt.run(d));
+      return res.json(defaults);
+    }
+    res.json(rows.map(r => r.nama));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/sumber-permintaan', (req, res) => {
+  try {
+    const { nama } = req.body;
+    if (!nama || !nama.trim()) return res.status(400).json({ error: 'Nama sumber wajib diisi' });
+    db.prepare("INSERT OR IGNORE INTO sumber_permintaan (nama) VALUES (?)").run(nama.trim());
+    res.json({ success: true, nama: nama.trim() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/sumber-permintaan/:nama', (req, res) => {
+  try {
+    const nama = decodeURIComponent(req.params.nama);
+    db.prepare("DELETE FROM sumber_permintaan WHERE nama = ?").run(nama);
+    res.json({ success: true, nama });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 1b. GET antrean by id
 router.get('/:id', (req, res) => {
   try {

@@ -4,8 +4,6 @@ import TopHeader from './components/layout/TopHeader';
 import Produk from './views/desktop/Produk';
 import Kategori from './views/desktop/Kategori';
 import Karyawan from './views/desktop/Karyawan';
-import Tahapan from './views/desktop/Tahapan';
-import Jasa from './views/desktop/Jasa';
 import Bahan from './views/desktop/Bahan';
 import MutasiBahan from './views/desktop/MutasiBahan';
 import MutasiGudangJadi from './views/desktop/MutasiGudangJadi';
@@ -24,13 +22,11 @@ export default function App() {
     'products',
     'categories',
     'employees',
-    'jasa',
     'bahan',
     'mutasi-bahan',
     'mutasi-gudang-jadi',
     'antrean',
     'laporan-stok-gudang',
-    'tahapan',
   ];
 
   // Ambil menu aktif terakhir dari URL hash atau localStorage agar tidak reset saat refresh
@@ -253,15 +249,6 @@ export default function App() {
             <Karyawan
               employees={employees}
               setEmployees={setEmployees}
-            />
-          )}
-          {activeMenu === 'tahapan' && (
-            <Tahapan onRedirect={setActiveMenu} />
-          )}
-          {activeMenu === 'jasa' && (
-            <Jasa
-              jasa={jasa}
-              setJasa={setJasa}
             />
           )}
           {activeMenu === 'bahan' && (

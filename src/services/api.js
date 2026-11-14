@@ -80,6 +80,9 @@ export const api = {
   serahFinishing: (data) => request('/antrean/serah-finishing', { method: 'POST', body: JSON.stringify(data) }),
   selesaiFinishing: (data) => request('/antrean/selesai-finishing', { method: 'POST', body: JSON.stringify(data) }),
   rollbackAntrean: (id) => request('/antrean/rollback', { method: 'POST', body: JSON.stringify({ id }) }),
+  getSumberPermintaan: () => request('/antrean/sumber-permintaan'),
+  addSumberPermintaan: (nama) => request('/antrean/sumber-permintaan', { method: 'POST', body: JSON.stringify({ nama }) }),
+  deleteSumberPermintaan: (nama) => request(`/antrean/sumber-permintaan/${encodeURIComponent(nama)}`, { method: 'DELETE' }),
 
   // Mutasi Gudang Jadi (Finished Goods)
   getMutasiGudangJadi: () => request('/mutasi-gudang-jadi'),

@@ -46,6 +46,11 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_antrean_no ON antrean(no_antrian);
   CREATE INDEX IF NOT EXISTS idx_antrean_sku ON antrean(sku);
+
+  CREATE TABLE IF NOT EXISTS sumber_permintaan (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama TEXT NOT NULL UNIQUE
+  );
 `);
 
 // Migrasi kolom tambahan secara aman
@@ -126,23 +131,5 @@ try { db.exec("ALTER TABLE antrean ADD COLUMN tgl_selesai TEXT;"); } catch (e) {
 try { db.exec("UPDATE antrean SET status = 'Proses Cutting' WHERE status = 'Sedang Diproses';"); } catch (e) {}
 // Pastikan antrean yang diserahkan ke gudang berstatus 'Selesai'
 try { db.exec("UPDATE antrean SET status = 'Selesai' WHERE status = 'Menunggu Penerimaan Gudang';"); } catch (e) {}
-
-// Bersihkan data fake mutasi bahan awal (MUT-202611-001 s/d 008) agar murni dari database inputan
-try {
-  const fakeNos = [
-    'MUT-202611-001',
-    'MUT-202611-002',
-    'MUT-202611-003',
-    'MUT-202611-004',
-    'MUT-202611-005',
-    'MUT-202611-006',
-    'MUT-202611-007',
-    'MUT-202611-008'
-  ];
-  for (const fNo of fakeNos) {
-    db.prepare("DELETE FROM mutasi_bahan_item WHERE no_bukti = ?").run(fNo);
-    db.prepare("DELETE FROM mutasi_bahan WHERE no_bukti = ?").run(fNo);
-  }
-} catch (e) {}
 
 export default db;

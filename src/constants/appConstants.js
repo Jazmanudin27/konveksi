@@ -161,10 +161,7 @@ export const INITIAL_BAHAN_DATA = [
 
 export const SUMBER_PERMINTAAN_OPTIONS = [
   "PO Pelanggan",
-  "List Barang Kosong",
-  "Rencana Internal",
   "Marketplace / Toko",
-  "Restock Gudang",
 ];
 
 export const ANTREAN_PRIORITAS_OPTIONS = [

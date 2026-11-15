@@ -407,10 +407,16 @@ export default function Produk({
                 <th className="py-2 px-2.5 w-36 border-r border-[#cbd5e1]">
                   VARIAN & UKURAN
                 </th>
-                <th className="py-2 px-2.5 text-center w-40 border-r border-[#cbd5e1] bg-slate-50">
-                  HARGA & STOK
+                <th className="py-2 px-2.5 text-center w-32 border-r border-[#cbd5e1]">
+                  HARGA
                 </th>
-                <th className="py-2 px-2 text-center w-24 border-r border-[#cbd5e1]">
+                <th className="py-2 px-2 text-center w-28 border-r border-[#cbd5e1] bg-sky-50/60 text-[#0369a1]">
+                  POTONG
+                </th>
+                <th className="py-2 px-2 text-center w-20 border-r border-[#cbd5e1] bg-slate-50">
+                  STOK
+                </th>
+                <th className="py-2 px-2 text-center w-20 border-r border-[#cbd5e1]">
                   STATUS
                 </th>
                 <th className="py-2 px-2 text-center w-24">AKSI</th>
@@ -419,7 +425,7 @@ export default function Produk({
             <tbody className="divide-y divide-[#cbd5e1] font-medium text-slate-700">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
+                  <td colSpan="9" className="py-12 text-center text-slate-400">
                     <PackageOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">
                       Tidak ada produk ditemukan
@@ -516,10 +522,10 @@ export default function Produk({
                         </div>
                       </td>
 
-                      {/* HARGA (HPP, JUAL, POTONG) SERTA STOK */}
+                      {/* HARGA (JUAL & HPP) */}
                       <td className="py-[2px] px-2.5">
                         <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center justify-between gap-1 text-xs">
+                          <div className="flex items-center justify-between gap-1 text-[11px]">
                             <span className="text-[10px] text-slate-400 font-semibold">
                               Jual:
                             </span>
@@ -535,31 +541,29 @@ export default function Produk({
                               Rp {hppVal.toLocaleString("id-ID")}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between gap-1 text-[10.5px]">
-                            <span className="text-[10px] text-slate-400">
-                              Potong:
-                            </span>
-                            <span className="font-mono font-bold text-[#0284c7]">
-                              Rp {hargaPotongVal.toLocaleString("id-ID")}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-1 pt-0.5 border-t border-slate-100 mt-0.5">
-                            <span className="text-[10px] text-slate-400">
-                              Stok:
-                            </span>
-                            <span
-                              className={`font-mono text-[10.5px] font-black px-1.5 py-0.2 rounded border ${
-                                stokVal > 20
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : stokVal > 0
-                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : "bg-rose-50 text-rose-700 border-rose-200"
-                              }`}
-                            >
-                              {stokVal.toLocaleString("id-ID")}
-                            </span>
-                          </div>
                         </div>
+                      </td>
+
+                      {/* ONGKOS POTONG (KOLOM TERPISAH) */}
+                      <td className="py-[2px] px-2 text-center bg-sky-50/20">
+                        <span className="font-mono font-extrabold text-[11.5px] text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 inline-block shadow-2xs">
+                          Rp {hargaPotongVal.toLocaleString("id-ID")}
+                        </span>
+                      </td>
+
+                      {/* STOK GUDANG (KOLOM TERPISAH) */}
+                      <td className="py-[2px] px-2 text-center">
+                        <span
+                          className={`font-mono text-xs font-black px-2 py-0.5 rounded border inline-block shadow-2xs ${
+                            stokVal > 20
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : stokVal > 0
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-rose-50 text-rose-700 border-rose-200"
+                          }`}
+                        >
+                          {stokVal.toLocaleString("id-ID")}
+                        </span>
                       </td>
 
                       {/* STATUS */}

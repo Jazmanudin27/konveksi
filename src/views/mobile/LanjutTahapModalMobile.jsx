@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   X,
   Scissors,
@@ -6,14 +6,188 @@ import {
   CheckCircle2,
   Sparkles,
   Warehouse,
-  Calendar,
+  Search,
+  ChevronDown,
+  Check,
+  Plus,
   User,
-  DollarSign,
   AlertCircle,
-  FileText,
-  Boxes,
 } from 'lucide-react';
 import { api } from '../../services/api';
+
+// Sub-komponen Input Format Rupiah Rata Kanan
+function RupiahInput({ label, value, onChange, placeholder = "0", required = false }) {
+  const displayValue = Number(value || 0).toLocaleString('id-ID');
+
+  const handleChange = (e) => {
+    const rawVal = e.target.value.replace(/\D/g, '');
+    const num = rawVal ? parseInt(rawVal, 10) : 0;
+    onChange(num);
+  };
+
+  return (
+    <div>
+      <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
+        {label}
+      </label>
+      <div className="relative">
+        <span className="absolute left-3 top-2.5 text-xs font-black text-slate-400 select-none">
+          Rp
+        </span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={displayValue}
+          onChange={handleChange}
+          placeholder={placeholder}
+          required={required}
+          className="w-full h-9 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-black text-slate-900 text-sm text-right focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-colors"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Sub-komponen Select Dropdown dengan Pencarian (Searchable Select)
+function SearchableSelectMobile({
+  label,
+  value,
+  onChange,
+  options = [],
+  placeholder = "Pilih petugas...",
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const q = search.toLowerCase();
+    return options.filter(
+      (opt) =>
+        (opt.nama || opt.label || "").toLowerCase().includes(q) ||
+        (opt.bagian || "").toLowerCase().includes(q) ||
+        (opt.kategori || "").toLowerCase().includes(q)
+    );
+  }, [options, search]);
+
+  const selectedItem = options.find((opt) => (opt.nama || opt.value) === value);
+
+  return (
+    <div className="relative">
+      <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
+        {label}
+      </label>
+
+      {/* Tombol Pemilih (Trigger) */}
+      <button
+        type="button"
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setSearch("");
+        }}
+        className="w-full h-10 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs flex items-center justify-between focus:bg-white focus:border-emerald-600 focus:outline-none transition-colors cursor-pointer text-left shadow-2xs"
+      >
+        <div className="flex items-center gap-2 truncate">
+          <User className="w-4 h-4 text-emerald-700 shrink-0" />
+          <span className="truncate">
+            {value || placeholder}
+          </span>
+          {selectedItem?.bagian && (
+            <span className="text-[9.5px] font-semibold text-slate-500 bg-slate-200/80 px-1.5 py-0.2 rounded shrink-0">
+              {selectedItem.bagian}
+            </span>
+          )}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {/* Dropdown Menu Pencarian */}
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col max-h-60">
+            {/* Kotak Input Search */}
+            <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5 shrink-0">
+              <Search className="w-3.5 h-3.5 text-slate-400 ml-1" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Ketik nama untuk mencari..."
+                className="w-full bg-white h-7 px-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-600 font-medium"
+                autoFocus
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Daftar Hasil Filter */}
+            <div className="overflow-y-auto divide-y divide-slate-50 flex-1">
+              {filteredOptions.map((opt) => {
+                const optVal = opt.nama || opt.value;
+                const isSelected = value === optVal;
+                return (
+                  <button
+                    type="button"
+                    key={opt.id || opt.nik || optVal}
+                    onClick={() => {
+                      onChange(optVal);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-emerald-50/80 transition-colors cursor-pointer ${
+                      isSelected ? "bg-emerald-50 text-emerald-900 font-bold" : "text-slate-700"
+                    }`}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-bold">{optVal}</span>
+                      {(opt.bagian || opt.kategori) && (
+                        <span className="text-[10px] text-slate-400">
+                          {opt.kategori ? `${opt.kategori} • ` : ""}{opt.bagian || ""}
+                        </span>
+                      )}
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
+                  </button>
+                );
+              })}
+
+              {/* Opsi Gunakan Nama Custom jika tidak ada di list */}
+              {search.trim() && !filteredOptions.some(o => (o.nama || o.value || '').toLowerCase() === search.toLowerCase()) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(search.trim());
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold flex items-center gap-1.5 transition-colors cursor-pointer border-t border-amber-200"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Gunakan nama: "{search.trim()}"</span>
+                </button>
+              )}
+
+              {filteredOptions.length === 0 && !search.trim() && (
+                <div className="p-4 text-center text-slate-400 text-xs">
+                  Tidak ada data karyawan
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function LanjutTahapModalMobile({
   isOpen,
@@ -34,7 +208,7 @@ export default function LanjutTahapModalMobile({
     return products.find((p) => p.sku === item.sku) || null;
   }, [products, item.sku]);
 
-  // Karyawan per bagian
+  // Karyawan per bagian (fallback ke semua karyawan jika filter kosong)
   const cuttingEmployees = useMemo(() => {
     const list = employees.filter((e) => {
       const b = (e.bagian || '').toLowerCase();
@@ -72,7 +246,7 @@ export default function LanjutTahapModalMobile({
   const [errorMsg, setErrorMsg] = useState('');
 
   // 1. Data Cutting
-  const defaultTarifPotong = matchedProduct?.hargaPotong || matchedProduct?.harga_potong || item.tarifCutting || 1500;
+  const defaultTarifPotong = matchedProduct?.hargaPotong || matchedProduct?.harga_potong || item.tarifCutting || 1800;
   const [tglSerahCutting, setTglSerahCutting] = useState(todayStr);
   const [timCutting, setTimCutting] = useState(
     cuttingEmployees[0]?.nama || item.timCutting || 'Tim Cutting 1'
@@ -155,7 +329,7 @@ export default function LanjutTahapModalMobile({
           id: item.id,
           noAntrian: item.noAntrian || `ANT-${item.id}`,
           sku: item.sku,
-          qty: Number(item.qtyPassQc || qty),
+          qty: Number(qtyPassQc || qty),
           lokasiRak,
           petugas: petugasGudang,
           catatan: catatanGudang,
@@ -229,24 +403,14 @@ export default function LanjutTahapModalMobile({
           {/* 1. TAHAP CUTTING */}
           {(currentStatus === 'Menunggu Cutting' || currentStatus === 'Draft') && (
             <>
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                  Pilih Tim / Petugas Cutting:
-                </label>
-                <select
-                  value={timCutting}
-                  onChange={(e) => setTimCutting(e.target.value)}
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
-                  required
-                >
-                  {cuttingEmployees.map((e) => (
-                    <option key={e.id || e.nik} value={e.nama}>
-                      {e.nama} ({e.bagian || 'Cutting'})
-                    </option>
-                  ))}
-                  <option value="Tim Cutting Luar / Makloon">Tim Cutting Luar / Makloon</option>
-                </select>
-              </div>
+              {/* Searchable Select Petugas Cutting */}
+              <SearchableSelectMobile
+                label="Pilih Tim / Petugas Cutting:"
+                value={timCutting}
+                onChange={setTimCutting}
+                options={cuttingEmployees}
+                placeholder="Pilih atau cari petugas cutting..."
+              />
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -262,19 +426,13 @@ export default function LanjutTahapModalMobile({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Tarif Potong / Pcs (Rp):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={tarifCutting}
-                    onChange={(e) => setTarifCutting(Number(e.target.value))}
-                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
-                    required
-                  />
-                </div>
+                {/* Input Format Rupiah Rata Kanan */}
+                <RupiahInput
+                  label="Tarif Potong / Pcs:"
+                  value={tarifCutting}
+                  onChange={setTarifCutting}
+                  required
+                />
               </div>
 
               {/* Box Total Estimasi Biaya */}
@@ -303,24 +461,14 @@ export default function LanjutTahapModalMobile({
           {/* 2. TAHAP JAHIT */}
           {currentStatus === 'Proses Cutting' && (
             <>
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                  Pilih Penjahit / Tim Jahit:
-                </label>
-                <select
-                  value={timJahit}
-                  onChange={(e) => setTimJahit(e.target.value)}
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
-                  required
-                >
-                  {jahitEmployees.map((e) => (
-                    <option key={e.id || e.nik} value={e.nama}>
-                      {e.nama} ({e.kategori || 'Internal'} - {e.bagian || 'Penjahit'})
-                    </option>
-                  ))}
-                  <option value="Makloon Luar">Makloon Luar</option>
-                </select>
-              </div>
+              {/* Searchable Select Penjahit */}
+              <SearchableSelectMobile
+                label="Pilih Penjahit / Tim Jahit:"
+                value={timJahit}
+                onChange={setTimJahit}
+                options={jahitEmployees}
+                placeholder="Pilih atau cari penjahit..."
+              />
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -336,19 +484,13 @@ export default function LanjutTahapModalMobile({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Tarif Jahit / Pcs (Rp):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={tarifJahit}
-                    onChange={(e) => setTarifJahit(Number(e.target.value))}
-                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
-                    required
-                  />
-                </div>
+                {/* Input Format Rupiah Rata Kanan */}
+                <RupiahInput
+                  label="Tarif Jahit / Pcs:"
+                  value={tarifJahit}
+                  onChange={setTarifJahit}
+                  required
+                />
               </div>
 
               {/* Box Total Estimasi Biaya Jahit */}
@@ -377,24 +519,14 @@ export default function LanjutTahapModalMobile({
           {/* 3. TAHAP QC */}
           {currentStatus === 'Proses Jahit' && (
             <>
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                  Pilih Petugas Pemeriksa QC:
-                </label>
-                <select
-                  value={timQc}
-                  onChange={(e) => setTimQc(e.target.value)}
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
-                  required
-                >
-                  {qcEmployees.map((e) => (
-                    <option key={e.id || e.nik} value={e.nama}>
-                      {e.nama} ({e.bagian || 'QC'})
-                    </option>
-                  ))}
-                  <option value="Tim QC Standar">Tim QC Standar</option>
-                </select>
-              </div>
+              {/* Searchable Select Petugas QC */}
+              <SearchableSelectMobile
+                label="Pilih Petugas Pemeriksa QC:"
+                value={timQc}
+                onChange={setTimQc}
+                options={qcEmployees}
+                placeholder="Pilih atau cari petugas QC..."
+              />
 
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
@@ -442,7 +574,7 @@ export default function LanjutTahapModalMobile({
                       setQtyPassQc(val);
                       setQtyRejectQc(Math.max(0, qty - val));
                     }}
-                    className="w-full h-9 px-3 bg-emerald-50 border border-emerald-300 rounded-xl font-black text-emerald-950 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full h-9 px-3 bg-emerald-50 border border-emerald-300 rounded-xl font-black text-emerald-950 text-xs text-right focus:bg-white focus:border-emerald-600 focus:outline-none"
                     required
                   />
                 </div>
@@ -456,7 +588,7 @@ export default function LanjutTahapModalMobile({
                     min="0"
                     value={qtyRejectQc}
                     onChange={(e) => setQtyRejectQc(Number(e.target.value))}
-                    className="w-full h-9 px-3 bg-rose-50 border border-rose-300 rounded-xl font-black text-rose-950 text-xs focus:bg-white focus:border-rose-600 focus:outline-none"
+                    className="w-full h-9 px-3 bg-rose-50 border border-rose-300 rounded-xl font-black text-rose-950 text-xs text-right focus:bg-white focus:border-rose-600 focus:outline-none"
                   />
                 </div>
               </div>
@@ -476,24 +608,14 @@ export default function LanjutTahapModalMobile({
                 </div>
               )}
 
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                  Pilih Tim Finishing & Packing:
-                </label>
-                <select
-                  value={timFinishing}
-                  onChange={(e) => setTimFinishing(e.target.value)}
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
-                  required
-                >
-                  {finishingEmployees.map((e) => (
-                    <option key={e.id || e.nik} value={e.nama}>
-                      {e.nama} ({e.bagian || 'Finishing'})
-                    </option>
-                  ))}
-                  <option value="Tim Packing & Uap 1">Tim Packing & Uap 1</option>
-                </select>
-              </div>
+              {/* Searchable Select Finishing */}
+              <SearchableSelectMobile
+                label="Pilih Tim Finishing & Packing:"
+                value={timFinishing}
+                onChange={setTimFinishing}
+                options={finishingEmployees}
+                placeholder="Pilih atau cari tim finishing..."
+              />
 
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
@@ -513,12 +635,12 @@ export default function LanjutTahapModalMobile({
           {/* 5. TAHAP GUDANG JADI */}
           {currentStatus === 'Proses Finishing' && (
             <>
-              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
-                <span className="text-[10.5px] font-bold text-emerald-800 block">
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between">
+                <span className="text-[10.5px] font-bold text-emerald-800">
                   Siap Masuk Stok Gudang Jadi:
                 </span>
                 <span className="font-mono font-black text-base text-emerald-950">
-                  {qtyPassQc || qty} Pcs ({item.namaProduk})
+                  {qtyPassQc || qty} Pcs
                 </span>
               </div>
 
@@ -602,4 +724,3 @@ export default function LanjutTahapModalMobile({
     </div>
   );
 }
-

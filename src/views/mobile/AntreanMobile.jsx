@@ -145,18 +145,24 @@ export default function AntreanMobile({
                 <span className="font-black text-slate-900">{item.qty || 50} Pcs</span>
               </div>
 
-              {/* Aksi Cepat Geser Tahap */}
-              <div className="flex items-center gap-1.5">
-                {item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
-                  <button
-                    onClick={() => onNextStatus(item)}
-                    className="text-[10.5px] font-bold text-white bg-[#064e3b] hover:bg-[#043e2f] px-3 py-1 rounded-xl shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Lanjut Tahap</span>
-                    <span>→</span>
-                  </button>
-                )}
-              </div>
+                {/* Aksi Cepat Buka Modal Serah Tahapan SOP */}
+                <div className="flex items-center gap-1.5">
+                  {item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
+                    <button
+                      onClick={() => onNextStatus(item)}
+                      className="text-[10.5px] font-bold text-white bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>
+                        {(item.status === 'Menunggu Cutting' || item.status === 'Draft') && 'Serah Cutting'}
+                        {item.status === 'Proses Cutting' && 'Serah Jahit'}
+                        {item.status === 'Proses Jahit' && 'Serah QC'}
+                        {item.status === 'Proses QC' && 'Serah Finishing'}
+                        {item.status === 'Proses Finishing' && 'Masuk Gudang'}
+                      </span>
+                      <span>→</span>
+                    </button>
+                  )}
+                </div>
             </div>
           </div>
         ))}

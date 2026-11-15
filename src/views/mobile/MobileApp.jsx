@@ -25,6 +25,7 @@ import KategoriMobile from './KategoriMobile';
 import LaporanMobile from './LaporanMobile';
 import MobileMenuSheet from './MobileMenuSheet';
 import AddAntreanModalMobile from './AddAntreanModalMobile';
+import LanjutTahapModalMobile from './LanjutTahapModalMobile';
 
 export default function MobileApp({
   products,
@@ -63,30 +64,23 @@ export default function MobileApp({
     (a) => (a.prioritas || '').toLowerCase() === 'urgent' && (a.status || a.statusTahapan) !== 'Selesai Gudang'
   ).length;
 
-  // Handler Geser Status Antrean Cepat di HP
-  const handleNextStatus = async (item) => {
-    const curStatus = item.status || item.statusTahapan || 'Menunggu Cutting';
-    let nextStatus = '';
-    if (curStatus === 'Menunggu Cutting' || curStatus === 'Draft') {
-      nextStatus = 'Proses Cutting';
-    } else if (curStatus === 'Proses Cutting') {
-      nextStatus = 'Proses Jahit';
-    } else if (curStatus === 'Proses Jahit') {
-      nextStatus = 'Proses QC';
-    } else if (curStatus === 'Proses QC') {
-      nextStatus = 'Proses Finishing';
-    } else if (curStatus === 'Proses Finishing') {
-      nextStatus = 'Selesai Gudang';
-    } else {
-      return;
-    }
+  // State Modal Lanjut Tahap Produksi SOP Mobile
+  const [selectedNextStatusItem, setSelectedNextStatusItem] = useState(null);
 
+  // Handler Buka Modal Serah Tahapan Produksi (Cutting, Jahit, QC, Finishing, Gudang)
+  const handleOpenNextStatus = (item) => {
+    setSelectedNextStatusItem(item);
+  };
+
+  // Handler Refresh Data Antrean setelah Serah Tahapan
+  const handleRefreshAntrean = async () => {
     try {
-      const updated = { ...item, status: nextStatus, statusTahapan: nextStatus };
-      await api.updateAntrean(item.id, updated);
-      setAntreanList((prev) => prev.map((a) => (a.id === item.id ? updated : a)));
+      const data = await api.getAntrean();
+      if (Array.isArray(data)) {
+        setAntreanList(data);
+      }
     } catch (err) {
-      alert('Gagal update status: ' + err.message);
+      console.warn('Gagal refresh antrean:', err);
     }
   };
 
@@ -225,7 +219,7 @@ export default function MobileApp({
                       }
                     }}
                     onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
-                    onNextStatus={handleNextStatus}
+                    onNextStatus={handleOpenNextStatus}
                     onSwitchToDesktop={onSwitchToDesktop}
                   />
                 </div>
@@ -238,7 +232,7 @@ export default function MobileApp({
                 <AntreanMobile
                   antreanList={antreanList}
                   onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
-                  onNextStatus={handleNextStatus}
+                  onNextStatus={handleOpenNextStatus}
                 />
               </div>
             )}
@@ -299,6 +293,18 @@ export default function MobileApp({
         products={products}
         onAntreanCreated={handleAntreanCreated}
       />
+
+      {/* 6. MODAL SERAH TAHAPAN PRODUKSI SOP MOBILE */}
+      {selectedNextStatusItem && (
+        <LanjutTahapModalMobile
+          isOpen={Boolean(selectedNextStatusItem)}
+          item={selectedNextStatusItem}
+          employees={employees}
+          products={products}
+          onClose={() => setSelectedNextStatusItem(null)}
+          onSuccess={handleRefreshAntrean}
+        />
+      )}
     </div>
   );
 }

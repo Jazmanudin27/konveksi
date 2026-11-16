@@ -42,6 +42,46 @@ import {
   BAHAN_OPTIONS,
 } from "../../constants/productConstants";
 
+export function getSmartColorHex(varianName, fallbackHex) {
+  if (
+    fallbackHex &&
+    fallbackHex !== "#111827" &&
+    fallbackHex !== "#64748b" &&
+    fallbackHex !== "#000000" &&
+    fallbackHex !== ""
+  ) {
+    return fallbackHex;
+  }
+  const name = String(varianName || "").toLowerCase().trim();
+  if (name.includes("hitam") || name.includes("black")) return "#1e293b";
+  if (name.includes("putih") || name.includes("white") || name.includes("bw") || name.includes("broken white")) return "#f8fafc";
+  if (name.includes("khaki") || name.includes("kaki")) return "#c3b091";
+  if (name.includes("dove") || name.includes("grey") || name.includes("abu")) return "#94a3b8";
+  if (name.includes("biskuit") || name.includes("biscuit")) return "#dfb88c";
+  if (name.includes("tanah") || name.includes("cookies") || name.includes("bata") || name.includes("teracotta")) return "#b87333";
+  if (name.includes("milo") || name.includes("coklat") || name.includes("brown")) return "#795548";
+  if (name.includes("burgundy") || name.includes("wine")) return "#800020";
+  if (name.includes("hazel")) return "#8e7618";
+  if (name.includes("maroon") || name.includes("maron")) return "#881337";
+  if (name.includes("caramel") || name.includes("karamel")) return "#c68a4c";
+  if (name.includes("navy") || name.includes("dongker")) return "#1e3a8a";
+  if (name.includes("sage")) return "#849673";
+  if (name.includes("denim") || name.includes("biru") || name.includes("blue")) return "#2563eb";
+  if (name.includes("dusty") || name.includes("pink") || name.includes("rose") || name.includes("fanta")) return "#f43f5e";
+  if (name.includes("army") || name.includes("lumut") || name.includes("olive")) return "#3f4f24";
+  if (name.includes("mocca") || name.includes("moka")) return "#a2836e";
+  if (name.includes("coksu")) return "#d2b48c";
+  if (name.includes("kuning") || name.includes("yellow") || name.includes("mustard")) return "#eab308";
+  if (name.includes("merah") || name.includes("red")) return "#dc2626";
+  if (name.includes("hijau") || name.includes("green") || name.includes("mint")) return "#16a34a";
+  if (name.includes("lilac") || name.includes("ungu") || name.includes("purple") || name.includes("lavender")) return "#a855f7";
+  if (name.includes("cream") || name.includes("krem")) return "#fef08a";
+  if (name.includes("tosca") || name.includes("toska")) return "#0d9488";
+  if (name.includes("silver")) return "#cbd5e1";
+  if (name.includes("gold") || name.includes("emas")) return "#d97706";
+  return fallbackHex || "#64748b";
+}
+
 export default function Produk({
   products: propProducts,
   setProducts: propSetProducts,
@@ -64,8 +104,10 @@ export default function Produk({
   const [perPage, setPerPage] = useState("25");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // View Mode: 'etalase' (Shopee grouped per SKU Induk) | 'flat' (Tabel semua varian)
+  // View Mode: 'etalase' (Shopee grouped per SKU Induk) | 'katalog' (Katalog Grid Shopee) | 'flat' (Tabel semua varian)
   const [viewMode, setViewMode] = useState("etalase");
+  const [variantCardMode, setVariantCardMode] = useState("grid"); // 'grid' | 'table'
+  const [colorFilter, setColorFilter] = useState({}); // { [skuInduk]: 'SEMUA' }
   const [expandedSkuInduk, setExpandedSkuInduk] = useState({});
   const [createPreset, setCreatePreset] = useState(null);
 
@@ -230,7 +272,8 @@ export default function Produk({
       if (potong > grp.maxPotong) grp.maxPotong = potong;
 
       if (item.varian && !grp.colors.some((c) => c.name === item.varian)) {
-        grp.colors.push({ name: item.varian, hex: item.warnaHex || "#64748b" });
+        const smartHex = getSmartColorHex(item.varian, item.warnaHex);
+        grp.colors.push({ name: item.varian, hex: smartHex });
       }
     });
 
@@ -486,24 +529,24 @@ export default function Produk({
         </div>
       </div>
 
-      {/* TOOLBAR TAMPILAN: ETALASE SKU INDUK (SHOPEE STYLE) VS TABEL SEMUA VARIAN */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs">
+      {/* TOOLBAR TAMPILAN: ETALASE SHOPEE vs KATALOG GRID vs TABEL SEMUA VARIAN */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-2xs">
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
             onClick={() => setViewMode("etalase")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               viewMode === "etalase"
-                ? "bg-[#0284c7] text-white shadow-2xs"
+                ? "bg-[#0284c7] text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
             <span>Etalase SKU Induk (Shopee Style)</span>
             <span
-              className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded ${
+              className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
                 viewMode === "etalase"
-                  ? "bg-white/20 text-white"
+                  ? "bg-white/25 text-white"
                   : "bg-slate-200 text-slate-700"
               }`}
             >
@@ -513,19 +556,41 @@ export default function Produk({
 
           <button
             type="button"
+            onClick={() => setViewMode("katalog")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "katalog"
+                ? "bg-[#0284c7] text-white shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+            }`}
+          >
+            <Store className="w-3.5 h-3.5" />
+            <span>Katalog Grid Toko</span>
+            <span
+              className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                viewMode === "katalog"
+                  ? "bg-white/25 text-white"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {groupedSkuIndukList.length} Kartu
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setViewMode("flat")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               viewMode === "flat"
-                ? "bg-[#0284c7] text-white shadow-2xs"
+                ? "bg-[#0284c7] text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
             }`}
           >
             <ListFilter className="w-3.5 h-3.5" />
             <span>Tabel Semua Varian</span>
             <span
-              className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded ${
+              className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
                 viewMode === "flat"
-                  ? "bg-white/20 text-white"
+                  ? "bg-white/25 text-white"
                   : "bg-slate-200 text-slate-700"
               }`}
             >
@@ -535,10 +600,36 @@ export default function Produk({
         </div>
 
         {viewMode === "etalase" && (
-          <div className="flex items-center gap-1.5 self-end sm:self-auto">
-            <span className="text-[11px] text-slate-500 font-medium mr-1">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <span className="text-[11px] text-slate-500 font-medium mr-1 hidden md:inline">
               {filteredProducts.length} varian dalam {groupedSkuIndukList.length} etalase
             </span>
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setVariantCardMode("grid")}
+                className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer text-[11px] ${
+                  variantCardMode === "grid"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                title="Tampilkan varian sebagai kartu visual menarik"
+              >
+                🎴 Kartu Shopee
+              </button>
+              <button
+                type="button"
+                onClick={() => setVariantCardMode("table")}
+                className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer text-[11px] ${
+                  variantCardMode === "table"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                title="Tampilkan varian sebagai tabel ringkas"
+              >
+                📋 Tabel
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => expandAll(true)}
@@ -557,11 +648,115 @@ export default function Produk({
         )}
       </div>
 
-      {/* KONTEN SESUAI VIEW MODE */}
-      {viewMode === "etalase" ? (
-        <div className="space-y-3">
+      {/* ================= KONTEN SESUAI VIEW MODE ================= */}
+      {viewMode === "katalog" ? (
+        /* MODE 1: KATALOG GRID SHOPEE (STOREFRONT STYLE) */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {groupedSkuIndukList.map((group) => {
+            const previewColors = group.colors.slice(0, 7);
+
+            return (
+              <div
+                key={group.skuInduk}
+                className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs hover:shadow-lg hover:border-sky-300 transition-all flex flex-col justify-between space-y-3 group"
+              >
+                {/* Header Card */}
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-mono text-xs font-black text-white bg-[#0369a1] px-2.5 py-0.5 rounded-md shadow-2xs tracking-wide">
+                      {group.skuInduk}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                      {group.kategori}
+                    </span>
+                  </div>
+
+                  <h3 className="font-black text-slate-900 text-sm mt-2 line-clamp-1 group-hover:text-[#0284c7] transition-colors">
+                    {group.namaProduk}
+                  </h3>
+                  {group.skuBahan && group.skuBahan !== "-" && (
+                    <div className="text-[10.5px] text-slate-400 font-mono mt-0.5">
+                      Bahan: {group.skuBahan}
+                    </div>
+                  )}
+                </div>
+
+                {/* Color Swatches Palette */}
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    <span>Pilihan Warna</span>
+                    <span className="text-sky-700 font-extrabold">{group.variants.length} Varian</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {previewColors.map((c, i) => (
+                      <span
+                        key={i}
+                        className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs inline-block ring-1 ring-white"
+                        style={{ backgroundColor: c.hex }}
+                        title={c.name}
+                      />
+                    ))}
+                    {group.colors.length > 7 && (
+                      <span className="text-[10px] font-extrabold text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                        +{group.colors.length - 7}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Price & Stock Stats */}
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">Harga Jual</span>
+                    <span className="font-mono font-bold text-slate-900 text-xs">
+                      {group.minHarga === group.maxHarga
+                        ? `Rp ${group.minHarga.toLocaleString("id-ID")}`
+                        : `Rp ${group.minHarga.toLocaleString("id-ID")} - ${group.maxHarga.toLocaleString("id-ID")}`}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 block font-medium">Ongkos Potong</span>
+                    <span className="font-mono font-extrabold text-[#0284c7] text-xs">
+                      Rp {group.minPotong.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <span
+                    className={`font-mono font-black text-xs px-2.5 py-1 rounded-lg ${
+                      group.totalStok > 20
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : group.totalStok > 0
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-rose-50 text-rose-700 border border-rose-200"
+                    }`}
+                  >
+                    Stok: {group.totalStok} Pcs
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode("etalase");
+                      setExpandedSkuInduk((p) => ({ ...p, [group.skuInduk]: true }));
+                    }}
+                    className="flex-1 py-1.5 px-2 bg-sky-50 hover:bg-sky-100 text-[#0284c7] rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-sky-200"
+                  >
+                    <span>Lihat Varian</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : viewMode === "etalase" ? (
+        /* MODE 2: ETALASE SKU INDUK (LIST MODEL + KARTU VARIAN MODERN) */
+        <div className="space-y-3.5">
           {groupedSkuIndukList.length === 0 ? (
-            <div className="bg-white border border-[#cbd5e1] rounded-xl p-12 text-center text-slate-400">
+            <div className="bg-white border border-[#cbd5e1] rounded-2xl p-12 text-center text-slate-400">
               <PackageOpen className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
               <p className="text-xs font-bold text-slate-700">
                 Tidak ada SKU Induk ditemukan
@@ -573,44 +768,55 @@ export default function Produk({
           ) : (
             groupedSkuIndukList.map((group) => {
               const expanded = isExpanded(group.skuInduk);
+              const activeColor = colorFilter[group.skuInduk] || "SEMUA";
+              const displayedVariants = group.variants.filter((v) => {
+                if (activeColor !== "SEMUA" && (v.varian || "").toLowerCase() !== activeColor.toLowerCase()) {
+                  return false;
+                }
+                return true;
+              });
 
               return (
                 <div
                   key={group.skuInduk}
-                  className="bg-white border border-[#cbd5e1] rounded-xl shadow-xs overflow-hidden transition-all hover:border-[#94a3b8]"
+                  className="bg-white border border-[#cbd5e1] rounded-2xl shadow-xs overflow-hidden transition-all hover:border-[#94a3b8]"
                 >
                   {/* Header SKU Induk / Etalase */}
-                  <div className="p-3 bg-gradient-to-r from-slate-50 via-sky-50/30 to-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                  <div className="p-3.5 bg-gradient-to-r from-slate-50 via-sky-50/40 to-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <button
                         type="button"
                         onClick={() => toggleExpand(group.skuInduk)}
-                        className="w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-all cursor-pointer shadow-2xs shrink-0"
+                        className="w-9 h-9 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-all cursor-pointer shadow-2xs shrink-0"
                         title={expanded ? "Tutup varian" : "Buka varian"}
                       >
                         {expanded ? (
-                          <ChevronDown className="w-4 h-4 text-sky-600" />
+                          <ChevronDown className="w-4 h-4 text-sky-600 stroke-[2.5]" />
                         ) : (
                           <ChevronRight className="w-4 h-4 text-slate-400" />
                         )}
                       </button>
+
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-500 text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
+                        <Shirt className="w-4 h-4" />
+                      </div>
 
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-black text-white bg-[#0369a1] px-2.5 py-0.5 rounded-md shadow-2xs tracking-wide">
                             {group.skuInduk}
                           </span>
-                          <span className="text-[10.5px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                          <span className="text-[10.5px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
                             {group.kategori}
                           </span>
-                          <span className="text-[10.5px] font-extrabold text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                            {group.variants.length} Varian SKU
+                          <span className="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                            {group.variants.length} Varian Warna
                           </span>
                         </div>
                         <div className="font-bold text-slate-900 text-xs mt-1 flex items-center gap-2">
                           <span>{group.namaProduk}</span>
                           {group.skuBahan && group.skuBahan !== "-" && (
-                            <span className="text-[10px] text-slate-500 font-mono font-normal">
+                            <span className="text-[10.5px] text-slate-500 font-mono font-normal">
                               (Bahan: {group.skuBahan})
                             </span>
                           )}
@@ -620,23 +826,23 @@ export default function Produk({
 
                     {/* Metrik Finansial & Stok & Tombol Tambah Varian */}
                     <div className="flex items-center gap-3 ml-auto">
-                      {/* Varian Warna Tersedia */}
+                      {/* Varian Warna Tersedia Preview */}
                       {group.colors.length > 0 && (
-                        <div className="hidden lg:flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                        <div className="hidden lg:flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
                           <span className="text-[9.5px] font-bold text-slate-400 mr-1">
                             Warna:
                           </span>
-                          {group.colors.slice(0, 5).map((c, i) => (
+                          {group.colors.slice(0, 6).map((c, i) => (
                             <span
                               key={i}
-                              className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs inline-block"
+                              className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs inline-block ring-1 ring-white"
                               style={{ backgroundColor: c.hex }}
                               title={c.name}
                             />
                           ))}
-                          {group.colors.length > 5 && (
+                          {group.colors.length > 6 && (
                             <span className="text-[9.5px] font-bold text-slate-500">
-                              +{group.colors.length - 5}
+                              +{group.colors.length - 6}
                             </span>
                           )}
                         </div>
@@ -651,6 +857,16 @@ export default function Produk({
                           {group.minHarga === group.maxHarga
                             ? `Rp ${group.minHarga.toLocaleString("id-ID")}`
                             : `Rp ${group.minHarga.toLocaleString("id-ID")} - ${group.maxHarga.toLocaleString("id-ID")}`}
+                        </span>
+                      </div>
+
+                      {/* Ongkos Potong */}
+                      <div className="text-right pl-3 border-l border-slate-200">
+                        <span className="text-[10px] text-slate-400 block font-medium">
+                          Ongkos Potong
+                        </span>
+                        <span className="text-xs font-extrabold text-[#0284c7] font-mono">
+                          Rp {group.minPotong.toLocaleString("id-ID")}
                         </span>
                       </div>
 
@@ -683,7 +899,7 @@ export default function Produk({
                             skuBahan: group.skuBahan,
                           })
                         }
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-md text-xs font-bold transition-all shadow-xs cursor-pointer ml-1"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ml-1"
                         title="Tambah varian warna/ukuran baru ke SKU Induk ini"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -694,139 +910,316 @@ export default function Produk({
                     </div>
                   </div>
 
-                  {/* Child Variants Table */}
+                  {/* Child Variants Area (Pilihan: Kartu Visual Shopee atau Tabel) */}
                   {expanded && (
-                    <div className="overflow-x-auto bg-[#fafbfc]">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-slate-100/90 text-[#475569] font-bold text-[10px] uppercase border-b border-slate-200 divide-x divide-slate-200/60">
-                            <th className="py-2 px-3 w-12 text-center">NO</th>
-                            <th className="py-2 px-3 w-44">SKU & BAHAN</th>
-                            <th className="py-2 px-3">VARIAN & UKURAN</th>
-                            <th className="py-2 px-3 text-right w-32">HARGA JUAL</th>
-                            <th className="py-2 px-3 text-right w-28 bg-sky-50/50 text-[#0369a1]">
-                              ONGKOS POTONG
-                            </th>
-                            <th className="py-2 px-3 text-center w-24">STOK</th>
-                            <th className="py-2 px-3 text-center w-24">STATUS</th>
-                            <th className="py-2 px-3 text-center w-28">AKSI</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200/70">
-                          {group.variants.map((variant, vIdx) => {
-                            const catMatch = categories.find(
-                              (c) => c.nama === variant.kategori,
-                            );
+                    <div className="bg-slate-50/70 border-t border-slate-200">
+                      {/* Sub-bar: Filter Warna Chips Cepat */}
+                      {group.colors.length > 1 && (
+                        <div className="px-4 py-2 bg-white/80 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+                          <div className="flex items-center gap-1.5 overflow-x-auto">
+                            <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide mr-1">
+                              Filter Warna:
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setColorFilter((p) => ({ ...p, [group.skuInduk]: "SEMUA" }))
+                              }
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                activeColor === "SEMUA"
+                                  ? "bg-slate-800 text-white shadow-2xs font-extrabold"
+                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                              }`}
+                            >
+                              Semua ({group.variants.length})
+                            </button>
+                            {group.colors.map((c) => {
+                              const isSelected = activeColor.toLowerCase() === c.name.toLowerCase();
+                              const countInColor = group.variants.filter(
+                                (v) => (v.varian || "").toLowerCase() === c.name.toLowerCase()
+                              ).length;
+
+                              return (
+                                <button
+                                  key={c.name}
+                                  type="button"
+                                  onClick={() =>
+                                    setColorFilter((p) => ({ ...p, [group.skuInduk]: c.name }))
+                                  }
+                                  className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                                    isSelected
+                                      ? "bg-[#0284c7] text-white shadow-2xs font-extrabold"
+                                      : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                                  }`}
+                                >
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full border border-slate-300 inline-block shadow-2xs ring-1 ring-white"
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                  <span>{c.name}</span>
+                                  <span
+                                    className={`text-[9.5px] font-mono px-1 rounded-full ${
+                                      isSelected ? "bg-white/30 text-white" : "bg-slate-100 text-slate-500"
+                                    }`}
+                                  >
+                                    {countInColor}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* RENDER VARIAN MODE: KARTU SHOPEE ATAU TABEL */}
+                      {variantCardMode === "grid" ? (
+                        /* ================= SHOPEE VARIANT CARDS GRID ================= */
+                        <div className="p-3.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                          {displayedVariants.map((variant, vIdx) => {
+                            const smartColor = getSmartColorHex(variant.varian, variant.warnaHex);
+                            const catMatch = categories.find((c) => c.nama === variant.kategori);
                             const hargaPotongVal = Number(
                               variant.hargaPotong !== undefined &&
                                 variant.hargaPotong !== null &&
                                 Number(variant.hargaPotong) > 0
                                 ? variant.hargaPotong
                                 : catMatch && catMatch.hargaPotong
-                                  ? catMatch.hargaPotong
-                                  : HARGA_POTONG_MAP[
-                                      variant.kategori?.toUpperCase()
-                                    ] || 0,
+                                ? catMatch.hargaPotong
+                                : HARGA_POTONG_MAP[variant.kategori?.toUpperCase()] || 0
                             );
+                            const stokVal = Number(variant.stok || 0);
 
                             return (
-                              <tr
+                              <div
                                 key={variant.id}
-                                className="hover:bg-sky-50/50 transition-colors divide-x divide-slate-200/60 font-medium"
+                                className="bg-white rounded-xl p-3 border border-slate-200 hover:border-sky-400 hover:shadow-md transition-all flex flex-col justify-between space-y-2 group relative"
                               >
-                                <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">
-                                  {vIdx + 1}
-                                </td>
-                                <td className="py-2 px-3">
-                                  <div className="font-mono font-bold text-[#0284c7] text-xs">
-                                    {variant.sku}
-                                  </div>
-                                  {variant.skuBahan && (
-                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                      Bahan: {variant.skuBahan}
+                                {/* Top: Color Swatch + Name + Size */}
+                                <div>
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span
+                                        className="w-5 h-5 rounded-full border border-slate-300 shadow-2xs shrink-0 ring-2 ring-white"
+                                        style={{ backgroundColor: smartColor }}
+                                        title={variant.varian}
+                                      />
+                                      <span
+                                        className="font-black text-slate-900 text-xs truncate"
+                                        title={variant.varian}
+                                      >
+                                        {variant.varian || "Polos"}
+                                      </span>
                                     </div>
-                                  )}
-                                </td>
-                                <td className="py-2 px-3">
-                                  <div className="flex items-center gap-2">
-                                    <span
-                                      className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
-                                      style={{
-                                        backgroundColor:
-                                          variant.warnaHex || "#111827",
-                                      }}
-                                    />
-                                    <span className="font-semibold text-slate-800 text-xs">
-                                      {variant.varian || "-"}
-                                    </span>
-                                    <span className="ml-1 text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-300">
+                                    <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-extrabold text-[10px] border border-slate-200 shrink-0 font-mono">
                                       {variant.ukuran || "-"}
                                     </span>
                                   </div>
-                                </td>
-                                <td className="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">
-                                  Rp {Number(variant.harga || 0).toLocaleString("id-ID")}
-                                </td>
-                                <td className="py-2 px-3 text-right font-mono font-bold text-[#0369a1] text-xs bg-sky-50/30">
-                                  Rp {hargaPotongVal.toLocaleString("id-ID")}
-                                </td>
-                                <td className="py-2 px-3 text-center">
+
+                                  {/* SKU Code */}
+                                  <div className="font-mono text-[10.5px] font-bold text-sky-700 bg-sky-50/80 px-2 py-0.5 rounded border border-sky-100 mt-1.5 truncate">
+                                    {variant.sku}
+                                  </div>
+                                </div>
+
+                                {/* Financials & Stock */}
+                                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1 text-xs">
+                                  <div className="flex justify-between items-center text-[10.5px]">
+                                    <span className="text-slate-400 font-medium">Harga:</span>
+                                    <span className="font-mono font-bold text-slate-800">
+                                      Rp {Number(variant.harga || 0).toLocaleString("id-ID")}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-[10.5px]">
+                                    <span className="text-slate-400 font-medium">Potong:</span>
+                                    <span className="font-mono font-extrabold text-[#0284c7]">
+                                      Rp {hargaPotongVal.toLocaleString("id-ID")}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center pt-1 border-t border-slate-200 text-[10.5px]">
+                                    <span className="text-slate-500 font-medium">Stok:</span>
+                                    <span
+                                      className={`font-mono font-black px-1.5 py-0.2 rounded text-[10.5px] ${
+                                        stokVal > 20
+                                          ? "bg-emerald-100 text-emerald-800"
+                                          : stokVal > 0
+                                          ? "bg-amber-100 text-amber-800"
+                                          : "bg-rose-100 text-rose-800"
+                                      }`}
+                                    >
+                                      {stokVal} Pcs
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Status & Actions */}
+                                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
                                   <span
-                                    className={`font-mono font-extrabold text-xs px-2 py-0.5 rounded-md inline-block ${
-                                      Number(variant.stok || 0) > 10
-                                        ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
-                                        : Number(variant.stok || 0) > 0
-                                          ? "text-amber-700 bg-amber-50 border border-amber-200"
-                                          : "text-rose-700 bg-rose-50 border border-rose-200"
-                                    }`}
-                                  >
-                                    {Number(variant.stok || 0)} Pcs
-                                  </span>
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  <span
-                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getBadgeClass(
-                                      variant.status,
+                                    className={`text-[9.5px] font-bold px-2 py-0.2 rounded-full border ${getBadgeClass(
+                                      variant.status
                                     )}`}
                                   >
                                     {variant.status || "Aktif"}
                                   </span>
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  <div className="flex items-center justify-center gap-1">
+                                  <div className="flex items-center gap-1">
                                     <button
                                       type="button"
                                       onClick={() => setViewProduct(variant)}
-                                      className="p-1 rounded text-slate-500 hover:text-[#0284c7] hover:bg-sky-50 transition-colors cursor-pointer"
+                                      className="w-6 h-6 rounded bg-slate-100 hover:bg-sky-50 text-slate-600 hover:text-sky-600 flex items-center justify-center transition-colors cursor-pointer"
                                       title="Lihat Detail"
                                     >
-                                      <Eye className="w-3.5 h-3.5" />
+                                      <Eye className="w-3 h-3" />
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleOpenEdit(variant)}
-                                      className="p-1 rounded text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                                      className="w-6 h-6 rounded bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-600 flex items-center justify-center transition-colors cursor-pointer"
                                       title="Edit Varian"
                                     >
-                                      <Edit3 className="w-3.5 h-3.5" />
+                                      <Edit3 className="w-3 h-3" />
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        handleDeleteProductPrompt(variant)
-                                      }
-                                      className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                      onClick={() => handleDeleteProductPrompt(variant)}
+                                      className="w-6 h-6 rounded bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
                                       title="Hapus Varian"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <Trash2 className="w-3 h-3" />
                                     </button>
                                   </div>
-                                </td>
-                              </tr>
+                                </div>
+                              </div>
                             );
                           })}
-                        </tbody>
-                      </table>
+                        </div>
+                      ) : (
+                        /* ================= TABEL FORMAT ================= */
+                        <div className="overflow-x-auto bg-white">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-slate-100/90 text-[#475569] font-bold text-[10px] uppercase border-b border-slate-200 divide-x divide-slate-200/60">
+                                <th className="py-2 px-3 w-12 text-center">NO</th>
+                                <th className="py-2 px-3 w-44">SKU & BAHAN</th>
+                                <th className="py-2 px-3">VARIAN & UKURAN</th>
+                                <th className="py-2 px-3 text-right w-32">HARGA JUAL</th>
+                                <th className="py-2 px-3 text-right w-28 bg-sky-50/50 text-[#0369a1]">
+                                  ONGKOS POTONG
+                                </th>
+                                <th className="py-2 px-3 text-center w-24">STOK</th>
+                                <th className="py-2 px-3 text-center w-24">STATUS</th>
+                                <th className="py-2 px-3 text-center w-28">AKSI</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200/70">
+                              {displayedVariants.map((variant, vIdx) => {
+                                const smartColor = getSmartColorHex(variant.varian, variant.warnaHex);
+                                const catMatch = categories.find(
+                                  (c) => c.nama === variant.kategori
+                                );
+                                const hargaPotongVal = Number(
+                                  variant.hargaPotong !== undefined &&
+                                    variant.hargaPotong !== null &&
+                                    Number(variant.hargaPotong) > 0
+                                    ? variant.hargaPotong
+                                    : catMatch && catMatch.hargaPotong
+                                    ? catMatch.hargaPotong
+                                    : HARGA_POTONG_MAP[variant.kategori?.toUpperCase()] || 0
+                                );
+
+                                return (
+                                  <tr
+                                    key={variant.id}
+                                    className="hover:bg-sky-50/50 transition-colors divide-x divide-slate-200/60 font-medium"
+                                  >
+                                    <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">
+                                      {vIdx + 1}
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <div className="font-mono font-bold text-[#0284c7] text-xs">
+                                        {variant.sku}
+                                      </div>
+                                      {variant.skuBahan && (
+                                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                          Bahan: {variant.skuBahan}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <div className="flex items-center gap-2">
+                                        <span
+                                          className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0 ring-1 ring-white"
+                                          style={{ backgroundColor: smartColor }}
+                                        />
+                                        <span className="font-semibold text-slate-800 text-xs">
+                                          {variant.varian || "-"}
+                                        </span>
+                                        <span className="ml-1 text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-300">
+                                          {variant.ukuran || "-"}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">
+                                      Rp {Number(variant.harga || 0).toLocaleString("id-ID")}
+                                    </td>
+                                    <td className="py-2 px-3 text-right font-mono font-bold text-[#0369a1] text-xs bg-sky-50/30">
+                                      Rp {hargaPotongVal.toLocaleString("id-ID")}
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      <span
+                                        className={`font-mono font-extrabold text-xs px-2 py-0.5 rounded-md inline-block ${
+                                          Number(variant.stok || 0) > 10
+                                            ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                                            : Number(variant.stok || 0) > 0
+                                            ? "text-amber-700 bg-amber-50 border border-amber-200"
+                                            : "text-rose-700 bg-rose-50 border border-rose-200"
+                                        }`}
+                                      >
+                                        {Number(variant.stok || 0)} Pcs
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      <span
+                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getBadgeClass(
+                                          variant.status
+                                        )}`}
+                                      >
+                                        {variant.status || "Aktif"}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      <div className="flex items-center justify-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => setViewProduct(variant)}
+                                          className="p-1 rounded text-slate-500 hover:text-[#0284c7] hover:bg-sky-50 transition-colors cursor-pointer"
+                                          title="Lihat Detail"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenEdit(variant)}
+                                          className="p-1 rounded text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                                          title="Edit Varian"
+                                        >
+                                          <Edit3 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteProductPrompt(variant)}
+                                          className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                          title="Hapus Varian"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -957,7 +1350,7 @@ export default function Produk({
                             <span
                               className="w-2.5 h-2.5 rounded-full shrink-0 border border-slate-300"
                               style={{
-                                backgroundColor: item.warnaHex || "#64748b",
+                                backgroundColor: getSmartColorHex(item.varian, item.warnaHex),
                               }}
                             />
                             <span className="truncate">{item.varian}</span>

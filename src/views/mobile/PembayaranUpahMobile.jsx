@@ -253,10 +253,122 @@ export default function PembayaranUpahMobile({ onBack }) {
     return Array.from(map.values()).sort((a, b) => b.totalKotor - a.totalKotor);
   }, [filteredList, kasbonAll]);
 
+  // Pisahkan Rekap Payroll Per Divisi / Tim (Cutting, Jahit, QC, Finishing)
+  const groupedByTahap = useMemo(() => {
+    const categories = [
+      {
+        key: 'Cutting',
+        label: 'Tim Pemotong (Cutting)',
+        sublabel: 'Borongan Per Tim Potong',
+        recipientHeader: 'NAMA TIM PEMOTONG',
+        icon: Scissors,
+        gradient: 'from-blue-600 to-indigo-700',
+        badgeColor: 'bg-blue-50 text-blue-800 border-blue-200',
+      },
+      {
+        key: 'Jahit',
+        label: 'Penjahit Konveksi (Sewing)',
+        sublabel: 'Borongan Penjahit / CMT',
+        recipientHeader: 'NAMA PENJAHIT',
+        icon: Shirt,
+        gradient: 'from-purple-600 to-violet-700',
+        badgeColor: 'bg-purple-50 text-purple-800 border-purple-200',
+      },
+      {
+        key: 'QC',
+        label: 'Tim Quality Control (QC)',
+        sublabel: 'Borongan Per Tim QC',
+        recipientHeader: 'NAMA TIM QC',
+        icon: ShieldCheck,
+        gradient: 'from-teal-600 to-cyan-700',
+        badgeColor: 'bg-teal-50 text-teal-800 border-teal-200',
+      },
+      {
+        key: 'Finishing',
+        label: 'Tim Finishing & Packing',
+        sublabel: 'Borongan Per Tim Finishing',
+        recipientHeader: 'NAMA TIM FINISHING',
+        icon: PackageCheck,
+        gradient: 'from-emerald-600 to-teal-800',
+        badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      },
+    ];
+
+    return categories
+      .filter((cat) => activeTahapTab === 'Semua' || activeTahapTab === cat.key)
+      .map((cat) => {
+        const itemsInTahap = filteredList.filter((i) => i.tahapan === cat.key);
+        const teamMap = new Map();
+
+        itemsInTahap.forEach((item) => {
+          const teamName = (item.namaPetugas || item.nama_petugas || 'Tanpa Nama Tim').trim();
+          if (!teamMap.has(teamName)) {
+            const employeeKasbons = kasbonAll.filter(
+              (k) => (k.namaPetugas || '').trim().toLowerCase() === teamName.toLowerCase()
+            );
+            const sisaPinjamanAktif = employeeKasbons.reduce(
+              (acc, k) => acc + Number(k.sisa || 0),
+              0
+            );
+
+            teamMap.set(teamName, {
+              namaPetugas: teamName,
+              tahapan: cat.key,
+              items: [],
+              totalQty: 0,
+              totalKotor: 0,
+              totalPotonganKasbon: 0,
+              totalBersih: 0,
+              pendingCount: 0,
+              lunasCount: 0,
+              sisaPinjamanAktif,
+            });
+          }
+
+          const grp = teamMap.get(teamName);
+          grp.items.push(item);
+          grp.totalQty += Number(item.qty || 0);
+          grp.totalKotor += Number(item.totalUpah || item.total_upah || 0);
+          grp.totalPotonganKasbon += Number(item.potonganKasbon || item.potongan_kasbon || 0);
+          grp.totalBersih += Number(
+            item.totalBersih ??
+              (Number(item.totalUpah || item.total_upah || 0) -
+                Number(item.potonganKasbon || item.potongan_kasbon || 0))
+          );
+
+          const statusBayar = item.statusBayar || item.status_bayar;
+          if (statusBayar === 'Lunas') {
+            grp.lunasCount += 1;
+          } else {
+            grp.pendingCount += 1;
+          }
+        });
+
+        const teams = Array.from(teamMap.values()).sort((a, b) => b.totalKotor - a.totalKotor);
+        const subtotalQty = teams.reduce((a, c) => a + c.totalQty, 0);
+        const subtotalKotor = teams.reduce((a, c) => a + c.totalKotor, 0);
+        const subtotalPotongan = teams.reduce((a, c) => a + c.totalPotonganKasbon, 0);
+        const subtotalBersih = teams.reduce((a, c) => a + c.totalBersih, 0);
+
+        return {
+          ...cat,
+          teams,
+          subtotalQty,
+          subtotalKotor,
+          subtotalPotongan,
+          subtotalBersih,
+        };
+      });
+  }, [filteredList, kasbonAll, activeTahapTab]);
+
   const currentSlipKaryawan = useMemo(() => {
     if (!selectedKaryawanName) return null;
+    for (const g of groupedByTahap) {
+      const match = g.teams.find((k) => k.namaPetugas === selectedKaryawanName);
+      if (match) return match;
+    }
     return rekapKaryawanList.find((k) => k.namaPetugas === selectedKaryawanName) || null;
-  }, [selectedKaryawanName, rekapKaryawanList]);
+  }, [selectedKaryawanName, groupedByTahap, rekapKaryawanList]);
 
   const handleOpenSlipKaryawan = (namaPetugas) => {
     setSelectedKaryawanName(namaPetugas);
@@ -529,117 +641,167 @@ export default function PembayaranUpahMobile({ onBack }) {
       </div>
 
       {viewMode === 'karyawan' ? (
-        /* ================= MODE 1: REKAP GAJI PER KARYAWAN ================= */
-        <div className="space-y-3">
+        /* ================= MODE 1: REKAP GAJI DIPISAH PER DIVISI / TIM ================= */
+        <div className="space-y-4">
           <div className="flex items-center justify-between text-xs px-1">
             <span className="font-extrabold text-slate-700">
-              Total {rekapKaryawanList.length} Tenaga Kerja
+              Total {rekapKaryawanList.length} Tenaga Kerja / Tim
             </span>
             <span className="text-slate-400 text-[11px] font-mono">
               {startDate && endDate ? `${startDate} s.d ${endDate}` : 'Semua Periode'}
             </span>
           </div>
 
-          {rekapKaryawanList.map((karyawan) => {
-            const hasPending = karyawan.pendingCount > 0;
-            const pendingItems = karyawan.items.filter(
-              (i) => (i.statusBayar || i.status_bayar) !== 'Lunas'
-            );
+          {groupedByTahap.map((group) => {
+            const Icon = group.icon;
+            const hasData = group.teams.length > 0;
 
             return (
               <div
-                key={karyawan.namaPetugas}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3 transition-all"
+                key={group.key}
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden space-y-2 pb-2"
               >
-                {/* Header Petugas */}
-                <div className="flex items-center justify-between">
+                {/* Header Section Per Divisi */}
+                <div className="p-3 bg-gradient-to-r from-slate-50 via-slate-100/60 to-white border-b border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center font-black text-xs border border-emerald-200">
-                      {karyawan.namaPetugas.slice(0, 2).toUpperCase()}
+                    <div
+                      className={`w-7 h-7 rounded-lg bg-gradient-to-tr ${group.gradient} text-white flex items-center justify-center font-black text-xs shadow-2xs`}
+                    >
+                      <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-black text-slate-900 leading-tight">
-                        {karyawan.namaPetugas}
+                      <h4 className="font-black text-slate-900 text-xs tracking-tight">
+                        {group.label}
                       </h4>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {getTahapBadge(karyawan.tahapan)}
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {karyawan.items.length} Order ({karyawan.totalQty} Pcs)
-                        </span>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        {group.teams.length} {group.key === 'Jahit' ? 'Penjahit' : 'Tim'}
                       </div>
                     </div>
                   </div>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
-                      !hasPending
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}
-                  >
-                    {!hasPending ? 'Lunas' : `${karyawan.pendingCount} Belum Bayar`}
-                  </span>
-                </div>
 
-                {/* Ringkasan Angka Gaji */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1.5 text-xs">
-                  <div className="flex justify-between items-center text-slate-500 text-[11px]">
-                    <span>Total Qty Selesai:</span>
-                    <span className="font-bold text-slate-800 font-mono">
-                      {karyawan.totalQty.toLocaleString('id-ID')} Pcs
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-500 text-[11px]">
-                    <span>Subtotal Upah Kotor:</span>
-                    <span className="font-bold text-slate-800 font-mono">
-                      Rp {karyawan.totalKotor.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  {karyawan.totalPotonganKasbon > 0 && (
-                    <div className="flex justify-between items-center text-amber-700 text-[11px]">
-                      <span>Potongan Kasbon:</span>
-                      <span className="font-bold font-mono">
-                        - Rp {karyawan.totalPotonganKasbon.toLocaleString('id-ID')}
-                      </span>
+                  {hasData && (
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        {group.subtotalQty.toLocaleString('id-ID')} Pcs
+                      </div>
+                      <div className="text-xs font-mono font-black text-emerald-800">
+                        Rp {group.subtotalBersih.toLocaleString('id-ID')}
+                      </div>
                     </div>
                   )}
-                  {karyawan.sisaPinjamanAktif > 0 && (
-                    <div className="flex justify-between items-center text-amber-600 text-[10.5px]">
-                      <span className="flex items-center gap-1">
-                        <Wallet className="w-3 h-3" /> Sisa Kasbon Berjalan:
-                      </span>
-                      <span className="font-bold font-mono">
-                        Rp {karyawan.sisaPinjamanAktif.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center pt-1.5 border-t border-slate-200">
-                    <span className="font-black text-slate-800">Total Gaji Bersih:</span>
-                    <span className="text-sm font-black text-[#064e3b] font-mono">
-                      Rp {karyawan.totalBersih.toLocaleString('id-ID')}
-                    </span>
-                  </div>
                 </div>
 
-                {/* Tombol Aksi */}
-                <div className="pt-1 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenSlipKaryawan(karyawan.namaPetugas)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Receipt className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Slip Gaji Emra</span>
-                  </button>
+                {/* List Kartu Tim / Karyawan di Divisi Ini */}
+                <div className="p-2 space-y-2.5">
+                  {!hasData ? (
+                    <div className="py-4 text-center text-[11px] text-slate-400 font-medium">
+                      Tidak ada data {group.label} pada periode ini
+                    </div>
+                  ) : (
+                    group.teams.map((karyawan) => {
+                      const hasPending = karyawan.pendingCount > 0;
+                      const pendingItems = karyawan.items.filter(
+                        (i) => (i.statusBayar || i.status_bayar) !== 'Lunas'
+                      );
 
-                  {hasPending && (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPay(pendingItems)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-[#064e3b] hover:bg-[#043d2e] text-white text-xs font-black shadow-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <Coins className="w-3.5 h-3.5" />
-                      <span>Bayar Gaji</span>
-                    </button>
+                      return (
+                        <div
+                          key={karyawan.namaPetugas}
+                          className="bg-slate-50/60 rounded-xl p-3 border border-slate-200/80 space-y-2.5 transition-all"
+                        >
+                          {/* Header Petugas / Nama Tim */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${group.gradient} text-white flex items-center justify-center font-black text-xs shadow-2xs`}
+                              >
+                                {karyawan.namaPetugas.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <h5 className="text-xs font-black text-slate-900 leading-tight">
+                                  {karyawan.namaPetugas}
+                                </h5>
+                                <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                  {karyawan.items.length} Order ({karyawan.totalQty.toLocaleString('id-ID')} Pcs)
+                                </div>
+                              </div>
+                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border ${
+                                !hasPending
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}
+                            >
+                              {!hasPending ? 'Lunas' : `${karyawan.pendingCount} Belum Bayar`}
+                            </span>
+                          </div>
+
+                          {/* Ringkasan Angka Gaji */}
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 space-y-1 text-xs">
+                            <div className="flex justify-between items-center text-slate-500 text-[10.5px]">
+                              <span>Total Qty Selesai:</span>
+                              <span className="font-bold text-slate-800 font-mono">
+                                {karyawan.totalQty.toLocaleString('id-ID')} Pcs
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-500 text-[10.5px]">
+                              <span>Upah Kotor:</span>
+                              <span className="font-bold text-slate-800 font-mono">
+                                Rp {karyawan.totalKotor.toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                            {karyawan.totalPotonganKasbon > 0 && (
+                              <div className="flex justify-between items-center text-amber-700 text-[10.5px]">
+                                <span>Potongan Kasbon:</span>
+                                <span className="font-bold font-mono">
+                                  - Rp {karyawan.totalPotonganKasbon.toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                            )}
+                            {karyawan.sisaPinjamanAktif > 0 && (
+                              <div className="flex justify-between items-center text-amber-600 text-[10px]">
+                                <span className="flex items-center gap-1">
+                                  <Wallet className="w-2.5 h-2.5" /> Sisa Kasbon:
+                                </span>
+                                <span className="font-bold font-mono">
+                                  Rp {karyawan.sisaPinjamanAktif.toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                              <span className="font-black text-slate-800 text-[11px]">Gaji Bersih:</span>
+                              <span className="text-xs font-black text-[#064e3b] font-mono">
+                                Rp {karyawan.totalBersih.toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Tombol Aksi */}
+                          <div className="pt-0.5 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenSlipKaryawan(karyawan.namaPetugas)}
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Receipt className="w-3 h-3 text-slate-600" />
+                              <span>Slip Gaji</span>
+                            </button>
+
+                            {hasPending && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPay(pendingItems)}
+                                className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#064e3b] hover:bg-[#043d2e] text-white text-[11px] font-black shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer"
+                              >
+                                <Coins className="w-3 h-3" />
+                                <span>Bayar Gaji</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -648,7 +810,7 @@ export default function PembayaranUpahMobile({ onBack }) {
 
           {rekapKaryawanList.length === 0 && (
             <div className="bg-white rounded-3xl p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200">
-              {loading ? 'Memuat rekap karyawan...' : 'Tidak ada data tenaga kerja pada periode ini.'}
+              {loading ? 'Memuat rekap tim...' : 'Tidak ada data tenaga kerja pada periode ini.'}
             </div>
           )}
         </div>

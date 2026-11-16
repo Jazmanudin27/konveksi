@@ -274,11 +274,120 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
     return Array.from(map.values()).sort((a, b) => b.totalKotor - a.totalKotor);
   }, [filteredList, kasbonAll]);
 
+  // Pisahkan Tabel Rekap Payroll Per Divisi / Tim (Cutting, Jahit, QC, Finishing)
+  const groupedByTahap = useMemo(() => {
+    const categories = [
+      {
+        key: 'Cutting',
+        label: 'Tim Pemotong (Cutting)',
+        sublabel: 'Borongan Per Tim Potong',
+        recipientHeader: 'NAMA TIM PEMOTONG',
+        icon: Scissors,
+        gradient: 'from-blue-600 to-indigo-700',
+        badgeColor: 'bg-blue-50 text-blue-800 border-blue-200',
+      },
+      {
+        key: 'Jahit',
+        label: 'Penjahit Konveksi (Sewing)',
+        sublabel: 'Borongan Penjahit / Mitra CMT',
+        recipientHeader: 'NAMA PENJAHIT / MITRA JAHIT',
+        icon: Shirt,
+        gradient: 'from-purple-600 to-violet-700',
+        badgeColor: 'bg-purple-50 text-purple-800 border-purple-200',
+      },
+      {
+        key: 'QC',
+        label: 'Tim Quality Control (QC)',
+        sublabel: 'Borongan Per Tim QC',
+        recipientHeader: 'NAMA TIM QC',
+        icon: ShieldCheck,
+        gradient: 'from-teal-600 to-cyan-700',
+        badgeColor: 'bg-teal-50 text-teal-800 border-teal-200',
+      },
+      {
+        key: 'Finishing',
+        label: 'Tim Finishing & Packing',
+        sublabel: 'Borongan Per Tim Finishing',
+        recipientHeader: 'NAMA TIM FINISHING',
+        icon: PackageCheck,
+        gradient: 'from-emerald-600 to-teal-800',
+        badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      },
+    ];
+
+    return categories
+      .filter((cat) => activeTahapTab === 'Semua' || activeTahapTab === cat.key)
+      .map((cat) => {
+        const itemsInTahap = filteredList.filter((i) => i.tahapan === cat.key);
+        const teamMap = new Map();
+
+        itemsInTahap.forEach((item) => {
+          const teamName = (item.namaPetugas || 'Tanpa Nama Tim').trim();
+          if (!teamMap.has(teamName)) {
+            const employeeKasbons = kasbonAll.filter(
+              (k) => (k.namaPetugas || '').trim().toLowerCase() === teamName.toLowerCase()
+            );
+            const sisaPinjamanAktif = employeeKasbons.reduce(
+              (acc, k) => acc + Number(k.sisa || 0),
+              0
+            );
+
+            teamMap.set(teamName, {
+              namaPetugas: teamName,
+              tahapan: cat.key,
+              items: [],
+              totalQty: 0,
+              totalKotor: 0,
+              totalPotonganKasbon: 0,
+              totalBersih: 0,
+              pendingCount: 0,
+              lunasCount: 0,
+              sisaPinjamanAktif,
+            });
+          }
+
+          const grp = teamMap.get(teamName);
+          grp.items.push(item);
+          grp.totalQty += Number(item.qty || 0);
+          grp.totalKotor += Number(item.totalUpah || 0);
+          grp.totalPotonganKasbon += Number(item.potonganKasbon || 0);
+          grp.totalBersih += Number(
+            item.totalBersih ?? (Number(item.totalUpah) - Number(item.potonganKasbon || 0))
+          );
+
+          if (item.statusBayar === 'Lunas') {
+            grp.lunasCount += 1;
+          } else {
+            grp.pendingCount += 1;
+          }
+        });
+
+        const teams = Array.from(teamMap.values()).sort((a, b) => b.totalKotor - a.totalKotor);
+        const subtotalQty = teams.reduce((a, c) => a + c.totalQty, 0);
+        const subtotalKotor = teams.reduce((a, c) => a + c.totalKotor, 0);
+        const subtotalPotongan = teams.reduce((a, c) => a + c.totalPotonganKasbon, 0);
+        const subtotalBersih = teams.reduce((a, c) => a + c.totalBersih, 0);
+
+        return {
+          ...cat,
+          teams,
+          subtotalQty,
+          subtotalKotor,
+          subtotalPotongan,
+          subtotalBersih,
+        };
+      });
+  }, [filteredList, kasbonAll, activeTahapTab]);
+
   // Data Karyawan yang sedang dibuka slipnya
   const currentSlipKaryawan = useMemo(() => {
     if (!selectedKaryawanName) return null;
+    for (const g of groupedByTahap) {
+      const match = g.teams.find((k) => k.namaPetugas === selectedKaryawanName);
+      if (match) return match;
+    }
     return rekapKaryawanList.find((k) => k.namaPetugas === selectedKaryawanName) || null;
-  }, [selectedKaryawanName, rekapKaryawanList]);
+  }, [selectedKaryawanName, groupedByTahap, rekapKaryawanList]);
 
   const handleOpenSlipKaryawan = (namaPetugas) => {
     setSelectedKaryawanName(namaPetugas);
@@ -746,182 +855,242 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
       {/* 4. KONTEN TABEL SESUAI VIEW MODE */}
       {viewMode === 'karyawan' ? (
         /* =================================================================== */
-        /* TABEL 1: REKAP GAJI MINGGUAN PER KARYAWAN / TIM (FORMAT EMRA)      */
+        /* TABEL 1: REKAP GAJI DIPISAH PER DIVISI / TIM (POTONG, JAHIT, QC, FINISHING) */
         /* =================================================================== */
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
-              <thead>
-                <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-xs tracking-wider uppercase">
-                  <th className="py-2.5 px-3 text-center w-12 border border-slate-200">NO</th>
-                  <th className="py-2.5 px-3 border border-slate-200 min-w-[200px]">NAMA KARYAWAN / TIM</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[140px]">BAGIAN / DIVISI</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[100px]">PEKERJAAN</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[130px] bg-rose-50/50 text-rose-800">GRAND TOTAL QTY</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-right min-w-[140px]">UPAH KOTOR</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-right min-w-[140px] text-amber-800 bg-amber-50/40">POTONGAN PINJAMAN</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-right min-w-[150px] bg-emerald-50/60 text-emerald-900">TOTAL GAJI BERSIH</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[120px]">STATUS</th>
-                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[210px]">AKSI</th>
-                </tr>
-              </thead>
-              <tbody className="font-medium text-slate-700 divide-y divide-slate-200">
-                {rekapKaryawanList.length === 0 ? (
-                  <tr>
-                    <td colSpan="10" className="py-12 text-center text-slate-400 border border-slate-200">
-                      <Users className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
-                      <p className="text-sm font-semibold text-slate-600">Tidak ada rekap gaji karyawan pada periode ini</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Coba ubah filter periode tanggal atau klik "Sync dari Antrean"
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  rekapKaryawanList.map((k, idx) => {
-                    const isAllLunas = k.pendingCount === 0;
+        <div className="space-y-4">
+          {groupedByTahap.map((group) => {
+            const Icon = group.icon;
+            const hasData = group.teams.length > 0;
 
-                    return (
-                      <tr key={k.namaPetugas} className="hover:bg-slate-50 transition-colors">
-                        {/* No */}
-                        <td className="py-2.5 px-3 text-center text-slate-400 font-bold font-mono border border-slate-200">
-                          {idx + 1}
-                        </td>
+            return (
+              <div
+                key={group.key}
+                className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden transition-all"
+              >
+                {/* Header Section Per Divisi */}
+                <div className="p-3.5 bg-gradient-to-r from-slate-50 via-slate-100/60 to-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${group.gradient} text-white flex items-center justify-center font-black text-xs shadow-xs`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-black text-slate-900 text-sm tracking-tight">
+                          {group.label}
+                        </h3>
+                        <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-black border ${group.badgeColor}`}>
+                          {group.sublabel}
+                        </span>
+                        <span className="font-mono text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                          {group.teams.length} {group.key === 'Jahit' ? 'Penjahit' : 'Tim'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-                        {/* Nama Karyawan / Tim */}
-                        <td className="py-2.5 px-3 border border-slate-200">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 font-bold text-xs">
-                              <User className="w-4 h-4 text-slate-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-black text-slate-900 text-sm">{k.namaPetugas}</div>
-                              <div className="text-[11px] text-slate-400">
-                                {k.items.length} batch pekerjaan
-                              </div>
-                            </div>
-                          </div>
-                        </td>
+                  {/* Subtotal Mini Stats Header */}
+                  {hasData && (
+                    <div className="flex items-center gap-3 text-xs font-semibold text-slate-600">
+                      <span>
+                        Total Qty: <strong className="text-rose-700 font-mono font-black">{group.subtotalQty.toLocaleString('id-ID')} Pcs</strong>
+                      </span>
+                      <span className="text-slate-300">•</span>
+                      <span>
+                        Total Gaji: <strong className="text-emerald-700 font-mono font-black">Rp {group.subtotalBersih.toLocaleString('id-ID')}</strong>
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-                        {/* Bagian / Divisi */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-center">
-                          {getTahapanBadge(k.tahapan)}
-                        </td>
-
-                        {/* Pekerjaan */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-center">
-                          <span className="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md">
-                            {k.items.length} Order
-                          </span>
-                        </td>
-
-                        {/* Grand Total Qty */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-center bg-rose-50/30">
-                          <span className="font-mono font-black text-xs sm:text-sm text-rose-700">
-                            {k.totalQty.toLocaleString('id-ID')} Pcs
-                          </span>
-                        </td>
-
-                        {/* Total Upah Kotor */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-right font-mono font-bold text-slate-900">
-                          Rp {k.totalKotor.toLocaleString('id-ID')}
-                        </td>
-
-                        {/* Potongan Kasbon / Pinjaman */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-right font-mono text-xs">
-                          {k.totalPotonganKasbon > 0 ? (
-                            <span className="font-bold text-amber-700">
-                              - Rp {k.totalPotonganKasbon.toLocaleString('id-ID')}
-                            </span>
-                          ) : k.sisaPinjamanAktif > 0 ? (
-                            <span className="text-[11px] text-amber-600 font-semibold">
-                              (Ada kasbon: Rp {k.sisaPinjamanAktif.toLocaleString('id-ID')})
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-
-                        {/* Total Gaji Bersih */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-right bg-emerald-50/40">
-                          <span className="font-mono font-black text-sm text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300 shadow-2xs">
-                            Rp {k.totalBersih.toLocaleString('id-ID')}
-                          </span>
-                        </td>
-
-                        {/* Status Gaji */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-center">
-                          {isAllLunas ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Lunas</span>
-                            </span>
-                          ) : k.lunasCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-300">
-                              <span>Sebagian</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                              <Clock className="w-3.5 h-3.5 text-rose-500" />
-                              <span>Belum Lunas</span>
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Aksi */}
-                        <td className="py-2.5 px-3 border border-slate-200 text-center">
-                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                            {/* Tombol Bayar Gaji Mingguan (jika ada pending) */}
-                            {!isAllLunas && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const pendingItems = k.items.filter((i) => i.statusBayar !== 'Lunas');
-                                  handleOpenPay(pendingItems);
-                                }}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
-                                title="Bayar semua tagihan upah karyawan ini dalam periode ini"
-                              >
-                                <CreditCard className="w-3.5 h-3.5" />
-                                <span>Bayar Gaji</span>
-                              </button>
-                            )}
-
-                            {/* Tombol Buka Slip Gaji Resmi (Format Emra Production) */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenSlipKaryawan(k.namaPetugas)}
-                              className="px-2.5 py-1 bg-[#0284c7] hover:bg-[#0369a1] active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
-                              title="Buka & Cetak Slip Gaji Resmi (Format Emra Production)"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                              <span>Slip Gaji</span>
-                            </button>
-                          </div>
-                        </td>
+                {/* Tabel Per Divisi (6 Kolom Ringkas, Tanpa Scroll Horizontal) */}
+                <div className="w-full">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-[11px] tracking-wide uppercase border-b border-slate-200">
+                        <th className="py-2.5 px-3 text-center w-12 border-r border-slate-200">NO</th>
+                        <th className="py-2.5 px-4 border-r border-slate-200">{group.recipientHeader}</th>
+                        <th className="py-2.5 px-4 border-r border-slate-200 text-right w-44 bg-rose-50/40 text-rose-900">
+                          VOLUME & UPAH KOTOR
+                        </th>
+                        <th className="py-2.5 px-4 border-r border-slate-200 text-right w-40 text-amber-900 bg-amber-50/30">
+                          POTONGAN KASBON
+                        </th>
+                        <th className="py-2.5 px-4 border-r border-slate-200 text-right w-48 bg-emerald-50/50 text-emerald-950">
+                          TOTAL GAJI BERSIH
+                        </th>
+                        <th className="py-2.5 px-4 text-center w-48">AKSI</th>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                    </thead>
+                    <tbody className="font-medium text-slate-700 divide-y divide-slate-200">
+                      {!hasData ? (
+                        <tr>
+                          <td colSpan="6" className="py-8 text-center text-slate-400">
+                            <p className="text-xs font-semibold text-slate-500">
+                              Tidak ada pembayaran untuk {group.label} pada periode ini.
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        group.teams.map((k, idx) => {
+                          const isAllLunas = k.pendingCount === 0;
 
-          {/* BOTTOM SUMMARY FOOTER KARYAWAN */}
-          <div className="bg-[#f8fafc] border-t border-slate-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-600 gap-2">
+                          return (
+                            <tr key={k.namaPetugas} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3 px-3 text-center text-slate-400 font-bold font-mono border-r border-slate-200">
+                                {idx + 1}
+                              </td>
+
+                              <td className="py-3 px-4 border-r border-slate-200">
+                                <div className="flex items-center gap-2.5">
+                                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${group.gradient} text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs`}>
+                                    {k.namaPetugas.slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="font-black text-slate-900 text-sm leading-tight">
+                                      {k.namaPetugas}
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5 font-medium">
+                                      {k.items.length} Order Pekerjaan
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-4 border-r border-slate-200 text-right bg-rose-50/20">
+                                <div className="font-mono font-black text-sm sm:text-base text-rose-700">
+                                  {k.totalQty.toLocaleString('id-ID')} Pcs
+                                </div>
+                                <div className="text-[11px] font-mono text-slate-500 mt-0.5">
+                                  Kotor: <strong className="text-slate-800">Rp {k.totalKotor.toLocaleString('id-ID')}</strong>
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-4 border-r border-slate-200 text-right font-mono">
+                                {k.totalPotonganKasbon > 0 ? (
+                                  <div>
+                                    <div className="font-bold text-amber-700 text-xs">
+                                      - Rp {k.totalPotonganKasbon.toLocaleString('id-ID')}
+                                    </div>
+                                    {k.sisaPinjamanAktif > 0 && (
+                                      <div className="text-[10px] text-amber-600 mt-0.5 font-sans">
+                                        Sisa: Rp {k.sisaPinjamanAktif.toLocaleString('id-ID')}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : k.sisaPinjamanAktif > 0 ? (
+                                  <div>
+                                    <span className="text-slate-400 text-xs">-</span>
+                                    <div className="text-[10.5px] text-amber-600 font-sans font-semibold mt-0.5">
+                                      Kasbon aktif: Rp {k.sisaPinjamanAktif.toLocaleString('id-ID')}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-300">-</span>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-4 border-r border-slate-200 text-right bg-emerald-50/30">
+                                <div>
+                                  <span className="font-mono font-black text-sm sm:text-base text-[#064e3b] bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs inline-block">
+                                    Rp {k.totalBersih.toLocaleString('id-ID')}
+                                  </span>
+                                </div>
+                                <div className="mt-1">
+                                  {isAllLunas ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                      <span>Lunas</span>
+                                    </span>
+                                  ) : k.lunasCount > 0 ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10.5px] font-black bg-amber-100 text-amber-800 border border-amber-200">
+                                      <span>Sebagian ({k.pendingCount} Belum)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                      <Clock className="w-3 h-3 text-rose-500" />
+                                      <span>Belum Dibayar</span>
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-4 text-center">
+                                <div className="flex items-center justify-center gap-1.5 flex-nowrap">
+                                  {!isAllLunas && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const pendingItems = k.items.filter((i) => i.statusBayar !== 'Lunas');
+                                        handleOpenPay(pendingItems);
+                                      }}
+                                      className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                      title="Bayar semua tagihan upah tim ini dalam periode ini"
+                                    >
+                                      <CreditCard className="w-3.5 h-3.5" />
+                                      <span>Bayar Gaji</span>
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenSlipKaryawan(k.namaPetugas)}
+                                    className="px-2.5 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                    title="Buka & Cetak Slip Gaji Resmi (Format Emra Production)"
+                                  >
+                                    <Printer className="w-3.5 h-3.5" />
+                                    <span>Slip Gaji</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Subtotal Footer Per Divisi */}
+                {hasData && (
+                  <div className="bg-[#f8fafc] border-t border-slate-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-600 gap-2">
+                    <div>
+                      Subtotal <strong>{group.label}</strong> ({group.teams.length} {group.key === 'Jahit' ? 'Penjahit' : 'Tim'})
+                    </div>
+                    <div className="flex items-center gap-4 font-semibold text-slate-700">
+                      <span>
+                        Total Qty: <strong className="text-rose-700 font-mono font-bold">{group.subtotalQty.toLocaleString('id-ID')} Pcs</strong>
+                      </span>
+                      <span>
+                        Kotor: <strong className="font-mono text-slate-900 font-bold">Rp {group.subtotalKotor.toLocaleString('id-ID')}</strong>
+                      </span>
+                      <span>
+                        Bersih: <strong className="text-emerald-700 font-mono font-bold">Rp {group.subtotalBersih.toLocaleString('id-ID')}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* GRAND TOTAL SUMMARY BAR */}
+          <div className="bg-[#0b1b36] text-white rounded-2xl p-4 shadow-md flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm gap-2">
             <div>
-              Total <strong className="text-slate-800">{rekapKaryawanList.length}</strong> Karyawan / Tim{' '}
-              (Periode: <strong className="text-slate-900">{startDate || 'Awal'} s.d {endDate || 'Sekarang'}</strong>)
+              <span className="font-bold text-amber-400 uppercase tracking-wide text-xs">Grand Total Seluruh Divisi</span>
+              <div className="text-[11px] text-slate-300 mt-0.5">
+                Periode: <strong className="text-white">{startDate || 'Awal'} s.d {endDate || 'Sekarang'}</strong>
+              </div>
             </div>
-            <div className="flex items-center gap-4 font-semibold text-slate-700">
+            <div className="flex items-center gap-5 font-bold">
               <span>
-                Grand Total Qty:{' '}
-                <strong className="text-rose-700 font-mono">
+                Grand Total QTY:{' '}
+                <strong className="text-rose-400 font-mono text-base">
                   {rekapKaryawanList.reduce((acc, c) => acc + c.totalQty, 0).toLocaleString('id-ID')} Pcs
                 </strong>
               </span>
               <span>
-                Total Gaji Bersih:{' '}
-                <strong className="text-emerald-700 font-mono font-bold">
+                Total Seluruh Gaji Bersih:{' '}
+                <strong className="text-emerald-400 font-mono text-base font-black">
                   Rp {rekapKaryawanList.reduce((acc, c) => acc + c.totalBersih, 0).toLocaleString('id-ID')}
                 </strong>
               </span>
@@ -1550,7 +1719,9 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-28 text-slate-500 font-medium">Nama Karyawan</span>
+                        <span className="w-28 text-slate-500 font-medium">
+                          {currentSlipKaryawan.tahapan === 'Jahit' ? 'Nama Penjahit' : 'Nama Tim'}
+                        </span>
                         <div className="flex items-center gap-1 font-bold text-slate-900">
                           <span>:</span>
                           <select

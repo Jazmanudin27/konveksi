@@ -9,7 +9,7 @@ export default function MobileSubHeader({
   onBack,
 }) {
   return (
-    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] text-white px-4 py-3 rounded-b-2xl shadow-md border-b border-emerald-900/50 flex items-center justify-between select-none">
+    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] text-white px-4 py-3.5 rounded-b-[1.75rem] shadow-lg border-b border-emerald-900/50 flex items-center justify-between select-none">
       {/* Hanya Tombol Back & Teks Judul */}
       <div className="flex items-center gap-3 min-w-0">
         {onBack && (

@@ -11,7 +11,7 @@ export default function MobileHeader({
   const displayCount = notificationCount > 0 ? notificationCount : activeUrgentCount;
 
   return (
-    <header className="bg-gradient-to-b from-[#064e3b] via-[#054338] to-[#04362d] text-white px-4 pt-3.5 pb-5 rounded-b-2xl shadow-md select-none relative z-10">
+    <header className="bg-gradient-to-b from-[#064e3b] via-[#054338] to-[#04362d] text-white px-4 pt-3.5 pb-6 rounded-b-[2rem] sm:rounded-b-[2.5rem] shadow-lg border-b border-emerald-900/40 select-none relative z-10">
       <div className="flex items-center justify-between">
         {/* Logo & Judul Brand Konveksi */}
         <div className="flex items-center gap-2.5">

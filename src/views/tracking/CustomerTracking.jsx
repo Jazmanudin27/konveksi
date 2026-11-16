@@ -258,18 +258,19 @@ Terima kasih! 🙏`;
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-800 font-sans select-none flex flex-col">
-      {/* 1. HERO HEADER WITH MODERN GRADIENT */}
-      <header className="relative bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white pt-6 pb-16 px-4 shadow-lg overflow-hidden">
-        {/* Subtle Decorative Background Rings */}
-        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-8 -left-8 w-56 h-56 rounded-full bg-teal-500/10 blur-xl pointer-events-none" />
+      {/* 1. HERO HEADER WITH CURVED BORDER RADIUS & MODERN GRADIENT */}
+      <header className="relative bg-gradient-to-br from-[#064e3b] via-[#043d2e] to-[#022c22] text-white pt-7 pb-16 px-4 shadow-[0_12px_32px_rgba(6,78,59,0.22)] rounded-b-[2.5rem] sm:rounded-b-[3.5rem] border-b border-emerald-500/20 overflow-hidden">
+        {/* Subtle Decorative Ambient Glows */}
+        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-emerald-400/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-teal-400/15 blur-2xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-emerald-600/5 blur-3xl pointer-events-none" />
 
-        <div className="max-w-xl mx-auto relative z-10">
+        <div className="max-w-xl mx-auto relative z-10 space-y-4">
+          {/* Brand Logo & Title */}
           <div className="flex items-center justify-between">
-            {/* Brand Logo & Title */}
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md p-1 border border-white/20 shadow-md flex items-center justify-center shrink-0">
-                <div className="w-full h-full rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-inner">
+                <div className="w-full h-full rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-inner">
                   <Shirt className="w-5 h-5 stroke-[2.2]" />
                 </div>
               </div>
@@ -290,11 +291,11 @@ Terima kasih! 🙏`;
             </div>
           </div>
 
-          {/* Search Box Di Dalam Hero */}
-          <div className="mt-5">
+          {/* Search Box Di Dalam Curved Hero */}
+          <div className="pt-1">
             <form onSubmit={handleSearchSubmit} className="relative">
-              <div className="relative flex items-center shadow-lg rounded-2xl overflow-hidden bg-white/95 backdrop-blur-md p-1 border border-white/30 focus-within:ring-2 focus-within:ring-emerald-400 transition-all">
-                <Search className="w-4 h-4 ml-3 text-slate-400 shrink-0 pointer-events-none" />
+              <div className="relative flex items-center shadow-xl rounded-2xl sm:rounded-full overflow-hidden bg-white/95 backdrop-blur-md p-1 border border-white/40 focus-within:ring-2 focus-within:ring-emerald-400 transition-all">
+                <Search className="w-4 h-4 ml-3.5 text-slate-400 shrink-0 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Ketik No. Antrean / PO (Cth: ANT-20261115-999)..."
@@ -305,7 +306,7 @@ Terima kasih! 🙏`;
                 <button
                   type="submit"
                   disabled={loading}
-                  className="h-10 px-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white text-xs sm:text-sm font-black rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm disabled:opacity-50"
+                  className="h-10 px-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-full transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm disabled:opacity-50"
                 >
                   {loading ? (
                     <span>Mencari...</span>
@@ -333,88 +334,167 @@ Terima kasih! 🙏`;
       <main className="max-w-xl mx-auto w-full px-4 -mt-8 flex-1 pb-8 space-y-4 relative z-20">
         {order ? (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* KARTU STATUS UTAMA */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] relative overflow-hidden">
-              {/* Header Kartu: No Antrean & Status Badge */}
-              <div className="flex items-center justify-between flex-wrap gap-2.5 pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-black text-xs sm:text-sm text-emerald-950 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200 shadow-2xs">
-                    {order.noAntrian}
-                  </span>
-                  <span className="text-[11px] font-extrabold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
-                    {order.sumberPermintaan || 'PO Pelanggan'}
-                  </span>
+            {/* KARTU STATUS UTAMA - DESAIN MODERN & ELEGAN */}
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_35px_rgba(0,0,0,0.06)] overflow-hidden">
+              {/* 1. Header Banner Status Aktif Berwarna */}
+              <div className={`p-4 sm:p-5 bg-gradient-to-r ${progress.color} text-white relative overflow-hidden`}>
+                <div className="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
+                <div className="relative z-10 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0 shadow-inner">
+                      <Activity className="w-5 h-5 text-white animate-pulse" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-white/90">
+                          Status Terkini • Tahap {progress.step} dari 6
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-white leading-tight mt-0.5">
+                        {progress.label}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Persentase Besar & Badge No Antrean */}
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <span className="font-mono font-bold text-xs bg-black/20 text-white px-2.5 py-1 rounded-xl backdrop-blur-md border border-white/20">
+                      {order.noAntrian}
+                    </span>
+                    <span className="font-black text-2xl sm:text-3xl text-white tracking-tight drop-shadow-xs">
+                      {progress.percent}%
+                    </span>
+                  </div>
                 </div>
 
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-xs ${progress.badgeBg}`}>
-                  <span className={`w-2 h-2 rounded-full ${progress.pulseColor} animate-ping`} />
-                  <span>{progress.label}</span>
+                {/* 6-Segment Progress Bar Indicator */}
+                <div className="mt-4 pt-3 border-t border-white/20">
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {[1, 2, 3, 4, 5, 6].map((st) => (
+                      <div key={st} className="flex flex-col gap-1">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-500 ${
+                            st < progress.step
+                              ? 'bg-white shadow-xs'
+                              : st === progress.step
+                              ? 'bg-white animate-pulse shadow-md ring-2 ring-white/50'
+                              : 'bg-white/25'
+                          }`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between text-[10.5px] font-bold text-white/85 mt-2">
+                    <span>1. Antrean</span>
+                    <span>2. Cutting</span>
+                    <span className={progress.step === 3 ? 'text-white font-extrabold underline' : ''}>3. Jahit</span>
+                    <span>4. QC</span>
+                    <span>5. Finishing</span>
+                    <span>6. Gudang</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Rincian Produk Pesanan */}
-              <div className="pt-3.5">
-                <h2 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
-                  {order.namaProduk}
-                </h2>
-                <div className="flex items-center gap-2 text-xs text-slate-600 mt-1.5 flex-wrap">
-                  <span className="font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
-                    SKU: {order.sku}
-                  </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="inline-flex items-center gap-1.5 font-bold text-slate-800 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200">
-                    <span
-                      className="w-3 h-3 rounded-full border border-slate-300 shrink-0 shadow-2xs"
-                      style={{
-                        backgroundColor:
-                          order.warnaHex || getVariantColor(order.varian),
-                      }}
-                    />
-                    <span>{order.varian || 'Standar'}</span>
-                  </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="font-bold text-slate-800 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200">
-                    Size: {Array.isArray(order.ukuran) ? order.ukuran[0] : (order.ukuran || 'All Size')}
-                  </span>
-                </div>
-              </div>
+              {/* 2. Rincian Produk Pesanan */}
+              <div className="p-4 sm:p-5 space-y-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center shrink-0 p-1 shadow-inner">
+                    <div className="w-full h-full rounded-xl bg-white flex items-center justify-center shadow-xs">
+                      <Shirt className="w-7 h-7 text-emerald-800" />
+                    </div>
+                  </div>
 
-              {/* 3 Metrik Stat Kotak */}
-              <div className="grid grid-cols-3 gap-2.5 mt-4 pt-3.5 border-t border-slate-100 text-center">
-                <div className="p-2.5 rounded-2xl bg-gradient-to-b from-slate-50 to-white border border-slate-200/80 shadow-2xs">
-                  <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Target Qty</span>
-                  <span className="font-black text-sm sm:text-base text-slate-900 mt-0.5 block">{order.qty || 50} Pcs</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-black text-xs text-[#0284c7] bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-200">
+                        {order.sku}
+                      </span>
+                      {order.sumberPermintaan && (
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          {order.sumberPermintaan}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 mt-1 truncate" title={order.namaProduk}>
+                      {order.namaProduk}
+                    </h2>
+                    <div className="flex items-center gap-2 text-xs text-slate-600 mt-1 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-slate-800 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                        <span
+                          className="w-3 h-3 rounded-full border border-slate-300 shrink-0 shadow-2xs"
+                          style={{
+                            backgroundColor:
+                              order.warnaHex || getVariantColor(order.varian),
+                          }}
+                        />
+                        <span>{order.varian || 'Standar'}</span>
+                      </span>
+                      <span className="font-bold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                        Size: {Array.isArray(order.ukuran) ? order.ukuran[0] : (order.ukuran || 'All Size')}
+                      </span>
+                      {order.kategori && (
+                        <span className="text-[11px] font-semibold text-slate-500">
+                          • {order.kategori}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="p-2.5 rounded-2xl bg-gradient-to-b from-slate-50 to-white border border-slate-200/80 shadow-2xs">
-                  <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Tgl Masuk</span>
-                  <span className="font-bold text-xs sm:text-sm text-slate-800 mt-0.5 block">{order.tglMasuk || '-'}</span>
-                </div>
-                <div className="p-2.5 rounded-2xl bg-gradient-to-b from-emerald-50/60 to-white border border-emerald-200/80 shadow-2xs">
-                  <span className="block text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">Estimasi Siap</span>
-                  <span className="font-black text-xs sm:text-sm text-emerald-800 mt-0.5 block">{order.deadline || '-'}</span>
-                </div>
-              </div>
 
-              {/* Progress Bar Dinamis */}
-              <div className="space-y-2 mt-4 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
-                    <Activity className="w-4 h-4 text-emerald-600" />
-                    <span>Kemajuan Pengerjaan</span>
-                  </span>
-                  <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    {progress.percent}%
-                  </span>
+                {/* 3. Kartu Metrik Rapi Berikon (Target Qty, Tgl Masuk, Estimasi Siap) */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-2">
+                  {/* Target Qty */}
+                  <div className="p-3 rounded-2xl bg-gradient-to-b from-blue-50/50 to-white border border-blue-100 flex flex-col justify-between shadow-2xs">
+                    <div className="flex items-center gap-1.5 text-blue-700">
+                      <Layers className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wide">Target Qty</span>
+                    </div>
+                    <div className="mt-1.5">
+                      <span className="font-mono font-black text-base sm:text-lg text-slate-900 leading-none">
+                        {order.qty || 50}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-500 ml-1">Pcs</span>
+                    </div>
+                    <span className="text-[9.5px] font-semibold text-slate-400 mt-0.5">Volume Pesanan</span>
+                  </div>
+
+                  {/* Tgl Masuk */}
+                  <div className="p-3 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-200/80 flex flex-col justify-between shadow-2xs">
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wide">Tgl Masuk</span>
+                    </div>
+                    <div className="mt-1.5">
+                      <span className="font-mono font-bold text-xs sm:text-sm text-slate-800 leading-none truncate block">
+                        {order.tglMasuk || '-'}
+                      </span>
+                    </div>
+                    <span className="text-[9.5px] font-semibold text-slate-400 mt-0.5">Mulai Antrean</span>
+                  </div>
+
+                  {/* Estimasi Siap */}
+                  <div className="p-3 rounded-2xl bg-gradient-to-b from-emerald-50/70 to-white border border-emerald-200 flex flex-col justify-between shadow-2xs">
+                    <div className="flex items-center gap-1.5 text-emerald-800">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wide">Estimasi Siap</span>
+                    </div>
+                    <div className="mt-1.5">
+                      <span className="font-mono font-black text-xs sm:text-sm text-emerald-800 leading-none truncate block">
+                        {order.deadline || '-'}
+                      </span>
+                    </div>
+                    <span className="text-[9.5px] font-bold text-emerald-600 mt-0.5">Target Selesai</span>
+                  </div>
                 </div>
-                <div className="w-full h-3.5 rounded-full bg-slate-100 overflow-hidden p-0.5 border border-slate-200 shadow-inner">
-                  <div
-                    className={`h-full rounded-full bg-gradient-to-r ${progress.color} transition-all duration-1000 shadow-sm`}
-                    style={{ width: `${progress.percent}%` }}
-                  />
+
+                {/* Info Text Tahapan Aktif */}
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-2.5">
+                  <Info className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                    {progress.subtitle}
+                  </p>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  {progress.subtitle}
-                </p>
               </div>
             </div>
 

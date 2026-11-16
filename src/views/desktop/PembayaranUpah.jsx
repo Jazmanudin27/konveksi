@@ -33,6 +33,7 @@ import {
   CalendarDays,
   ChevronRight,
   Download,
+  History,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -72,8 +73,12 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   });
   const [loading, setLoading] = useState(false);
 
-  // View Mode: 'sheet' (Default: Input Slip Gaji Emra Production) | 'karyawan' (Rekap Per Tim) | 'transaksi' (Rincian Order)
-  const [viewMode, setViewMode] = useState('sheet');
+  // Main Tab Navigasi: 'input' (Input Pembayaran / Slip Emra) | 'histori' (Histori Pembayaran)
+  const [activeMainTab, setActiveMainTab] = useState('input');
+
+  // Modal Detail Rincian Histori Pembayaran
+  const [historiDetailItem, setHistoriDetailItem] = useState(null);
+  const [isHistoriDetailOpen, setIsHistoriDetailOpen] = useState(false);
 
   // State Pilihan Sheet Mode (Potong, Jahit, QC, Finishing)
   const [sheetTahap, setSheetTahap] = useState('Cutting'); // 'Cutting' | 'Jahit' | 'QC' | 'Finishing'
@@ -406,6 +411,121 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
     return sheetTeamsList.find((t) => t.namaPetugas === sheetTeam) || null;
   }, [sheetTeamsList, sheetTeam]);
 
+  // Daftar Histori Pembayaran yang sudah diinput/dibayarkan (Lunas)
+  // Dikelompokkan per transaksi pembayaran (tgl_bayar + namaPetugas + tahapan)
+  const historiBayarList = useMemo(() => {
+    const lunasItems = dataList.filter(
+      (i) => i.statusBayar === 'Lunas' || i.status_bayar === 'Lunas'
+    );
+    const groups = new Map();
+
+    lunasItems.forEach((item) => {
+      const tgl = item.tglBayar || (item.createdAt ? String(item.createdAt).slice(0, 10) : '-');
+      const pet = (item.namaPetugas || 'Tanpa Nama').trim();
+      const thp = item.tahapan || 'Konveksi';
+      // Group key per tanggal bayar + nama petugas + tahap
+      const key = `${tgl}_${pet}_${thp}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          tglBayar: tgl,
+          namaPetugas: pet,
+          tahapan: thp,
+          metodeBayar: item.metodeBayar || 'Tunai',
+          catatan: item.catatan || '',
+          items: [],
+          totalQty: 0,
+          totalKotor: 0,
+          totalPotonganKasbon: 0,
+          totalBersih: 0,
+        });
+      }
+
+      const g = groups.get(key);
+      g.items.push(item);
+      g.totalQty += Number(item.qty || 0);
+      g.totalKotor += Number(item.totalUpah || 0);
+      g.totalPotonganKasbon += Number(item.potonganKasbon || 0);
+      g.totalBersih += Number(
+        item.totalBersih ?? (Number(item.totalUpah || 0) - Number(item.potonganKasbon || 0))
+      );
+    });
+
+    return Array.from(groups.values())
+      .map((g) => {
+        const dates = g.items
+          .map((i) => (i.createdAt ? String(i.createdAt).slice(0, 10) : ''))
+          .filter(Boolean)
+          .sort();
+        const minDate = dates[0] || g.tglBayar;
+        const maxDate = dates[dates.length - 1] || g.tglBayar;
+        const periode = minDate === maxDate ? minDate : `${minDate} s.d ${maxDate}`;
+        return {
+          ...g,
+          periode,
+        };
+      })
+      .sort((a, b) => (b.tglBayar || '').localeCompare(a.tglBayar || ''));
+  }, [dataList]);
+
+  // Handle Batal Bayar Sekaligus untuk Seluruh Item dalam 1 Record Histori
+  const handleBatalHistori = async (historiGroup) => {
+    const res = await Swal.fire({
+      icon: 'warning',
+      title: 'Batalkan Pembayaran Ini?',
+      html: `
+        <div class="text-xs text-left space-y-1">
+          <p>Yakin ingin membatalkan pembayaran upah untuk:</p>
+          <p>• <strong>${historiGroup.namaPetugas}</strong> (${historiGroup.tahapan})</p>
+          <p>• Tanggal: <strong>${historiGroup.tglBayar}</strong></p>
+          <p>• Total Bayar: <strong>Rp ${historiGroup.totalBersih.toLocaleString('id-ID')}</strong> (${historiGroup.items.length} Order)</p>
+          <p class="text-rose-600 mt-2 font-semibold">* Status seluruh order ini akan dikembalikan menjadi Belum Lunas.</p>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Batalkan Lunas',
+      cancelButtonText: 'Kembali',
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+    });
+
+    if (res.isConfirmed) {
+      try {
+        Swal.fire({
+          title: 'Membatalkan...',
+          text: 'Mengembalikan status tagihan upah...',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
+
+        // Batal bayar untuk setiap item di histori ini
+        await Promise.all(historiGroup.items.map((i) => api.batalBayarUpah(i.id)));
+        await fetchData();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Pembayaran Dibatalkan',
+          text: `${historiGroup.items.length} order tagihan dikembalikan ke status Belum Lunas.`,
+          timer: 1800,
+          showConfirmButton: false,
+        });
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Membatalkan',
+          text: err.message || 'Terjadi kesalahan sistem.',
+        });
+      }
+    }
+  };
+
+  // Open Detail Rincian Histori Modal
+  const handleOpenDetailHistori = (historiGroup) => {
+    setHistoriDetailItem(historiGroup);
+    setIsHistoriDetailOpen(true);
+  };
+
   // Data Karyawan yang sedang dibuka slipnya
   const currentSlipKaryawan = useMemo(() => {
     if (!selectedKaryawanName) return null;
@@ -599,8 +719,8 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
   return (
     <div className="w-full space-y-3 select-none">
-      {/* 1. HEADER CARD */}
-      <div className="bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] text-white rounded-2xl py-3 px-4 sm:px-5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
+      {/* 1. HEADER TITLE */}
+      <div className="bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] text-white rounded-2xl py-3.5 px-4 sm:px-5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center shrink-0 text-white shadow-inner border border-white/20">
             <Coins className="w-5 h-5 text-emerald-300" />
@@ -615,13 +735,12 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
               </span>
             </div>
             <p className="text-xs text-emerald-100/90 mt-1 leading-tight font-medium">
-              Manajemen & pencatatan pembayaran upah kerja tim Pemotong, Penjahit, QC, dan Finishing
+              Pencatatan slip pembayaran mingguan tim Pemotong, Penjahit, QC, dan Finishing
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {/* Tombol Sinkronisasi dari Antrean */}
           <button
             onClick={handleSyncFromAntrean}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer border border-white/25 active:scale-95"
@@ -630,273 +749,49 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Sync dari Antrean</span>
           </button>
-
-          {/* Tombol Bayar Terpilih (Batch Action) */}
-          {selectedIds.length > 0 && (
-            <button
-              onClick={() => {
-                const selectedItems = dataList.filter((i) => selectedIds.includes(i.id));
-                handleOpenPay(selectedItems);
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md transition-all cursor-pointer active:scale-95 animate-in zoom-in-95"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Bayar Terpilih ({selectedIds.length})</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* 2. REKAP KPI CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-        {/* Total Tagihan Upah */}
-        <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider">Total Tagihan</span>
-            <Coins className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 mt-1 font-mono">
-            Rp {Number(rekap.totalTagihan || 0).toLocaleString('id-ID')}
-          </div>
-          <span className="text-[11px] text-slate-500 font-semibold mt-0.5 block">
-            {rekap.totalPcs || 0} Pcs dikerjakan
-          </span>
-        </div>
+      {/* 2. DUA TAB UTAMA: INPUT PEMBAYARAN & HISTORI PEMBAYARAN */}
+      <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('input')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            activeMainTab === 'input'
+              ? 'bg-[#064e3b] text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+          <span>Input Pembayaran</span>
+        </button>
 
-        {/* Sudah Dibayar (Lunas) */}
-        <div className="bg-white rounded-2xl p-3 sm:p-4 border border-emerald-200/90 shadow-2xs bg-gradient-to-b from-emerald-50/40 to-white">
-          <div className="flex items-center justify-between text-emerald-700">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider">Sudah Dibayar (Lunas)</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="text-lg sm:text-xl font-black text-emerald-800 mt-1 font-mono">
-            Rp {Number(rekap.totalLunas || 0).toLocaleString('id-ID')}
-          </div>
-          <span className="text-[11px] text-emerald-700 font-bold mt-0.5 block">
-            Terverifikasi Lunas
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('histori')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            activeMainTab === 'histori'
+              ? 'bg-[#064e3b] text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <History className="w-4 h-4 text-emerald-400" />
+          <span>Histori Pembayaran</span>
+          <span
+            className={`text-[10.5px] font-mono px-2 py-0.2 rounded-full font-bold ${
+              activeMainTab === 'histori'
+                ? 'bg-white/20 text-white'
+                : 'bg-slate-100 text-slate-700'
+            }`}
+          >
+            {historiBayarList.length}
           </span>
-        </div>
-
-        {/* Sisa Belum Dibayar (Pending) */}
-        <div className="bg-white rounded-2xl p-3 sm:p-4 border border-rose-200/90 shadow-2xs bg-gradient-to-b from-rose-50/40 to-white">
-          <div className="flex items-center justify-between text-rose-700">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider">Belum Dibayar (Sisa)</span>
-            <Clock className="w-4 h-4 text-rose-500" />
-          </div>
-          <div className="text-lg sm:text-xl font-black text-rose-800 mt-1 font-mono">
-            Rp {Number(rekap.totalPending || 0).toLocaleString('id-ID')}
-          </div>
-          <span className="text-[11px] text-rose-700 font-bold mt-0.5 block">
-            Tagihan Menunggu Bayar
-          </span>
-        </div>
-
-        {/* Total Transaksi Upah */}
-        <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider">Total Transaksi</span>
-            <Receipt className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="text-lg sm:text-xl font-black text-slate-900 mt-1 font-mono">
-            {dataList.length} <span className="text-xs font-semibold text-slate-500">Record</span>
-          </div>
-          <span className="text-[11px] text-slate-500 font-semibold mt-0.5 block">
-            Dari seluruh tahapan SOP
-          </span>
-        </div>
+        </button>
       </div>
 
-      {/* 3. TABS FILTER TAHAPAN & KONTROL PENCARIAN */}
-      <div className="space-y-2">
-        {/* Horizontal Tabs Tahapan */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold no-scrollbar">
-          {[
-            { key: 'Semua', label: 'Semua Tahapan', count: dataList.length },
-            {
-              key: 'Cutting',
-              label: 'Pemotong (Cutting)',
-              count: dataList.filter((i) => i.tahapan === 'Cutting').length,
-            },
-            {
-              key: 'Jahit',
-              label: 'Penjahit (Sewing)',
-              count: dataList.filter((i) => i.tahapan === 'Jahit').length,
-            },
-            {
-              key: 'QC',
-              label: 'Tim QC',
-              count: dataList.filter((i) => i.tahapan === 'QC').length,
-            },
-            {
-              key: 'Finishing',
-              label: 'Finishing & Packing',
-              count: dataList.filter((i) => i.tahapan === 'Finishing').length,
-            },
-          ].map((tab) => {
-            const isSelected = activeTahapTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTahapTab(tab.key)}
-                className={`px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
-                  isSelected
-                    ? 'bg-[#064e3b] text-white font-extrabold shadow-xs'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`text-[10px] font-mono font-black px-1.5 py-0.2 rounded-full ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* View Mode Switcher & Filter Periode Bar */}
-        <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
-          {/* Baris 1: Mode Switcher & Presets */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-fit flex-wrap">
-              <button
-                type="button"
-                onClick={() => setViewMode('sheet')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                  viewMode === 'sheet'
-                    ? 'bg-[#064e3b] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-300" />
-                <span>Input Slip Gaji (Mode Google Sheet)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode('karyawan')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                  viewMode === 'karyawan'
-                    ? 'bg-[#064e3b] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Tabel Rekap Divisi</span>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    viewMode === 'karyawan' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {rekapKaryawanList.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode('transaksi')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                  viewMode === 'transaksi'
-                    ? 'bg-[#064e3b] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <ListFilter className="w-3.5 h-3.5" />
-                <span>Rincian Transaksi Order</span>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    viewMode === 'transaksi' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {filteredList.length}
-                </span>
-              </button>
-            </div>
-
-            {/* Quick Date Presets */}
-            <div className="flex items-center gap-1 text-[11px] font-bold">
-              <span className="text-slate-400 mr-1 hidden sm:inline">Pilih Periode:</span>
-              <button
-                type="button"
-                onClick={() => handleSetPresetDate('minggu')}
-                className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
-              >
-                1 Minggu Terakhir
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSetPresetDate('bulan')}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-              >
-                Bulan Ini
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSetPresetDate('semua')}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-              >
-                Semua
-              </button>
-            </div>
-          </div>
-
-          {/* Baris 2: Date Range Picker, Search, Status */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 pt-1 border-t border-slate-100">
-            {/* Date Range Inputs */}
-            <div className="md:col-span-5 flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-50 p-1 rounded-xl border border-slate-200">
-              <CalendarDays className="w-4 h-4 text-emerald-700 shrink-0 ml-1.5" />
-              <span className="text-[11px] text-slate-500 whitespace-nowrap">Dari:</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-7 px-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-emerald-600 flex-1"
-              />
-              <span className="text-[11px] text-slate-500 whitespace-nowrap">s.d</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-7 px-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-emerald-600 flex-1"
-              />
-            </div>
-
-            {/* Search Input */}
-            <div className="relative md:col-span-5">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Cari nama karyawan / tim / SKU / produk..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-9 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none"
-              />
-            </div>
-
-            {/* Status Bayar */}
-            <div className="md:col-span-2">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full h-9 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-600 focus:outline-none cursor-pointer"
-              >
-                <option value="Semua">Semua Status</option>
-                <option value="Belum Lunas">🔴 Belum Lunas</option>
-                <option value="Lunas">🟢 Lunas</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. KONTEN VIEW MODE */}
-      {viewMode === 'sheet' ? (
-        /* =================================================================== */
-        /* MODE SHEET GOOGLE: INPUT & TAMPILAN SLIP GAJI EMRA PRODUCTION      */
-        /* =================================================================== */
+      {/* 3. KONTEN TAB: INPUT PEMBAYARAN (SLIP GAJI EMRA SEPERTI GAMBAR 2) */}
+      {activeMainTab === 'input' && (
         <div className="space-y-4">
           {/* TAB PEMISAH DIVISI (POTONG, JAHIT, QC, FINISHING) */}
           <div className="bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2">
@@ -1273,469 +1168,295 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
             </div>
           </div>
         </div>
-      ) : viewMode === 'karyawan' ? (
-        /* =================================================================== */
-        /* TABEL 1: REKAP GAJI DIPISAH PER DIVISI / TIM (POTONG, JAHIT, QC, FINISHING) */
-        /* =================================================================== */
-        <div className="space-y-4">
-          {groupedByTahap.map((group) => {
-            const Icon = group.icon;
-            const hasData = group.teams.length > 0;
+      )}
+      {/* 4. KONTEN TAB: HISTORI PEMBAYARAN */}
+      {activeMainTab === 'histori' && (
+        <div className="space-y-3">
+          {/* Search Header */}
+          <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-2.5">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Cari tim, penjahit, atau tanggal..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none"
+              />
+            </div>
 
-            return (
-              <div
-                key={group.key}
-                className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden transition-all"
-              >
-                {/* Header Section Per Divisi */}
-                <div className="p-3.5 bg-gradient-to-r from-slate-50 via-slate-100/60 to-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${group.gradient} text-white flex items-center justify-center font-black text-xs shadow-xs`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-black text-slate-900 text-sm tracking-tight">
-                          {group.label}
-                        </h3>
-                        <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-black border ${group.badgeColor}`}>
-                          {group.sublabel}
-                        </span>
-                        <span className="font-mono text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                          {group.teams.length} {group.key === 'Jahit' ? 'Penjahit' : 'Tim'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+            <div className="text-xs text-slate-500 font-semibold">
+              Total <strong className="text-emerald-800 font-mono font-black">{historiBayarList.length}</strong> transaksi pembayaran tersimpan
+            </div>
+          </div>
 
-                  {/* Subtotal Mini Stats Header */}
-                  {hasData && (
-                    <div className="flex items-center gap-3 text-xs font-semibold text-slate-600">
-                      <span>
-                        Total Qty: <strong className="text-rose-700 font-mono font-black">{group.subtotalQty.toLocaleString('id-ID')} Pcs</strong>
-                      </span>
-                      <span className="text-slate-300">•</span>
-                      <span>
-                        Total Gaji: <strong className="text-emerald-700 font-mono font-black">Rp {group.subtotalBersih.toLocaleString('id-ID')}</strong>
-                      </span>
-                    </div>
-                  )}
-                </div>
+          {/* Tabel Histori Pembayaran */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-[11px] tracking-wide uppercase border-b border-slate-200">
+                    <th className="py-3 px-3 text-center w-12 border-r border-slate-200">NO</th>
+                    <th className="py-3 px-4 border-r border-slate-200 whitespace-nowrap">TANGGAL PEMBAYARAN</th>
+                    <th className="py-3 px-4 border-r border-slate-200 whitespace-nowrap">PERIODE</th>
+                    <th className="py-3 px-4 border-r border-slate-200">TIM / PENJAHIT</th>
+                    <th className="py-3 px-4 border-r border-slate-200 text-center whitespace-nowrap">VOLUME & ORDER</th>
+                    <th className="py-3 px-4 border-r border-slate-200 text-right whitespace-nowrap bg-emerald-50/50 text-emerald-950">
+                      JUMLAH BAYAR
+                    </th>
+                    <th className="py-3 px-4 text-center w-40 whitespace-nowrap">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
+                  {historiBayarList.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-12 text-center text-slate-400">
+                        <Receipt className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                        <p className="text-sm font-semibold text-slate-600">Belum ada histori pembayaran</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Lakukan input pembayaran pada tab "Input Pembayaran" untuk mencatat pembayaran baru
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    historiBayarList
+                      .filter((h) => {
+                        if (!searchQuery) return true;
+                        const q = searchQuery.toLowerCase();
+                        return (
+                          (h.namaPetugas || '').toLowerCase().includes(q) ||
+                          (h.tahapan || '').toLowerCase().includes(q) ||
+                          (h.tglBayar || '').toLowerCase().includes(q) ||
+                          (h.periode || '').toLowerCase().includes(q)
+                        );
+                      })
+                      .map((h, idx) => (
+                        <tr key={h.key || idx} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-3 text-center text-slate-400 font-bold font-mono border-r border-slate-200">
+                            {idx + 1}
+                          </td>
 
-                {/* Tabel Per Divisi (6 Kolom Ringkas, Tanpa Scroll Horizontal) */}
-                <div className="w-full">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-[11px] tracking-wide uppercase border-b border-slate-200">
-                        <th className="py-2.5 px-3 text-center w-12 border-r border-slate-200">NO</th>
-                        <th className="py-2.5 px-4 border-r border-slate-200">{group.recipientHeader}</th>
-                        <th className="py-2.5 px-4 border-r border-slate-200 text-right w-44 bg-rose-50/40 text-rose-900">
-                          VOLUME & UPAH KOTOR
-                        </th>
-                        <th className="py-2.5 px-4 border-r border-slate-200 text-right w-40 text-amber-900 bg-amber-50/30">
-                          POTONGAN KASBON
-                        </th>
-                        <th className="py-2.5 px-4 border-r border-slate-200 text-right w-48 bg-emerald-50/50 text-emerald-950">
-                          TOTAL GAJI BERSIH
-                        </th>
-                        <th className="py-2.5 px-4 text-center w-48">AKSI</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-medium text-slate-700 divide-y divide-slate-200">
-                      {!hasData ? (
-                        <tr>
-                          <td colSpan="6" className="py-8 text-center text-slate-400">
-                            <p className="text-xs font-semibold text-slate-500">
-                              Tidak ada pembayaran untuk {group.label} pada periode ini.
-                            </p>
+                          {/* Tanggal Pembayaran */}
+                          <td className="py-3 px-4 border-r border-slate-200 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900">
+                              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>{h.tglBayar}</span>
+                            </div>
+                            <span className="text-[10.5px] text-slate-400 block mt-0.5 font-sans">
+                              Metode: {h.metodeBayar || 'Tunai'}
+                            </span>
+                          </td>
+
+                          {/* Periode */}
+                          <td className="py-3 px-4 border-r border-slate-200 whitespace-nowrap font-mono text-slate-700 text-xs">
+                            {h.periode}
+                          </td>
+
+                          {/* Tim / Penjahit */}
+                          <td className="py-3 px-4 border-r border-slate-200">
+                            <div className="font-black text-slate-900 text-sm">{h.namaPetugas}</div>
+                            <div className="mt-0.5">{getTahapanBadge(h.tahapan)}</div>
+                          </td>
+
+                          {/* Jumlah Order & Pcs */}
+                          <td className="py-3 px-4 border-r border-slate-200 text-center whitespace-nowrap">
+                            <div className="font-mono font-black text-rose-700 text-xs">
+                              {h.totalQty.toLocaleString('id-ID')} Pcs
+                            </div>
+                            <div className="text-[10.5px] text-slate-400 mt-0.5">
+                              {h.items.length} Order Pekerjaan
+                            </div>
+                          </td>
+
+                          {/* Jumlah Bayar */}
+                          <td className="py-3 px-4 border-r border-slate-200 text-right bg-emerald-50/30 whitespace-nowrap">
+                            <span className="font-mono font-black text-sm text-[#064e3b] bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs inline-block">
+                              Rp {h.totalBersih.toLocaleString('id-ID')}
+                            </span>
+                          </td>
+
+                          {/* Aksi: Show dan Batal */}
+                          <td className="py-3 px-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1.5">
+                              {/* Tombol Show (Rincian) */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenDetailHistori(h)}
+                                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs active:scale-95"
+                                title="Lihat rincian order yang dibayar"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Show</span>
+                              </button>
+
+                              {/* Tombol Batal */}
+                              <button
+                                type="button"
+                                onClick={() => handleBatalHistori(h)}
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs active:scale-95"
+                                title="Batalkan pembayaran dan kembalikan ke status belum lunas"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Batal</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
-                      ) : (
-                        group.teams.map((k, idx) => {
-                          const isAllLunas = k.pendingCount === 0;
-
-                          return (
-                            <tr key={k.namaPetugas} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="py-3 px-3 text-center text-slate-400 font-bold font-mono border-r border-slate-200">
-                                {idx + 1}
-                              </td>
-
-                              <td className="py-3 px-4 border-r border-slate-200">
-                                <div className="flex items-center gap-2.5">
-                                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${group.gradient} text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs`}>
-                                    {k.namaPetugas.slice(0, 2).toUpperCase()}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="font-black text-slate-900 text-sm leading-tight">
-                                      {k.namaPetugas}
-                                    </div>
-                                    <div className="text-[11px] text-slate-400 mt-0.5 font-medium">
-                                      {k.items.length} Order Pekerjaan
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-
-                              <td className="py-3 px-4 border-r border-slate-200 text-right bg-rose-50/20">
-                                <div className="font-mono font-black text-sm sm:text-base text-rose-700">
-                                  {k.totalQty.toLocaleString('id-ID')} Pcs
-                                </div>
-                                <div className="text-[11px] font-mono text-slate-500 mt-0.5">
-                                  Kotor: <strong className="text-slate-800">Rp {k.totalKotor.toLocaleString('id-ID')}</strong>
-                                </div>
-                              </td>
-
-                              <td className="py-3 px-4 border-r border-slate-200 text-right font-mono">
-                                {k.totalPotonganKasbon > 0 ? (
-                                  <div>
-                                    <div className="font-bold text-amber-700 text-xs">
-                                      - Rp {k.totalPotonganKasbon.toLocaleString('id-ID')}
-                                    </div>
-                                    {k.sisaPinjamanAktif > 0 && (
-                                      <div className="text-[10px] text-amber-600 mt-0.5 font-sans">
-                                        Sisa: Rp {k.sisaPinjamanAktif.toLocaleString('id-ID')}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : k.sisaPinjamanAktif > 0 ? (
-                                  <div>
-                                    <span className="text-slate-400 text-xs">-</span>
-                                    <div className="text-[10.5px] text-amber-600 font-sans font-semibold mt-0.5">
-                                      Kasbon aktif: Rp {k.sisaPinjamanAktif.toLocaleString('id-ID')}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="text-slate-300">-</span>
-                                )}
-                              </td>
-
-                              <td className="py-3 px-4 border-r border-slate-200 text-right bg-emerald-50/30">
-                                <div>
-                                  <span className="font-mono font-black text-sm sm:text-base text-[#064e3b] bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs inline-block">
-                                    Rp {k.totalBersih.toLocaleString('id-ID')}
-                                  </span>
-                                </div>
-                                <div className="mt-1">
-                                  {isAllLunas ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                      <span>Lunas</span>
-                                    </span>
-                                  ) : k.lunasCount > 0 ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10.5px] font-black bg-amber-100 text-amber-800 border border-amber-200">
-                                      <span>Sebagian ({k.pendingCount} Belum)</span>
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                      <Clock className="w-3 h-3 text-rose-500" />
-                                      <span>Belum Dibayar</span>
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              <td className="py-3 px-4 text-center">
-                                <div className="flex items-center justify-center gap-1.5 flex-nowrap">
-                                  {!isAllLunas && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const pendingItems = k.items.filter((i) => i.statusBayar !== 'Lunas');
-                                        handleOpenPay(pendingItems);
-                                      }}
-                                      className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                                      title="Bayar semua tagihan upah tim ini dalam periode ini"
-                                    >
-                                      <CreditCard className="w-3.5 h-3.5" />
-                                      <span>Bayar Gaji</span>
-                                    </button>
-                                  )}
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenSlipKaryawan(k.namaPetugas)}
-                                    className="px-2.5 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                                    title="Buka & Cetak Slip Gaji Resmi (Format Emra Production)"
-                                  >
-                                    <Printer className="w-3.5 h-3.5" />
-                                    <span>Slip Gaji</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Subtotal Footer Per Divisi */}
-                {hasData && (
-                  <div className="bg-[#f8fafc] border-t border-slate-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-600 gap-2">
-                    <div>
-                      Subtotal <strong>{group.label}</strong> ({group.teams.length} {group.key === 'Jahit' ? 'Penjahit' : 'Tim'})
-                    </div>
-                    <div className="flex items-center gap-4 font-semibold text-slate-700">
-                      <span>
-                        Total Qty: <strong className="text-rose-700 font-mono font-bold">{group.subtotalQty.toLocaleString('id-ID')} Pcs</strong>
-                      </span>
-                      <span>
-                        Kotor: <strong className="font-mono text-slate-900 font-bold">Rp {group.subtotalKotor.toLocaleString('id-ID')}</strong>
-                      </span>
-                      <span>
-                        Bersih: <strong className="text-emerald-700 font-mono font-bold">Rp {group.subtotalBersih.toLocaleString('id-ID')}</strong>
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* GRAND TOTAL SUMMARY BAR */}
-          <div className="bg-[#0b1b36] text-white rounded-2xl p-4 shadow-md flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm gap-2">
-            <div>
-              <span className="font-bold text-amber-400 uppercase tracking-wide text-xs">Grand Total Seluruh Divisi</span>
-              <div className="text-[11px] text-slate-300 mt-0.5">
-                Periode: <strong className="text-white">{startDate || 'Awal'} s.d {endDate || 'Sekarang'}</strong>
-              </div>
-            </div>
-            <div className="flex items-center gap-5 font-bold">
-              <span>
-                Grand Total QTY:{' '}
-                <strong className="text-rose-400 font-mono text-base">
-                  {rekapKaryawanList.reduce((acc, c) => acc + c.totalQty, 0).toLocaleString('id-ID')} Pcs
-                </strong>
-              </span>
-              <span>
-                Total Seluruh Gaji Bersih:{' '}
-                <strong className="text-emerald-400 font-mono text-base font-black">
-                  Rp {rekapKaryawanList.reduce((acc, c) => acc + c.totalBersih, 0).toLocaleString('id-ID')}
-                </strong>
-              </span>
+                      ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      ) : (
-        /* =================================================================== */
-        /* TABEL 2: RINCIAN PER TRANSAKSI ORDER (FLAT LIST)                   */
-        /* =================================================================== */
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
-              <thead>
-                <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-xs tracking-wider uppercase">
-                  <th className="py-2.5 px-2 text-center w-9 min-w-[36px] border border-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={filteredList.length > 0 && selectedIds.length === filteredList.length}
-                      onChange={handleSelectAll}
-                      className="rounded border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer w-4 h-4"
-                      title="Pilih Semua Tagihan"
-                    />
-                  </th>
-                  <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-slate-200">NO</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px] border border-slate-200">NO. BAYAR & TANGGAL</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px] border border-slate-200">ANTREAN & PRODUK</th>
-                  <th className="py-2.5 px-3 min-w-[200px] border border-slate-200">BAGIAN & PETUGAS</th>
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[120px] border border-slate-200">QTY & TARIF</th>
-                  <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[130px] border border-slate-200">TOTAL UPAH</th>
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[140px] border border-slate-200">STATUS BAYAR</th>
-                  <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[140px] border border-slate-200">AKSI</th>
-                </tr>
-              </thead>
-              <tbody className="font-medium text-slate-700 divide-y divide-slate-200">
-                {filteredList.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="py-12 text-center text-slate-400 border border-slate-200">
-                      <Receipt className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
-                      <p className="text-sm font-semibold text-slate-600">Tidak ada data tagihan upah</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Klik "Sync dari Antrean" untuk memuat tagihan upah dari order yang sudah diserahkan
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredList.map((item, idx) => {
-                    const isSelected = selectedIds.includes(item.id);
-                    const isLunas = item.statusBayar === 'Lunas';
+      )}
 
-                    return (
-                      <tr
-                        key={item.id}
-                        className={`transition-colors ${
-                          isSelected ? 'bg-emerald-50/60' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        {/* Checkbox */}
-                        <td className="py-2 px-2 text-center border border-slate-200">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggleSelect(item.id)}
-                            className="rounded border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer w-4 h-4"
-                          />
+      {/* MODAL DETAIL RINCIAN HISTORI PEMBAYARAN (SHOW) */}
+      {isHistoriDetailOpen && historiDetailItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+            {/* Header Modal */}
+            <div className="bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-emerald-300">
+                  <Receipt className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-white">Rincian Histori Pembayaran</h3>
+                  <p className="text-[11px] text-emerald-200/90 font-medium">
+                    Detail transaksi pembayaran upah yang telah diverifikasi
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsHistoriDetailOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body Info */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                <div>
+                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Penerima</span>
+                  <span className="font-black text-slate-900 text-sm">{historiDetailItem.namaPetugas}</span>
+                  <span className="text-[11px] text-emerald-700 font-semibold block">{historiDetailItem.tahapan}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Tanggal Bayar</span>
+                  <span className="font-bold text-slate-800 text-xs font-mono">{historiDetailItem.tglBayar}</span>
+                  <span className="text-[10.5px] text-slate-500 block">Metode: {historiDetailItem.metodeBayar || 'Tunai'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Periode Pengerjaan</span>
+                  <span className="font-bold text-slate-800 text-xs font-mono">{historiDetailItem.periode}</span>
+                  <span className="text-[10.5px] text-slate-500 block">{historiDetailItem.items.length} Order</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Total Dibayar</span>
+                  <span className="font-mono font-black text-sm text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block">
+                    Rp {historiDetailItem.totalBersih.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabel Order Items */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#1e293b] text-white font-extrabold text-[11px] uppercase tracking-wider">
+                    <tr>
+                      <th className="py-2.5 px-3 text-center w-10">NO</th>
+                      <th className="py-2.5 px-3">NO. ORDER / ANTREAN</th>
+                      <th className="py-2.5 px-3">MODEL & WARNA</th>
+                      <th className="py-2.5 px-3 text-right">HARGA / PCS</th>
+                      <th className="py-2.5 px-3 text-center">QTY</th>
+                      <th className="py-2.5 px-3 text-right">SUBTOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-slate-700">
+                    {historiDetailItem.items.map((it, idx) => (
+                      <tr key={it.id || idx} className="hover:bg-slate-50">
+                        <td className="py-2 px-3 text-center font-mono text-slate-400">{idx + 1}</td>
+                        <td className="py-2 px-3">
+                          <span className="font-mono font-bold text-emerald-950 text-xs">{it.noPembayaran}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">{it.noAntrian || '-'}</span>
                         </td>
-
-                        {/* No */}
-                        <td className="py-2 px-2 text-center text-slate-500 font-bold text-xs sm:text-sm border border-slate-200">
-                          {idx + 1}
+                        <td className="py-2 px-3">
+                          <span className="font-bold text-slate-900 block">{it.namaProduk}</span>
+                          <span className="text-[10.5px] text-slate-500">{it.warna || it.varian || '-'}</span>
                         </td>
-
-                        {/* No. Bayar & Tanggal Buat */}
-                        <td className="py-2 px-3 border border-slate-200 whitespace-nowrap">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-mono font-bold text-xs text-emerald-950 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block w-fit">
-                              {item.noPembayaran}
-                            </span>
-                            <span className="text-[11px] font-mono text-slate-500">
-                              {item.createdAt ? String(item.createdAt).slice(0, 10) : '-'}
-                            </span>
-                          </div>
+                        <td className="py-2 px-3 text-right font-mono">
+                          Rp {Number(it.tarifPerPcs || 0).toLocaleString('id-ID')}
                         </td>
-
-                        {/* No. Antrean & Model Produk */}
-                        <td className="py-2 px-3 border border-slate-200">
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-mono font-bold text-xs text-blue-700">
-                              {item.noAntrian}
-                            </span>
-                            <span className="text-xs sm:text-sm font-bold text-slate-900 truncate" title={item.namaProduk}>
-                              {item.namaProduk}
-                            </span>
-                            <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
-                              <span>SKU: {item.sku}</span>
-                              {item.varian && item.varian !== '-' && (
-                                <span className="text-slate-700 font-semibold">• {item.varian}</span>
-                              )}
-                            </div>
-                          </div>
+                        <td className="py-2 px-3 text-center font-mono font-bold text-rose-700">
+                          {Number(it.qty || 0).toLocaleString('id-ID')} Pcs
                         </td>
-
-                        {/* Bagian & Petugas */}
-                        <td className="py-2 px-3 border border-slate-200">
-                          <div className="flex flex-col gap-1 items-start">
-                            {getTahapanBadge(item.tahapan)}
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                              <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{item.namaPetugas}</span>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Qty & Tarif */}
-                        <td className="py-2 px-3 text-center border border-slate-200 whitespace-nowrap">
-                          <div className="flex flex-col items-center">
-                            <span className="font-mono font-black text-xs sm:text-sm text-slate-900">
-                              {Number(item.qty).toLocaleString('id-ID')} Pcs
-                            </span>
-                            <span className="text-[11px] font-mono text-slate-500">
-                              @ Rp {Number(item.tarifPerPcs).toLocaleString('id-ID')}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Total Upah */}
-                        <td className="py-2 px-3 text-right border border-slate-200 whitespace-nowrap">
-                          <div className="flex flex-col items-end">
-                            <span className="font-mono font-black text-xs sm:text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block">
-                              Rp {Number(item.totalUpah || 0).toLocaleString('id-ID')}
-                            </span>
-                            {Number(item.potonganKasbon) > 0 && (
-                              <span className="text-[10px] text-amber-700 font-mono mt-0.5">
-                                (Potong Kasbon: -Rp {Number(item.potonganKasbon).toLocaleString('id-ID')})
-                              </span>
-                            )}
-                            {Number(item.potonganKasbon) > 0 && (
-                              <span className="text-[10px] text-emerald-700 font-mono font-bold">
-                                Bersih: Rp {Number(item.totalBersih || (Number(item.totalUpah) - Number(item.potonganKasbon))).toLocaleString('id-ID')}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Status Bayar */}
-                        <td className="py-2 px-3 text-center border border-slate-200 whitespace-nowrap">
-                          <div className="flex flex-col items-center gap-1">
-                            {isLunas ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Lunas</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
-                                <Clock className="w-3.5 h-3.5 text-rose-500" />
-                                <span>Belum Lunas</span>
-                              </span>
-                            )}
-
-                            {isLunas && (
-                              <div className="text-[10px] text-slate-500 font-mono">
-                                <span>{item.tglBayar}</span>
-                                {item.metodeBayar && (
-                                  <span className="block text-slate-400">({item.metodeBayar})</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Aksi */}
-                        <td className="py-2 px-2.5 text-center border border-slate-200 whitespace-nowrap">
-                          <div className="inline-flex items-center justify-center gap-1.5">
-                            {/* Tombol Bayar Sekarang (jika Belum Lunas) */}
-                            {!isLunas ? (
-                              <button
-                                onClick={() => handleOpenPay([item])}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
-                                title="Bayar tagihan upah ini"
-                              >
-                                <CreditCard className="w-3.5 h-3.5" />
-                                <span>Bayar</span>
-                              </button>
-                            ) : (
-                              /* Tombol Batalkan Lunas (Undo) */
-                              <button
-                                onClick={() => handleBatalBayar(item)}
-                                className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
-                                title="Batalkan status lunas (Undo jika salah klik bayar)"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
-                              </button>
-                            )}
-
-                            {/* Tombol Lihat Slip */}
-                            <button
-                              onClick={() => handleOpenSlip(item)}
-                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
-                              title="Tampilkan & Cetak Slip Upah"
-                            >
-                              <Receipt className="w-4 h-4 text-slate-600" />
-                            </button>
-                          </div>
+                        <td className="py-2 px-3 text-right font-mono font-black text-emerald-800">
+                          Rp {Number(it.totalUpah || 0).toLocaleString('id-ID')}
                         </td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* BOTTOM SUMMARY FOOTER TRANSAKSI */}
-          <div className="bg-[#f8fafc] border-t border-slate-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-600 gap-2">
-            <div>
-              Menampilkan <span className="font-bold text-slate-800">{filteredList.length}</span> dari{' '}
-              <span className="font-bold text-slate-800">{dataList.length}</span> data upah
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-slate-100 font-black border-t-2 border-slate-300 text-xs">
+                    <tr>
+                      <td colSpan="4" className="py-2.5 px-3 text-right uppercase text-slate-700">
+                        Grand Total Qty & Upah:
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-mono font-black text-rose-700">
+                        {historiDetailItem.totalQty.toLocaleString('id-ID')} Pcs
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-800">
+                        Rp {historiDetailItem.totalKotor.toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                    {historiDetailItem.totalPotonganKasbon > 0 && (
+                      <tr>
+                        <td colSpan="5" className="py-1.5 px-3 text-right uppercase text-amber-800">
+                          Potongan Pinjaman / Kasbon:
+                        </td>
+                        <td className="py-1.5 px-3 text-right font-mono font-black text-amber-700">
+                          - Rp {historiDetailItem.totalPotonganKasbon.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    )}
+                    <tr className="bg-emerald-50/80 text-emerald-950 text-sm">
+                      <td colSpan="5" className="py-2.5 px-3 text-right uppercase font-black">
+                        Total Gaji Bersih Dibayar:
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-800">
+                        Rp {historiDetailItem.totalBersih.toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
-            <div className="flex items-center gap-4 font-semibold text-slate-700">
-              <span>
-                Total Qty: <strong className="text-slate-900">{filteredList.reduce((acc, c) => acc + (Number(c.qty) || 0), 0).toLocaleString('id-ID')} Pcs</strong>
-              </span>
-              <span>
-                Total Upah: <strong className="text-emerald-700 font-bold">Rp {filteredList.reduce((acc, c) => acc + (Number(c.totalUpah) || 0), 0).toLocaleString('id-ID')}</strong>
-              </span>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsHistoriDetailOpen(false);
+                  handleBatalHistori(historiDetailItem);
+                }}
+                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Batalkan Pembayaran Ini</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsHistoriDetailOpen(false)}
+                className="px-4 py-1.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer transition-all"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>

@@ -1328,211 +1328,211 @@ export default function Antrean({
   }, [antreanList, activeTab, filterSumber, filterPrioritas, searchTerm]);
 
   return (
-    <div className="w-full space-y-1.5 select-none">
+    <div className="w-full space-y-2 select-none">
       {/* 1. HEADER CARD (COMPACT SLIM PM STYLE PERSIS MUTASI BAHAN) */}
-      <div className="bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white rounded-lg py-1.5 px-3 sm:px-3.5 shadow-[0_2px_4px_rgba(2,132,199,0.18)] flex flex-col md:flex-row md:items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 text-white">
-            <ListOrdered className="w-4 h-4 text-white" />
+      <div className="bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white rounded-xl py-2 px-3 sm:px-4 shadow-[0_2px_4px_rgba(2,132,199,0.18)] flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 text-white">
+            <ListOrdered className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5 leading-none">
-              <h2 className="text-[13.5px] font-extrabold text-white tracking-tight">
+            <div className="flex items-center gap-2 leading-none">
+              <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
                 1. Antrean Permintaan Produksi
               </h2>
-              <span className="px-1.5 py-0.5 rounded bg-white/25 text-white text-[9.5px] font-extrabold">
+              <span className="px-2 py-0.5 rounded-md bg-white/25 text-white text-[10.5px] font-black">
                 TAHAP 1 SOP
               </span>
             </div>
-            <p className="text-[10.5px] text-white/85 mt-0.5 leading-tight">
+            <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
               Pendaftaran permintaan masuk dari PO, barang kosong, atau rencana internal berelasi ke Master Produk
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-md text-[11px] font-bold shadow-xs transition-all cursor-pointer border border-white/20"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer border border-white/25"
           >
-            <RefreshCw className="w-3 h-3" />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span>Refresh</span>
           </button>
 
           <button
             onClick={handleOpenCreate}
-            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-[11px] font-bold shadow-xs transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-black shadow-xs transition-all cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4 stroke-[3]" />
             <span>+ Antrean Baru</span>
           </button>
         </div>
       </div>
 
       {/* 2. STATS KPI CARDS (4 KARTU BER-BORDER #cbd5e1) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
-        <div className="bg-white border border-[#cbd5e1] rounded-lg p-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Total Antrean Masuk
             </div>
-            <div className="text-base font-extrabold text-[#0f172a] mt-0.5 leading-none">
-              {stats.total} <span className="text-[11px] font-medium text-slate-400">Order</span>
+            <div className="text-lg sm:text-xl font-black text-[#0f172a] mt-0.5 leading-none">
+              {stats.total} <span className="text-xs font-semibold text-slate-400">Order</span>
             </div>
           </div>
-          <div className="w-7 h-7 rounded-md bg-sky-50 text-[#0284c7] flex items-center justify-center shrink-0">
-            <ReceiptText className="w-3.5 h-3.5" />
+          <div className="w-8 h-8 rounded-lg bg-sky-50 text-[#0284c7] flex items-center justify-center shrink-0">
+            <ReceiptText className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="bg-white border border-[#cbd5e1] rounded-lg p-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-[#b91c1c] uppercase tracking-wider">
+            <div className="text-[11px] font-bold text-[#b91c1c] uppercase tracking-wider">
               Prioritas Urgent
             </div>
-            <div className="text-base font-extrabold text-[#ef4444] mt-0.5 leading-none">
-              {stats.countUrgent} <span className="text-[11px] font-medium text-slate-500">Batch Prioritas</span>
+            <div className="text-lg sm:text-xl font-black text-[#ef4444] mt-0.5 leading-none">
+              {stats.countUrgent} <span className="text-xs font-semibold text-slate-500">Batch Prioritas</span>
             </div>
           </div>
-          <div className="w-7 h-7 rounded-md bg-[#fef2f2] text-[#b91c1c] flex items-center justify-center shrink-0">
-            <AlertCircle className="w-3.5 h-3.5" />
+          <div className="w-8 h-8 rounded-lg bg-[#fef2f2] text-[#b91c1c] flex items-center justify-center shrink-0">
+            <AlertCircle className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="bg-white border border-[#cbd5e1] rounded-lg p-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">
+            <div className="text-[11px] font-bold text-[#047857] uppercase tracking-wider">
               Menunggu Cutting
             </div>
-            <div className="text-base font-extrabold text-[#059669] mt-0.5 leading-none">
-              {stats.countWaiting} <span className="text-[11px] font-medium text-slate-500">Siap Potong</span>
+            <div className="text-lg sm:text-xl font-black text-[#059669] mt-0.5 leading-none">
+              {stats.countWaiting} <span className="text-xs font-semibold text-slate-500">Siap Potong</span>
             </div>
           </div>
-          <div className="w-7 h-7 rounded-md bg-[#ecfdf5] text-[#047857] flex items-center justify-center shrink-0">
-            <Clock className="w-3.5 h-3.5" />
+          <div className="w-8 h-8 rounded-lg bg-[#ecfdf5] text-[#047857] flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="bg-white border border-[#cbd5e1] rounded-lg p-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Total Target Volume
             </div>
-            <div className="text-base font-extrabold text-[#0284c7] mt-0.5 leading-none">
-              {stats.totalQty.toLocaleString('id-ID')} <span className="text-[11px] font-medium text-slate-400">Pcs</span>
+            <div className="text-lg sm:text-xl font-black text-[#0284c7] mt-0.5 leading-none">
+              {stats.totalQty.toLocaleString('id-ID')} <span className="text-xs font-semibold text-slate-400">Pcs</span>
             </div>
           </div>
-          <div className="w-7 h-7 rounded-md bg-blue-50 text-[#0284c7] flex items-center justify-center shrink-0">
-            <Shirt className="w-3.5 h-3.5" />
+          <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#0284c7] flex items-center justify-center shrink-0">
+            <Shirt className="w-4 h-4" />
           </div>
         </div>
       </div>
 
       {/* 3. FILTER TABS (PM TAB STYLES PERSIS MUTASI BAHAN) */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
         <button
           onClick={() => setActiveTab('Semua Antrean')}
-          className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+          className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
             activeTab === 'Semua Antrean'
               ? 'bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]'
               : 'bg-[#eff6ff] text-[#0284c7] border border-[#bae6fd] hover:bg-sky-100/60'
           }`}
         >
-          <Layers className="w-3 h-3" />
+          <Layers className="w-3.5 h-3.5" />
           <span>Semua Antrean ({stats.total})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('Menunggu Cutting')}
-          className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+          className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
             activeTab === 'Menunggu Cutting'
               ? 'bg-[#d97706] text-white border border-[#d97706] shadow-[0_1px_4px_rgba(217,119,6,0.25)]'
               : 'bg-[#fffbeb] text-[#b45309] border border-[#fde68a] hover:bg-amber-100/60'
           }`}
         >
-          <Clock className="w-3 h-3" />
+          <Clock className="w-3.5 h-3.5" />
           <span>Menunggu Cutting ({stats.countWaiting})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('Proses Cutting')}
-          className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+          className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
             activeTab === 'Proses Cutting'
               ? 'bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]'
               : 'bg-[#eff6ff] text-[#0284c7] border border-[#bae6fd] hover:bg-sky-100/60'
           }`}
         >
-          <Scissors className="w-3 h-3" />
+          <Scissors className="w-3.5 h-3.5" />
           <span>Proses Cutting ({stats.countCutting})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('Proses Jahit')}
-          className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+          className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
             activeTab === 'Proses Jahit'
               ? 'bg-[#4f46e5] text-white border border-[#4f46e5] shadow-[0_1px_4px_rgba(79,70,229,0.25)]'
               : 'bg-[#eef2ff] text-[#4338ca] border border-[#c7d2fe] hover:bg-indigo-100/60'
           }`}
         >
-          <SewingMachineIcon className="w-3 h-3" />
+          <SewingMachineIcon className="w-3.5 h-3.5" />
           <span>Proses Jahit ({stats.countJahit})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('Proses QC')}
-          className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+          className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
             activeTab === 'Proses QC'
               ? 'bg-[#0f766e] text-white border border-[#0f766e] shadow-[0_1px_4px_rgba(15,118,110,0.25)]'
               : 'bg-[#f0fdfa] text-[#0f766e] border border-[#99f6e4] hover:bg-teal-100/60'
           }`}
         >
-          <ShieldCheck className="w-3 h-3" />
+          <ShieldCheck className="w-3.5 h-3.5" />
           <span>Proses QC ({stats.countQc})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('Proses Finishing')}
-          className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+          className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
             activeTab === 'Proses Finishing'
               ? 'bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]'
               : 'bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60'
           }`}
         >
-          <PackageCheck className="w-3 h-3" />
+          <PackageCheck className="w-3.5 h-3.5" />
           <span>Proses Finishing ({stats.countFinishing})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('Selesai')}
-          className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+          className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
             activeTab === 'Selesai'
               ? 'bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]'
               : 'bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60'
           }`}
         >
-          <CheckCircle2 className="w-3 h-3" />
+          <CheckCircle2 className="w-3.5 h-3.5" />
           <span>Selesai ({stats.countDone})</span>
         </button>
       </div>
 
       {/* 4. FILTER BAR CARD (HIGH CONTRAST) */}
-      <div className="bg-white border border-[#cbd5e1] rounded-lg p-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex flex-col sm:flex-row items-center gap-1.5">
+      <div className="bg-white border border-[#cbd5e1] rounded-xl p-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex flex-col sm:flex-row items-center gap-2">
         <div className="relative flex-1 w-full">
-          <Search className="w-3.5 h-3.5 text-[#94a3b8] absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#94a3b8] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari No Antrian, No Reff, SKU, Model Produk, Catatan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-2.5 py-1 text-xs bg-[#f8fafc] border border-[#cbd5e1] rounded-md focus:outline-none focus:border-[#0284c7] focus:bg-white text-[#0f172a] transition-all"
+            className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm bg-[#f8fafc] border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] focus:bg-white text-[#0f172a] transition-all"
           />
         </div>
 
-        <div className="w-full sm:w-44">
+        <div className="w-full sm:w-48">
           <select
             value={filterSumber}
             onChange={(e) => setFilterSumber(e.target.value)}
-            className="w-full px-2.5 py-1 text-xs bg-white border border-[#cbd5e1] rounded-md focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
+            className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
           >
             <option value="">Semua Sumber Permintaan</option>
             {sumberOptions.map(opt => (
@@ -1543,11 +1543,11 @@ export default function Antrean({
           </select>
         </div>
 
-        <div className="w-full sm:w-36">
+        <div className="w-full sm:w-40">
           <select
             value={filterPrioritas}
             onChange={(e) => setFilterPrioritas(e.target.value)}
-            className="w-full px-2.5 py-1 text-xs bg-white border border-[#cbd5e1] rounded-md focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
+            className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
           >
             <option value="">Semua Prioritas</option>
             <option value="Urgent">Urgent</option>
@@ -1622,25 +1622,25 @@ export default function Antrean({
       {/* 5. TABEL INDEX ANTREAN (KOLOM CHECKBOX + MERGE BIAR LEGA) */}
       <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_6px_rgba(15,23,42,0.05)] overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse border border-[#cbd5e1]">
             <thead>
-              <tr className="bg-[#f8fafc] text-[#475569] font-bold text-[10px] tracking-wide uppercase">
-                <th className="py-1 px-1.5 text-center w-8 min-w-[32px] border border-[#cbd5e1]">
+              <tr className="bg-[#f8fafc] text-[#334155] font-extrabold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-2 text-center w-9 min-w-[36px] border border-[#cbd5e1]">
                   <input
                     type="checkbox"
                     checked={filteredList.length > 0 && selectedIds.length === filteredList.length}
                     onChange={handleSelectAll}
-                    className="rounded border-slate-300 text-[#0284c7] focus:ring-0 cursor-pointer w-3.5 h-3.5"
+                    className="rounded border-slate-300 text-[#0284c7] focus:ring-0 cursor-pointer w-4 h-4"
                     title="Pilih Semua Antrean"
                   />
                 </th>
-                <th className="py-1 px-1 text-center w-9 min-w-[36px] border border-[#cbd5e1]">NO</th>
-                <th className="py-1 px-2.5 whitespace-nowrap min-w-[170px] border border-[#cbd5e1]">NO. ANTREAN & TGL</th>
-                <th className="py-1 px-2.5 whitespace-nowrap min-w-[140px] border border-[#cbd5e1]">SUMBER & REFF</th>
-                <th className="py-1 px-2.5 min-w-[220px] border border-[#cbd5e1]">RINCIAN MODEL PRODUK (SKU)</th>
-                <th className="py-1 px-2 text-center whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">TARGET & PRIORITAS</th>
-                <th className="py-1 px-2 text-center min-w-[160px] border border-[#cbd5e1]">STATUS & HISTORI TAHAPAN</th>
-                <th className="py-1 px-2 text-center whitespace-nowrap min-w-[140px] border border-[#cbd5e1]">AKSI</th>
+                <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-[#cbd5e1]">NO</th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[180px] border border-[#cbd5e1]">NO. ANTREAN & TGL</th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] border border-[#cbd5e1]">SUMBER & REFF</th>
+                <th className="py-2.5 px-3 min-w-[240px] border border-[#cbd5e1]">RINCIAN MODEL PRODUK (SKU)</th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">TARGET & PRIORITAS</th>
+                <th className="py-2.5 px-3 text-center min-w-[180px] border border-[#cbd5e1]">STATUS & HISTORI TAHAPAN</th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[150px] border border-[#cbd5e1]">AKSI</th>
               </tr>
             </thead>
             <tbody className="font-medium text-slate-700 divide-y divide-[#cbd5e1]">
@@ -1662,42 +1662,42 @@ export default function Antrean({
                   return (
                     <tr key={item.id} className={`transition-colors ${isSelected ? 'bg-blue-50/60' : 'hover:bg-[#f1f5f9]'}`}>
                       {/* 0. CHECKBOX SELECT */}
-                      <td className="py-[2px] px-1.5 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2 text-center border border-[#cbd5e1]">
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(item.id)}
-                          className="rounded border-slate-300 text-[#0284c7] focus:ring-0 cursor-pointer w-3.5 h-3.5"
+                          className="rounded border-slate-300 text-[#0284c7] focus:ring-0 cursor-pointer w-4 h-4"
                         />
                       </td>
 
                       {/* 1. NO */}
-                      <td className="py-[2px] px-1 text-center text-slate-500 font-semibold text-[11px] border border-[#cbd5e1]">
+                      <td className="py-2 px-2 text-center text-slate-500 font-bold text-xs sm:text-sm border border-[#cbd5e1]">
                         {idx + 1}
                       </td>
 
                       {/* 2. NO. ANTREAN & TGL MASUK (GABUNGAN) */}
-                      <td className="py-[2px] px-2.5 border border-[#cbd5e1] whitespace-nowrap">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono font-bold text-[11px] text-[#0284c7] bg-[#eff6ff] px-1.5 py-0.5 rounded border border-[#bfdbfe] inline-block w-fit">
+                      <td className="py-2 px-3 border border-[#cbd5e1] whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-mono font-bold text-xs sm:text-[13px] text-[#0284c7] bg-[#eff6ff] px-2 py-0.5 rounded border border-[#bfdbfe] inline-block w-fit">
                             {item.noAntrian}
                           </span>
-                          <div className="flex items-center gap-1 text-slate-500 text-[10.5px] mt-0.5">
-                            <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                          <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-0.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-mono">{item.tglMasuk}</span>
                           </div>
                         </div>
                       </td>
 
                       {/* 3. SUMBER PERMINTAAN & NO REFF (GABUNGAN) */}
-                      <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 border border-[#cbd5e1]">
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[11.5px] font-bold text-slate-800" title={item.sumberPermintaan}>
+                          <span className="text-xs sm:text-sm font-bold text-slate-800" title={item.sumberPermintaan}>
                             {item.sumberPermintaan}
                           </span>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono mt-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mt-0.5">
                             <span className="text-slate-400">Reff:</span>
-                            <span className="font-semibold text-slate-700 bg-slate-100 px-1 rounded">
+                            <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded">
                               {item.noReff || '-'}
                             </span>
                           </div>
@@ -1705,22 +1705,22 @@ export default function Antrean({
                       </td>
 
                       {/* 4. MODEL PRODUK & SPESIFIKASI (SPACE LEBAR & LENGKAP) */}
-                      <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 border border-[#cbd5e1]">
                         <div className="flex flex-col min-w-0">
                           {/* SKU & Nama Produk */}
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-mono font-extrabold text-[10.5px] text-[#0284c7] bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 shrink-0">
+                            <span className="font-mono font-black text-xs text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
                               {item.sku}
                             </span>
-                            <span className="font-bold text-[#0f172a] text-xs truncate" title={item.namaProduk}>
+                            <span className="font-bold text-[#0f172a] text-xs sm:text-sm truncate" title={item.namaProduk}>
                               {item.namaProduk || '-'}
                             </span>
                           </div>
 
                           {/* Kategori, Varian, Ukuran, Kain */}
-                          <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500 mt-1 flex-wrap">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1 flex-wrap">
                             {item.kategori && (
-                              <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold text-[10px]">
+                              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-xs">
                                 {item.kategori}
                               </span>
                             )}
@@ -1732,7 +1732,7 @@ export default function Antrean({
                             {item.skuBahan && item.skuBahan !== '-' && (
                               <>
                                 <span className="text-slate-300">•</span>
-                                <span className="font-mono text-cyan-800 font-semibold text-[10px]">
+                                <span className="font-mono text-cyan-800 font-bold text-xs">
                                   Kain: {item.skuBahan}
                                 </span>
                               </>
@@ -1742,14 +1742,14 @@ export default function Antrean({
                       </td>
 
                       {/* 5. TARGET QTY & PRIORITAS (GABUNGAN) */}
-                      <td className="py-[2px] px-2 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-center border border-[#cbd5e1]">
                         <div className="flex flex-col items-center gap-1">
-                          <span className="font-mono font-extrabold text-xs text-[#0f172a]">
+                          <span className="font-mono font-black text-sm sm:text-base text-[#0f172a]">
                             {Number(item.qty).toLocaleString('id-ID')}{' '}
-                            <span className="text-[10px] font-medium text-slate-500">Pcs</span>
+                            <span className="text-xs font-semibold text-slate-500">Pcs</span>
                           </span>
                           <span
-                            className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9.5px] font-bold border ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${
                               isUrgent
                                 ? 'bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]'
                                 : item.prioritas === 'Low'
@@ -1757,17 +1757,17 @@ export default function Antrean({
                                 : 'bg-[#eff6ff] text-[#1d4ed8] border-[#bfdbfe]'
                             }`}
                           >
-                            {isUrgent && <Flame className="w-2.5 h-2.5 text-rose-600 shrink-0" />}
+                            {isUrgent && <Flame className="w-3 h-3 text-rose-600 shrink-0" />}
                             <span>{item.prioritas}</span>
                           </span>
                         </div>
                       </td>
 
                       {/* 6. STATUS & HISTORI CUTTING / JAHIT */}
-                      <td className="py-[2px] px-2 text-center border border-[#cbd5e1]">
-                        <div className="flex flex-col items-center gap-1">
+                      <td className="py-2 px-3 text-center border border-[#cbd5e1]">
+                        <div className="flex flex-col items-center gap-1.5">
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold border ${
                               item.status === 'Menunggu Cutting'
                                 ? 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]'
                                 : item.status === 'Proses Cutting' || item.status === 'Sedang Diproses'
@@ -1785,22 +1785,22 @@ export default function Antrean({
                           >
                             {item.status === 'Sedang Diproses' ? 'Proses Cutting' : item.status === 'Menunggu Penerimaan Gudang' ? 'Selesai' : item.status}
                           </span>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
-                            <Clock className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>s/d {item.deadline}</span>
                           </div>
 
                           {/* HISTORI PENYERAHAN TIM CUTTING JIKA SUDAH DISERAHKAN */}
                           {item.tglSerahCutting && (
-                            <div className="w-full mt-1 px-1.5 py-1 rounded bg-[#f0f9ff] border border-[#bae6fd] text-left leading-tight text-[9.5px]">
-                              <div className="font-extrabold text-[#0369a1] flex items-center gap-1">
-                                <Scissors className="w-2.5 h-2.5 shrink-0" />
+                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f0f9ff] border border-[#bae6fd] text-left leading-snug text-[11px]">
+                              <div className="font-extrabold text-[#0369a1] flex items-center gap-1.5 text-xs">
+                                <Scissors className="w-3 h-3 shrink-0" />
                                 <span className="truncate" title={item.timCutting}>{item.timCutting || 'Tim Cutting'}</span>
                               </div>
-                              <div className="text-slate-600 font-mono text-[9px] mt-0.5">
+                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
                                 Tgl: {item.tglSerahCutting}
                               </div>
-                              <div className="text-emerald-700 font-mono font-bold text-[9px] mt-0.5">
+                              <div className="text-emerald-700 font-mono font-bold text-[11px] mt-0.5">
                                 @Rp {(Number(item.tarifCutting) || 1500).toLocaleString('id-ID')} • Tot: Rp {(Number(item.totalBiayaCutting) || ((item.qty || 0) * (item.tarifCutting || 1500))).toLocaleString('id-ID')}
                               </div>
                             </div>
@@ -1808,15 +1808,15 @@ export default function Antrean({
 
                           {/* HISTORI PENYERAHAN TIM JAHIT JIKA SUDAH DISERAHKAN */}
                           {item.tglSerahJahit && (
-                            <div className="w-full mt-0.5 px-1.5 py-1 rounded bg-[#f5f3ff] border border-[#ddd6fe] text-left leading-tight text-[9.5px]">
-                              <div className="font-extrabold text-[#6d28d9] flex items-center gap-1">
-                                <SewingMachineIcon className="w-2.5 h-2.5 shrink-0" />
+                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f5f3ff] border border-[#ddd6fe] text-left leading-snug text-[11px]">
+                              <div className="font-extrabold text-[#6d28d9] flex items-center gap-1.5 text-xs">
+                                <SewingMachineIcon className="w-3 h-3 shrink-0" />
                                 <span className="truncate" title={item.timJahit}>{item.timJahit || 'Tim Jahit'}</span>
                               </div>
-                              <div className="text-slate-600 font-mono text-[9px] mt-0.5">
+                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
                                 Tgl: {item.tglSerahJahit}
                               </div>
-                              <div className="text-purple-700 font-mono font-bold text-[9px] mt-0.5">
+                              <div className="text-purple-700 font-mono font-bold text-[11px] mt-0.5">
                                 @Rp {(Number(item.tarifJahit) || 3500).toLocaleString('id-ID')} • Tot: Rp {(Number(item.totalBiayaJahit) || ((item.qty || 0) * (item.tarifJahit || 3500))).toLocaleString('id-ID')}
                               </div>
                             </div>
@@ -1824,15 +1824,15 @@ export default function Antrean({
 
                           {/* HISTORI PENYERAHAN TIM QC JIKA SUDAH DISERAHKAN */}
                           {item.tglSerahQc && (
-                            <div className="w-full mt-0.5 px-1.5 py-1 rounded bg-[#f0fdfa] border border-[#99f6e4] text-left leading-tight text-[9.5px]">
-                              <div className="font-extrabold text-[#0f766e] flex items-center gap-1">
-                                <ShieldCheck className="w-2.5 h-2.5 shrink-0" />
+                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f0fdfa] border border-[#99f6e4] text-left leading-snug text-[11px]">
+                              <div className="font-extrabold text-[#0f766e] flex items-center gap-1.5 text-xs">
+                                <ShieldCheck className="w-3 h-3 shrink-0" />
                                 <span className="truncate" title={item.timQc}>{item.timQc || 'Tim QC'}</span>
                               </div>
-                              <div className="text-slate-600 font-mono text-[9px] mt-0.5">
+                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
                                 Tgl QC: {item.tglSerahQc}
                               </div>
-                              <div className="text-teal-700 font-semibold text-[9px] mt-0.5">
+                              <div className="text-teal-700 font-semibold text-[11px] mt-0.5">
                                 Status: {item.statusQc || 'Pemeriksaan'}
                               </div>
                             </div>
@@ -1840,15 +1840,15 @@ export default function Antrean({
 
                           {/* HISTORI HASIL QC & PENYERAHAN TIM FINISHING */}
                           {item.tglSerahFinishing && (
-                            <div className="w-full mt-0.5 px-1.5 py-1 rounded bg-[#ecfdf5] border border-[#a7f3d0] text-left leading-tight text-[9.5px]">
-                              <div className="font-extrabold text-[#047857] flex items-center gap-1">
-                                <PackageCheck className="w-2.5 h-2.5 shrink-0" />
+                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#ecfdf5] border border-[#a7f3d0] text-left leading-snug text-[11px]">
+                              <div className="font-extrabold text-[#047857] flex items-center gap-1.5 text-xs">
+                                <PackageCheck className="w-3 h-3 shrink-0" />
                                 <span className="truncate" title={item.timFinishing}>{item.timFinishing || 'Tim Finishing'}</span>
                               </div>
-                              <div className="text-slate-600 font-mono text-[9px] mt-0.5">
+                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
                                 Tgl Finishing: {item.tglSerahFinishing}
                               </div>
-                              <div className="text-emerald-700 font-mono font-bold text-[9px] mt-0.5">
+                              <div className="text-emerald-700 font-mono font-bold text-[11px] mt-0.5">
                                 ✅ Lolos: {Number(item.qtyPassQc || (item.qty || 0)).toLocaleString('id-ID')} Pcs
                                 {Number(item.qtyRejectQc) > 0 && (
                                   <span className="text-rose-600 ml-1">• ❌ Reject: {Number(item.qtyRejectQc).toLocaleString('id-ID')}</span>
@@ -1858,12 +1858,12 @@ export default function Antrean({
                           )}
                           {/* HISTORI PENYERAHAN KE GUDANG JADI */}
                           {item.tglSerahGudang && (
-                            <div className="w-full mt-0.5 px-1.5 py-1 rounded bg-[#f0fdf4] border border-[#bbf7d0] text-left leading-tight text-[9.5px]">
-                              <div className="font-extrabold text-[#15803d] flex items-center gap-1">
-                                <Warehouse className="w-2.5 h-2.5 shrink-0" />
+                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f0fdf4] border border-[#bbf7d0] text-left leading-snug text-[11px]">
+                              <div className="font-extrabold text-[#15803d] flex items-center gap-1.5 text-xs">
+                                <Warehouse className="w-3 h-3 shrink-0" />
                                 <span>Gudang Jadi (Selesai)</span>
                               </div>
-                              <div className="text-slate-600 font-mono text-[9px] mt-0.5">
+                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
                                 Tgl Serah: {item.tglSerahGudang}
                               </div>
                             </div>
@@ -1872,62 +1872,55 @@ export default function Antrean({
                       </td>
 
                       {/* 7. AKSI: IKON SERAHKAN CUTTING / JAHIT / QC / FINISHING, EYE, EDIT, TRASH */}
-                      <td className="py-[2px] px-2 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-center border border-[#cbd5e1]">
                         <div className="inline-flex items-center justify-center gap-1.5 flex-nowrap">
-                          {/* Tombol Dinamis:
-                              - Jika 'Menunggu Cutting': Ikon Scissors (Serahkan Cutting)
-                              - Jika 'Proses Cutting': Ikon SewingMachine (Serahkan Jahit)
-                              - Jika 'Proses Jahit': Tombol Produksi Hilang, ganti Ikon ShieldCheck (Serahkan QC)
-                              - Jika 'Proses QC': Ikon PackageCheck (Hasil Cek QC & Serahkan ke Finishing)
-                              - Jika 'Proses Finishing': Ikon PackageCheck (Update Finishing)
-                          */}
                           {item.status === 'Proses Cutting' || item.status === 'Sedang Diproses' ? (
                             <button
                               onClick={() => handleOpenJahitModal([item])}
-                              className="w-7 h-7 rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                              className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                               title="Lanjut ke Proses Jahit (Serahkan ke Tim Jahit)"
                             >
-                              <SewingMachineIcon className="w-3.5 h-3.5" />
+                              <SewingMachineIcon className="w-4 h-4" />
                             </button>
                           ) : item.status === 'Proses Jahit' ? (
                             <button
                               onClick={() => handleOpenQcModal([item])}
-                              className="w-7 h-7 rounded bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                              className="w-8 h-8 rounded-lg bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                               title="Lanjut ke Proses QC (Serahkan ke Tim QC untuk Inspeksi)"
                             >
-                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <ShieldCheck className="w-4 h-4" />
                             </button>
                           ) : item.status === 'Proses QC' ? (
                             <button
                               onClick={() => handleOpenFinishingModal([item])}
-                              className="w-7 h-7 rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                              className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                               title="Pemeriksaan Hasil QC & Serahkan ke Proses Finishing"
                             >
-                              <PackageCheck className="w-3.5 h-3.5" />
+                              <PackageCheck className="w-4 h-4" />
                             </button>
                           ) : item.status === 'Proses Finishing' ? (
                             <button
                               onClick={() => handleOpenGudangJadiModal(item)}
-                              className="w-7 h-7 rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                              className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                               title="Selesaikan Finishing & Masukkan Barang ke Gudang Jadi"
                             >
-                              <Warehouse className="w-3.5 h-3.5" />
+                              <Warehouse className="w-4 h-4" />
                             </button>
                           ) : item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang' ? (
-                            <span className="w-7 h-7 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold shrink-0" title="Produksi Selesai (Di Gudang Jadi)">
+                            <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold shrink-0" title="Produksi Selesai (Di Gudang Jadi)">
                               ✓
                             </span>
                           ) : (
                             <button
                               onClick={() => handleOpenCuttingModal([item])}
-                              className={`w-7 h-7 rounded flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0 ${
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0 ${
                                 item.tglSerahCutting
                                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                                     : 'bg-blue-600 hover:bg-blue-700 text-white'
                               }`}
                               title={item.tglSerahCutting ? 'Edit / Lihat Penyerahan Cutting' : 'Serahkan ke Tim Cutting (Hitung Biaya)'}
                             >
-                              <Scissors className="w-3.5 h-3.5" />
+                              <Scissors className="w-4 h-4" />
                             </button>
                           )}
 
@@ -1941,20 +1934,20 @@ export default function Antrean({
                                 }).catch(() => {});
                               }
                             }}
-                            className="w-7 h-7 rounded bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                            className="w-8 h-8 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                             title="Tampilkan Detail Antrean"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-4 h-4" />
                           </button>
 
                           {/* Tombol Bagikan Link Tracking Customer */}
                           <button
                             type="button"
                             onClick={() => setShareTrackingItem(item)}
-                            className="w-7 h-7 rounded bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                            className="w-8 h-8 rounded-lg bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                             title="Bagikan Link Live Tracking ke Pelanggan (WhatsApp / Link)"
                           >
-                            <Share2 className="w-3.5 h-3.5" />
+                            <Share2 className="w-4 h-4" />
                           </button>
 
                           {/* Tombol Edit & Hapus HANYA muncul jika status 'Menunggu Cutting' */}
@@ -1962,28 +1955,28 @@ export default function Antrean({
                             <>
                               <button
                                 onClick={() => handleOpenEdit(item)}
-                                className="w-7 h-7 rounded bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                                className="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                                 title="Edit Antrean"
                               >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-4 h-4" />
                               </button>
 
                               <button
                                 onClick={() => handleDelete(item)}
-                                className="w-7 h-7 rounded bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                                className="w-8 h-8 rounded-lg bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                                 title="Hapus Antrean"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </>
                           ) : (
                             /* Jika dalam proses produksi, sediakan tombol Batalkan Tahap (Undo / Rollback) */
                             <button
                               onClick={() => handleRollbackTahap(item)}
-                              className="w-6 h-6 rounded bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                              className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border border-amber-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
                               title="Batalkan & Kembalikan ke Tahap Sebelumnya (Undo jika salah proses)"
                             >
-                              <RotateCcw className="w-3 h-3 stroke-[2.5]" />
+                              <RotateCcw className="w-4 h-4 stroke-[2.5]" />
                             </button>
                           )}
                         </div>
@@ -1997,14 +1990,14 @@ export default function Antrean({
         </div>
 
         {/* BOTTOM SUMMARY FOOTER */}
-        <div className="bg-[#f8fafc] border-t border-[#cbd5e1] px-3 py-1.5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-1.5">
+        <div className="bg-[#f8fafc] border-t border-[#cbd5e1] px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-600 gap-2">
           <div>
             Menampilkan <span className="font-bold text-slate-800">{filteredList.length}</span> dari{' '}
             <span className="font-bold text-slate-800">{antreanList.length}</span> antrean
           </div>
           <div className="flex items-center gap-3 font-semibold text-slate-700">
             <span>
-              Total Target: <strong className="text-[#0284c7]">{stats.totalQty.toLocaleString('id-ID')} Pcs</strong>
+              Total Target: <strong className="text-[#0284c7] font-bold">{stats.totalQty.toLocaleString('id-ID')} Pcs</strong>
             </span>
           </div>
         </div>

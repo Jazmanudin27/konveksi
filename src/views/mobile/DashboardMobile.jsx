@@ -29,10 +29,7 @@ export default function DashboardMobile({
   onNextStatus,
   onSwitchToDesktop,
 }) {
-  // Tab toggle pada kartu biru (Target Order vs Stok Gudang Jadi)
-  const [activeKpiTab, setActiveKpiTab] = useState('order');
-
-  // Normalisasi data dan perhitungan KPI yang akurat
+  // Normalisasi data dan perhitungan KPI yang akurat dari database real
   const stats = useMemo(() => {
     const normalizedList = antreanList.map((item) => {
       const qty = Number(item.qty ?? item.targetQty ?? 0);
@@ -101,7 +98,7 @@ export default function DashboardMobile({
   }, [antreanList, products]);
 
   return (
-    <div className="space-y-4 -mt-5 pb-6 relative z-20">
+    <div className="space-y-3.5 -mt-2 pb-6 relative z-20">
       {/* 1. KARTU PROFIL ADMIN PRODUKSI & 4 STATUS PIPELINE KONVEKSI */}
       <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100/90">
         <div className="flex items-center justify-between">
@@ -183,76 +180,41 @@ export default function DashboardMobile({
         </div>
       </div>
 
-      {/* 2. KARTU BIRU ROYAL VOLUME TARGET & NILAI GUDANG (Menggantikan Tagihan & Tabungan) */}
+      {/* 2. KARTU VOLUME TARGET ORDER PRODUKSI (DATA ASLI DARI ANTREAN REAL-TIME) */}
       <div className="bg-gradient-to-br from-[#1d4ed8] via-[#2563eb] to-[#1e40af] text-white rounded-3xl p-4 sm:p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden">
-        {/* Switcher Pill di atas */}
-        <div className="bg-blue-950/40 rounded-full p-1 inline-flex items-center gap-1 border border-white/10 mb-3.5">
-          <button
-            onClick={() => setActiveKpiTab('order')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeKpiTab === 'order'
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-white/80 hover:text-white'
-            }`}
-          >
-            <Scissors className="w-3.5 h-3.5" />
-            <span>Target Order</span>
-          </button>
-          <button
-            onClick={() => setActiveKpiTab('gudang')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeKpiTab === 'gudang'
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-white/80 hover:text-white'
-            }`}
-          >
-            <Warehouse className="w-3.5 h-3.5" />
-            <span>Stok Gudang</span>
-          </button>
-        </div>
-
         {/* Konten Utama Angka Besar */}
         <div className="flex items-start justify-between">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-blue-200">
-              {activeKpiTab === 'order' ? 'TOTAL TARGET VOLUME ORDER' : 'TOTAL ESTIMASI NILAI STOK GUDANG JADI'}
+            <div className="text-[10px] font-extrabold uppercase tracking-wider text-blue-200 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>TOTAL TARGET VOLUME ORDER</span>
             </div>
             <div className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">
-              {activeKpiTab === 'order'
-                ? `${(stats.totalTargetPcs || 50).toLocaleString('id-ID')} Pcs`
-                : `Rp ${(stats.totalNilaiStokRp || 36400000).toLocaleString('id-ID')}`}
+              {Number(stats.totalTargetPcs || 0).toLocaleString('id-ID')} Pcs
             </div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
-            {activeKpiTab === 'order' ? (
-              <Scissors className="w-5 h-5 text-white/80" />
-            ) : (
-              <Warehouse className="w-5 h-5 text-white/80" />
-            )}
+          <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
+            <Scissors className="w-5 h-5 text-blue-100" />
           </div>
         </div>
 
         {/* Dua Sub-Kotak Putih di Bawah Kartu Biru */}
         <div className="grid grid-cols-2 gap-2.5 mt-4">
           <div className="bg-white rounded-2xl p-3 text-slate-800 shadow-xs">
-            <div className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
-              {activeKpiTab === 'order' ? 'POTONG & JAHIT' : 'TOTAL FISIK READY'}
+            <div className="text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">
+              POTONG & JAHIT
             </div>
             <div className="text-sm sm:text-base font-black text-blue-600 mt-0.5">
-              {activeKpiTab === 'order'
-                ? `${(stats.targetPotongJahit || 50).toLocaleString('id-ID')} Pcs`
-                : `${(stats.totalStokGudangPcs || 1040).toLocaleString('id-ID')} Pcs`}
+              {Number(stats.targetPotongJahit || 0).toLocaleString('id-ID')} Pcs
             </div>
           </div>
 
           <div className="bg-white rounded-2xl p-3 text-slate-800 shadow-xs">
-            <div className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
-              {activeKpiTab === 'order' ? 'FINISHING & GUDANG' : 'TOTAL SKU AKTIF'}
+            <div className="text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">
+              FINISHING & GUDANG
             </div>
             <div className="text-sm sm:text-base font-black text-amber-600 mt-0.5">
-              {activeKpiTab === 'order'
-                ? `${stats.targetFinishing.toLocaleString('id-ID')} Pcs`
-                : `${products.length || 10} SKU`}
+              {Number(stats.targetFinishing || 0).toLocaleString('id-ID')} Pcs
             </div>
           </div>
         </div>

@@ -25,9 +25,41 @@ import {
   Eye,
   Filter,
   Wallet,
+  LayoutGrid,
+  ListFilter,
+  Users,
+  Building2,
+  FileText,
+  CalendarDays,
+  ChevronRight,
+  Download,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
+
+function angkaTerbilang(nilai) {
+  const bilangan = [
+    '', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan',
+    'Sepuluh', 'Sebelas'
+  ];
+  const angka = Math.floor(Math.abs(Number(nilai) || 0));
+  if (angka === 0) return 'Nol Rupiah';
+
+  function sebut(x) {
+    if (x < 12) return bilangan[x];
+    if (x < 20) return sebut(x - 10) + ' Belas';
+    if (x < 100) return sebut(Math.floor(x / 10)) + ' Puluh ' + sebut(x % 10);
+    if (x < 200) return 'Seratus ' + sebut(x - 100);
+    if (x < 1000) return sebut(Math.floor(x / 100)) + ' Ratus ' + sebut(x % 100);
+    if (x < 2000) return 'Seribu ' + sebut(x - 1000);
+    if (x < 1000000) return sebut(Math.floor(x / 1000)) + ' Ribu ' + sebut(x % 1000);
+    if (x < 1000000000) return sebut(Math.floor(x / 1000000)) + ' Juta ' + sebut(x % 1000000);
+    if (x < 1000000000000) return sebut(Math.floor(x / 1000000000)) + ' Miliar ' + sebut(x % 1000000000);
+    return '';
+  }
+
+  return sebut(angka).replace(/\s+/g, ' ').trim() + ' Rupiah';
+}
 
 export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   const [dataList, setDataList] = useState([]);
@@ -39,6 +71,23 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
     perTahapan: {},
   });
   const [loading, setLoading] = useState(false);
+
+  // View Mode: 'karyawan' (Default: Rekap Gaji Mingguan / Periode Per Tim) | 'transaksi' (Rincian Order)
+  const [viewMode, setViewMode] = useState('karyawan');
+
+  // Filter Tanggal Periode Mingguan
+  const defaultStartDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().slice(0, 10);
+  }, []);
+  const defaultEndDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(defaultEndDate);
+
+  // Data Kasbon untuk deteksi pinjaman aktif
+  const [kasbonAll, setKasbonAll] = useState([]);
 
   // Filter State
   const [activeTahapTab, setActiveTahapTab] = useState('Semua'); // 'Semua' | 'Cutting' | 'Jahit' | 'QC' | 'Finishing'
@@ -56,11 +105,15 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
     catatan: '',
   });
 
-  // Slip Modal State
+  // Slip Modal Single Order
   const [isSlipModalOpen, setIsSlipModalOpen] = useState(false);
   const [slipItem, setSlipItem] = useState(null);
 
-  // Kasbon State
+  // Slip Modal Karyawan / Tim Mingguan (Format Emra Production)
+  const [isSlipKaryawanModalOpen, setIsSlipKaryawanModalOpen] = useState(false);
+  const [selectedKaryawanName, setSelectedKaryawanName] = useState('');
+
+  // Kasbon State saat Modal Bayar
   const [kasbonInfo, setKasbonInfo] = useState(null);
   const [potonganKasbon, setPotonganKasbon] = useState(0);
 
@@ -68,9 +121,10 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [list, rekapData] = await Promise.all([
+      const [list, rekapData, kasbonData] = await Promise.all([
         api.getPembayaranUpah(),
         api.getPembayaranUpahRekap().catch(() => null),
+        api.getKasbon().catch(() => []),
       ]);
 
       if (Array.isArray(list)) {
@@ -78,6 +132,9 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
       }
       if (rekapData) {
         setRekap(rekapData);
+      }
+      if (Array.isArray(kasbonData)) {
+        setKasbonAll(kasbonData);
       }
     } catch (err) {
       console.warn('Gagal memuat pembayaran upah:', err);
@@ -89,6 +146,24 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleSetPresetDate = (type) => {
+    const today = new Date();
+    if (type === 'minggu') {
+      const start = new Date();
+      start.setDate(today.getDate() - 6);
+      setStartDate(start.toISOString().slice(0, 10));
+      setEndDate(today.toISOString().slice(0, 10));
+    } else if (type === 'bulan') {
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      setStartDate(`${y}-${m}-01`);
+      setEndDate(today.toISOString().slice(0, 10));
+    } else if (type === 'semua') {
+      setStartDate('');
+      setEndDate('');
+    }
+  };
 
   // Sync dari Antrean Produksi
   const handleSyncFromAntrean = async () => {
@@ -130,6 +205,12 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
       ) {
         return false;
       }
+
+      // Filter Tanggal Periode
+      const itemDate = item.tglBayar || (item.createdAt ? String(item.createdAt).slice(0, 10) : '');
+      if (startDate && itemDate && itemDate < startDate) return false;
+      if (endDate && itemDate && itemDate > endDate) return false;
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchNo = item.noPembayaran?.toLowerCase().includes(q);
@@ -137,11 +218,72 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
         const matchSku = item.sku?.toLowerCase().includes(q);
         const matchProd = item.namaProduk?.toLowerCase().includes(q);
         const matchPet = item.namaPetugas?.toLowerCase().includes(q);
-        if (!matchNo && !matchAnt && !matchSku && !matchProd && !matchPet) return false;
+        const matchInduk = item.skuInduk?.toLowerCase().includes(q);
+        if (!matchNo && !matchAnt && !matchSku && !matchProd && !matchPet && !matchInduk) return false;
       }
       return true;
     });
-  }, [dataList, activeTahapTab, filterStatus, filterPetugas, searchQuery]);
+  }, [dataList, activeTahapTab, filterStatus, filterPetugas, searchQuery, startDate, endDate]);
+
+  // Rekap Payroll Per Karyawan / Tim
+  const rekapKaryawanList = useMemo(() => {
+    const map = new Map();
+
+    filteredList.forEach((item) => {
+      const pet = (item.namaPetugas || 'Tanpa Nama').trim();
+      if (!map.has(pet)) {
+        // Cek pinjaman / kasbon aktif karyawan ini
+        const employeeKasbons = kasbonAll.filter(
+          (k) => (k.namaPetugas || '').trim().toLowerCase() === pet.toLowerCase()
+        );
+        const sisaPinjamanAktif = employeeKasbons.reduce(
+          (acc, k) => acc + Number(k.sisa || 0),
+          0
+        );
+
+        map.set(pet, {
+          namaPetugas: pet,
+          tahapan: item.tahapan,
+          items: [],
+          totalQty: 0,
+          totalKotor: 0,
+          totalPotonganKasbon: 0,
+          totalBersih: 0,
+          pendingCount: 0,
+          lunasCount: 0,
+          sisaPinjamanAktif,
+        });
+      }
+
+      const grp = map.get(pet);
+      grp.items.push(item);
+      grp.totalQty += Number(item.qty || 0);
+      grp.totalKotor += Number(item.totalUpah || 0);
+      grp.totalPotonganKasbon += Number(item.potonganKasbon || 0);
+      grp.totalBersih += Number(
+        item.totalBersih ?? (Number(item.totalUpah) - Number(item.potonganKasbon || 0))
+      );
+
+      if (item.statusBayar === 'Lunas') {
+        grp.lunasCount += 1;
+      } else {
+        grp.pendingCount += 1;
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.totalKotor - a.totalKotor);
+  }, [filteredList, kasbonAll]);
+
+  // Data Karyawan yang sedang dibuka slipnya
+  const currentSlipKaryawan = useMemo(() => {
+    if (!selectedKaryawanName) return null;
+    return rekapKaryawanList.find((k) => k.namaPetugas === selectedKaryawanName) || null;
+  }, [selectedKaryawanName, rekapKaryawanList]);
+
+  const handleOpenSlipKaryawan = (namaPetugas) => {
+    setSelectedKaryawanName(namaPetugas);
+    setIsSlipKaryawanModalOpen(true);
+  };
 
   // Handle Multi-Select
   const handleSelectAll = (e) => {
@@ -479,251 +621,536 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
           })}
         </div>
 
-        {/* Filter Bar: Search, Status Filter, Petugas Filter */}
-        <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row items-center gap-2">
-          {/* Search Input */}
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Cari no bayar / antrean / SKU / nama produk / nama petugas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none"
-            />
+        {/* View Mode Switcher & Filter Periode Bar */}
+        <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+          {/* Baris 1: Mode Switcher & Presets */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-fit">
+              <button
+                type="button"
+                onClick={() => setViewMode('karyawan')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  viewMode === 'karyawan'
+                    ? 'bg-[#064e3b] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Rekap Gaji Mingguan (Per Tim / Karyawan)</span>
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    viewMode === 'karyawan' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {rekapKaryawanList.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('transaksi')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  viewMode === 'transaksi'
+                    ? 'bg-[#064e3b] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ListFilter className="w-3.5 h-3.5" />
+                <span>Rincian Transaksi Order</span>
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    viewMode === 'transaksi' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {filteredList.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Quick Date Presets */}
+            <div className="flex items-center gap-1 text-[11px] font-bold">
+              <span className="text-slate-400 mr-1 hidden sm:inline">Pilih Periode:</span>
+              <button
+                type="button"
+                onClick={() => handleSetPresetDate('minggu')}
+                className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+              >
+                1 Minggu Terakhir
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetPresetDate('bulan')}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                Bulan Ini
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetPresetDate('semua')}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                Semua
+              </button>
+            </div>
           </div>
 
-          {/* Filter Status Bayar */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-9 px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-600 focus:outline-none cursor-pointer w-full sm:w-auto"
-            >
-              <option value="Semua">Semua Status Bayar</option>
-              <option value="Belum Lunas">🔴 Belum Lunas (Pending)</option>
-              <option value="Lunas">🟢 Lunas</option>
-            </select>
+          {/* Baris 2: Date Range Picker, Search, Status */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 pt-1 border-t border-slate-100">
+            {/* Date Range Inputs */}
+            <div className="md:col-span-5 flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-50 p-1 rounded-xl border border-slate-200">
+              <CalendarDays className="w-4 h-4 text-emerald-700 shrink-0 ml-1.5" />
+              <span className="text-[11px] text-slate-500 whitespace-nowrap">Dari:</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-7 px-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-emerald-600 flex-1"
+              />
+              <span className="text-[11px] text-slate-500 whitespace-nowrap">s.d</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-7 px-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-emerald-600 flex-1"
+              />
+            </div>
+
+            {/* Search Input */}
+            <div className="relative md:col-span-5">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Cari nama karyawan / tim / SKU / produk..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none"
+              />
+            </div>
+
+            {/* Status Bayar */}
+            <div className="md:col-span-2">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full h-9 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-600 focus:outline-none cursor-pointer"
+              >
+                <option value="Semua">Semua Status</option>
+                <option value="Belum Lunas">🔴 Belum Lunas</option>
+                <option value="Lunas">🟢 Lunas</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 4. TABEL PEMBAYARAN UPAH */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
-            <thead>
-              <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-xs tracking-wider uppercase">
-                <th className="py-2.5 px-2 text-center w-9 min-w-[36px] border border-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={filteredList.length > 0 && selectedIds.length === filteredList.length}
-                    onChange={handleSelectAll}
-                    className="rounded border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer w-4 h-4"
-                    title="Pilih Semua Tagihan"
-                  />
-                </th>
-                <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-slate-200">NO</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px] border border-slate-200">NO. BAYAR & TANGGAL</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px] border border-slate-200">ANTREAN & PRODUK</th>
-                <th className="py-2.5 px-3 min-w-[200px] border border-slate-200">BAGIAN & PETUGAS</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[120px] border border-slate-200">QTY & TARIF</th>
-                <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[130px] border border-slate-200">TOTAL UPAH</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[140px] border border-slate-200">STATUS BAYAR</th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[140px] border border-slate-200">AKSI</th>
-              </tr>
-            </thead>
-            <tbody className="font-medium text-slate-700 divide-y divide-slate-200">
-              {filteredList.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className="py-12 text-center text-slate-400 border border-slate-200">
-                    <Receipt className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
-                    <p className="text-sm font-semibold text-slate-600">Tidak ada data tagihan upah</p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Klik "Sync dari Antrean" untuk memuat tagihan upah dari order yang sudah diserahkan
-                    </p>
-                  </td>
+      {/* 4. KONTEN TABEL SESUAI VIEW MODE */}
+      {viewMode === 'karyawan' ? (
+        /* =================================================================== */
+        /* TABEL 1: REKAP GAJI MINGGUAN PER KARYAWAN / TIM (FORMAT EMRA)      */
+        /* =================================================================== */
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
+              <thead>
+                <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-xs tracking-wider uppercase">
+                  <th className="py-2.5 px-3 text-center w-12 border border-slate-200">NO</th>
+                  <th className="py-2.5 px-3 border border-slate-200 min-w-[200px]">NAMA KARYAWAN / TIM</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[140px]">BAGIAN / DIVISI</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[100px]">PEKERJAAN</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[130px] bg-rose-50/50 text-rose-800">GRAND TOTAL QTY</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-right min-w-[140px]">UPAH KOTOR</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-right min-w-[140px] text-amber-800 bg-amber-50/40">POTONGAN PINJAMAN</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-right min-w-[150px] bg-emerald-50/60 text-emerald-900">TOTAL GAJI BERSIH</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[120px]">STATUS</th>
+                  <th className="py-2.5 px-3 border border-slate-200 text-center min-w-[210px]">AKSI</th>
                 </tr>
-              ) : (
-                filteredList.map((item, idx) => {
-                  const isSelected = selectedIds.includes(item.id);
-                  const isLunas = item.statusBayar === 'Lunas';
+              </thead>
+              <tbody className="font-medium text-slate-700 divide-y divide-slate-200">
+                {rekapKaryawanList.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="py-12 text-center text-slate-400 border border-slate-200">
+                      <Users className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                      <p className="text-sm font-semibold text-slate-600">Tidak ada rekap gaji karyawan pada periode ini</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Coba ubah filter periode tanggal atau klik "Sync dari Antrean"
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  rekapKaryawanList.map((k, idx) => {
+                    const isAllLunas = k.pendingCount === 0;
 
-                  return (
-                    <tr
-                      key={item.id}
-                      className={`transition-colors ${
-                        isSelected ? 'bg-emerald-50/60' : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      {/* Checkbox */}
-                      <td className="py-2 px-2 text-center border border-slate-200">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleToggleSelect(item.id)}
-                          className="rounded border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer w-4 h-4"
-                        />
-                      </td>
+                    return (
+                      <tr key={k.namaPetugas} className="hover:bg-slate-50 transition-colors">
+                        {/* No */}
+                        <td className="py-2.5 px-3 text-center text-slate-400 font-bold font-mono border border-slate-200">
+                          {idx + 1}
+                        </td>
 
-                      {/* No */}
-                      <td className="py-2 px-2 text-center text-slate-500 font-bold text-xs sm:text-sm border border-slate-200">
-                        {idx + 1}
-                      </td>
-
-                      {/* No. Bayar & Tanggal Buat */}
-                      <td className="py-2 px-3 border border-slate-200 whitespace-nowrap">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono font-bold text-xs text-emerald-950 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block w-fit">
-                            {item.noPembayaran}
-                          </span>
-                          <span className="text-[11px] font-mono text-slate-500">
-                            {item.createdAt ? String(item.createdAt).slice(0, 10) : '-'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* No. Antrean & Model Produk */}
-                      <td className="py-2 px-3 border border-slate-200">
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-mono font-bold text-xs text-blue-700">
-                            {item.noAntrian}
-                          </span>
-                          <span className="text-xs sm:text-sm font-bold text-slate-900 truncate" title={item.namaProduk}>
-                            {item.namaProduk}
-                          </span>
-                          <span className="text-[11px] font-mono text-slate-500">
-                            SKU: {item.sku}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Bagian & Petugas */}
-                      <td className="py-2 px-3 border border-slate-200">
-                        <div className="flex flex-col gap-1 items-start">
-                          {getTahapanBadge(item.tahapan)}
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{item.namaPetugas}</span>
+                        {/* Nama Karyawan / Tim */}
+                        <td className="py-2.5 px-3 border border-slate-200">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0 font-bold text-xs">
+                              <User className="w-4 h-4 text-slate-500" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-black text-slate-900 text-sm">{k.namaPetugas}</div>
+                              <div className="text-[11px] text-slate-400">
+                                {k.items.length} batch pekerjaan
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Qty & Tarif */}
-                      <td className="py-2 px-3 text-center border border-slate-200 whitespace-nowrap">
-                        <div className="flex flex-col items-center">
-                          <span className="font-mono font-black text-xs sm:text-sm text-slate-900">
-                            {Number(item.qty).toLocaleString('id-ID')} Pcs
-                          </span>
-                          <span className="text-[11px] font-mono text-slate-500">
-                            @ Rp {Number(item.tarifPerPcs).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-                      </td>
+                        {/* Bagian / Divisi */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-center">
+                          {getTahapanBadge(k.tahapan)}
+                        </td>
 
-                      {/* Total Upah */}
-                      <td className="py-2 px-3 text-right border border-slate-200 whitespace-nowrap">
-                        <div className="flex flex-col items-end">
-                          <span className="font-mono font-black text-xs sm:text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block">
-                            Rp {Number(item.totalUpah || 0).toLocaleString('id-ID')}
+                        {/* Pekerjaan */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-center">
+                          <span className="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md">
+                            {k.items.length} Order
                           </span>
-                          {Number(item.potonganKasbon) > 0 && (
-                            <span className="text-[10px] text-amber-700 font-mono mt-0.5">
-                              (Potong Kasbon: -Rp {Number(item.potonganKasbon).toLocaleString('id-ID')})
+                        </td>
+
+                        {/* Grand Total Qty */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-center bg-rose-50/30">
+                          <span className="font-mono font-black text-xs sm:text-sm text-rose-700">
+                            {k.totalQty.toLocaleString('id-ID')} Pcs
+                          </span>
+                        </td>
+
+                        {/* Total Upah Kotor */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-right font-mono font-bold text-slate-900">
+                          Rp {k.totalKotor.toLocaleString('id-ID')}
+                        </td>
+
+                        {/* Potongan Kasbon / Pinjaman */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-right font-mono text-xs">
+                          {k.totalPotonganKasbon > 0 ? (
+                            <span className="font-bold text-amber-700">
+                              - Rp {k.totalPotonganKasbon.toLocaleString('id-ID')}
                             </span>
-                          )}
-                          {Number(item.potonganKasbon) > 0 && (
-                            <span className="text-[10px] text-emerald-700 font-mono font-bold">
-                              Bersih: Rp {Number(item.totalBersih || (Number(item.totalUpah) - Number(item.potonganKasbon))).toLocaleString('id-ID')}
+                          ) : k.sisaPinjamanAktif > 0 ? (
+                            <span className="text-[11px] text-amber-600 font-semibold">
+                              (Ada kasbon: Rp {k.sisaPinjamanAktif.toLocaleString('id-ID')})
                             </span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
                           )}
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Status Bayar */}
-                      <td className="py-2 px-3 text-center border border-slate-200 whitespace-nowrap">
-                        <div className="flex flex-col items-center gap-1">
-                          {isLunas ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        {/* Total Gaji Bersih */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-right bg-emerald-50/40">
+                          <span className="font-mono font-black text-sm text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300 shadow-2xs">
+                            Rp {k.totalBersih.toLocaleString('id-ID')}
+                          </span>
+                        </td>
+
+                        {/* Status Gaji */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-center">
+                          {isAllLunas ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                               <span>Lunas</span>
                             </span>
+                          ) : k.lunasCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                              <span>Sebagian</span>
+                            </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                               <Clock className="w-3.5 h-3.5 text-rose-500" />
                               <span>Belum Lunas</span>
                             </span>
                           )}
+                        </td>
 
-                          {isLunas && (
-                            <div className="text-[10px] text-slate-500 font-mono">
-                              <span>{item.tglBayar}</span>
-                              {item.metodeBayar && (
-                                <span className="block text-slate-400">({item.metodeBayar})</span>
+                        {/* Aksi */}
+                        <td className="py-2.5 px-3 border border-slate-200 text-center">
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            {/* Tombol Bayar Gaji Mingguan (jika ada pending) */}
+                            {!isAllLunas && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const pendingItems = k.items.filter((i) => i.statusBayar !== 'Lunas');
+                                  handleOpenPay(pendingItems);
+                                }}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                                title="Bayar semua tagihan upah karyawan ini dalam periode ini"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>Bayar Gaji</span>
+                              </button>
+                            )}
+
+                            {/* Tombol Buka Slip Gaji Resmi (Format Emra Production) */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenSlipKaryawan(k.namaPetugas)}
+                              className="px-2.5 py-1 bg-[#0284c7] hover:bg-[#0369a1] active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                              title="Buka & Cetak Slip Gaji Resmi (Format Emra Production)"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span>Slip Gaji</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* BOTTOM SUMMARY FOOTER KARYAWAN */}
+          <div className="bg-[#f8fafc] border-t border-slate-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-600 gap-2">
+            <div>
+              Total <strong className="text-slate-800">{rekapKaryawanList.length}</strong> Karyawan / Tim{' '}
+              (Periode: <strong className="text-slate-900">{startDate || 'Awal'} s.d {endDate || 'Sekarang'}</strong>)
+            </div>
+            <div className="flex items-center gap-4 font-semibold text-slate-700">
+              <span>
+                Grand Total Qty:{' '}
+                <strong className="text-rose-700 font-mono">
+                  {rekapKaryawanList.reduce((acc, c) => acc + c.totalQty, 0).toLocaleString('id-ID')} Pcs
+                </strong>
+              </span>
+              <span>
+                Total Gaji Bersih:{' '}
+                <strong className="text-emerald-700 font-mono font-bold">
+                  Rp {rekapKaryawanList.reduce((acc, c) => acc + c.totalBersih, 0).toLocaleString('id-ID')}
+                </strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* =================================================================== */
+        /* TABEL 2: RINCIAN PER TRANSAKSI ORDER (FLAT LIST)                   */
+        /* =================================================================== */
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
+              <thead>
+                <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-xs tracking-wider uppercase">
+                  <th className="py-2.5 px-2 text-center w-9 min-w-[36px] border border-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={filteredList.length > 0 && selectedIds.length === filteredList.length}
+                      onChange={handleSelectAll}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer w-4 h-4"
+                      title="Pilih Semua Tagihan"
+                    />
+                  </th>
+                  <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-slate-200">NO</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px] border border-slate-200">NO. BAYAR & TANGGAL</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px] border border-slate-200">ANTREAN & PRODUK</th>
+                  <th className="py-2.5 px-3 min-w-[200px] border border-slate-200">BAGIAN & PETUGAS</th>
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[120px] border border-slate-200">QTY & TARIF</th>
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[130px] border border-slate-200">TOTAL UPAH</th>
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[140px] border border-slate-200">STATUS BAYAR</th>
+                  <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[140px] border border-slate-200">AKSI</th>
+                </tr>
+              </thead>
+              <tbody className="font-medium text-slate-700 divide-y divide-slate-200">
+                {filteredList.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="py-12 text-center text-slate-400 border border-slate-200">
+                      <Receipt className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                      <p className="text-sm font-semibold text-slate-600">Tidak ada data tagihan upah</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Klik "Sync dari Antrean" untuk memuat tagihan upah dari order yang sudah diserahkan
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredList.map((item, idx) => {
+                    const isSelected = selectedIds.includes(item.id);
+                    const isLunas = item.statusBayar === 'Lunas';
+
+                    return (
+                      <tr
+                        key={item.id}
+                        className={`transition-colors ${
+                          isSelected ? 'bg-emerald-50/60' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <td className="py-2 px-2 text-center border border-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelect(item.id)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer w-4 h-4"
+                          />
+                        </td>
+
+                        {/* No */}
+                        <td className="py-2 px-2 text-center text-slate-500 font-bold text-xs sm:text-sm border border-slate-200">
+                          {idx + 1}
+                        </td>
+
+                        {/* No. Bayar & Tanggal Buat */}
+                        <td className="py-2 px-3 border border-slate-200 whitespace-nowrap">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-mono font-bold text-xs text-emerald-950 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block w-fit">
+                              {item.noPembayaran}
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-500">
+                              {item.createdAt ? String(item.createdAt).slice(0, 10) : '-'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* No. Antrean & Model Produk */}
+                        <td className="py-2 px-3 border border-slate-200">
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-mono font-bold text-xs text-blue-700">
+                              {item.noAntrian}
+                            </span>
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 truncate" title={item.namaProduk}>
+                              {item.namaProduk}
+                            </span>
+                            <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
+                              <span>SKU: {item.sku}</span>
+                              {item.varian && item.varian !== '-' && (
+                                <span className="text-slate-700 font-semibold">• {item.varian}</span>
                               )}
                             </div>
-                          )}
-                        </div>
-                      </td>
+                          </div>
+                        </td>
 
-                      {/* Aksi */}
-                      <td className="py-2 px-2.5 text-center border border-slate-200 whitespace-nowrap">
-                        <div className="inline-flex items-center justify-center gap-1.5">
-                          {/* Tombol Bayar Sekarang (jika Belum Lunas) */}
-                          {!isLunas ? (
+                        {/* Bagian & Petugas */}
+                        <td className="py-2 px-3 border border-slate-200">
+                          <div className="flex flex-col gap-1 items-start">
+                            {getTahapanBadge(item.tahapan)}
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                              <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{item.namaPetugas}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Qty & Tarif */}
+                        <td className="py-2 px-3 text-center border border-slate-200 whitespace-nowrap">
+                          <div className="flex flex-col items-center">
+                            <span className="font-mono font-black text-xs sm:text-sm text-slate-900">
+                              {Number(item.qty).toLocaleString('id-ID')} Pcs
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-500">
+                              @ Rp {Number(item.tarifPerPcs).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Total Upah */}
+                        <td className="py-2 px-3 text-right border border-slate-200 whitespace-nowrap">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono font-black text-xs sm:text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block">
+                              Rp {Number(item.totalUpah || 0).toLocaleString('id-ID')}
+                            </span>
+                            {Number(item.potonganKasbon) > 0 && (
+                              <span className="text-[10px] text-amber-700 font-mono mt-0.5">
+                                (Potong Kasbon: -Rp {Number(item.potonganKasbon).toLocaleString('id-ID')})
+                              </span>
+                            )}
+                            {Number(item.potonganKasbon) > 0 && (
+                              <span className="text-[10px] text-emerald-700 font-mono font-bold">
+                                Bersih: Rp {Number(item.totalBersih || (Number(item.totalUpah) - Number(item.potonganKasbon))).toLocaleString('id-ID')}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Status Bayar */}
+                        <td className="py-2 px-3 text-center border border-slate-200 whitespace-nowrap">
+                          <div className="flex flex-col items-center gap-1">
+                            {isLunas ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Lunas</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
+                                <Clock className="w-3.5 h-3.5 text-rose-500" />
+                                <span>Belum Lunas</span>
+                              </span>
+                            )}
+
+                            {isLunas && (
+                              <div className="text-[10px] text-slate-500 font-mono">
+                                <span>{item.tglBayar}</span>
+                                {item.metodeBayar && (
+                                  <span className="block text-slate-400">({item.metodeBayar})</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Aksi */}
+                        <td className="py-2 px-2.5 text-center border border-slate-200 whitespace-nowrap">
+                          <div className="inline-flex items-center justify-center gap-1.5">
+                            {/* Tombol Bayar Sekarang (jika Belum Lunas) */}
+                            {!isLunas ? (
+                              <button
+                                onClick={() => handleOpenPay([item])}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                                title="Bayar tagihan upah ini"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>Bayar</span>
+                              </button>
+                            ) : (
+                              /* Tombol Batalkan Lunas (Undo) */
+                              <button
+                                onClick={() => handleBatalBayar(item)}
+                                className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                                title="Batalkan status lunas (Undo jika salah klik bayar)"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+                              </button>
+                            )}
+
+                            {/* Tombol Lihat Slip */}
                             <button
-                              onClick={() => handleOpenPay([item])}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
-                              title="Bayar tagihan upah ini"
+                              onClick={() => handleOpenSlip(item)}
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                              title="Tampilkan & Cetak Slip Upah"
                             >
-                              <CreditCard className="w-3.5 h-3.5" />
-                              <span>Bayar</span>
+                              <Receipt className="w-4 h-4 text-slate-600" />
                             </button>
-                          ) : (
-                            /* Tombol Batalkan Lunas (Undo) */
-                            <button
-                              onClick={() => handleBatalBayar(item)}
-                              className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
-                              title="Batalkan status lunas (Undo jika salah klik bayar)"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
-                            </button>
-                          )}
-
-                          {/* Tombol Lihat Slip */}
-                          <button
-                            onClick={() => handleOpenSlip(item)}
-                            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
-                            title="Tampilkan & Cetak Slip Upah"
-                          >
-                            <Receipt className="w-4 h-4 text-slate-600" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* BOTTOM SUMMARY FOOTER */}
-        <div className="bg-[#f8fafc] border-t border-slate-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-600 gap-2">
-          <div>
-            Menampilkan <span className="font-bold text-slate-800">{filteredList.length}</span> dari{' '}
-            <span className="font-bold text-slate-800">{dataList.length}</span> data upah
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-          <div className="flex items-center gap-4 font-semibold text-slate-700">
-            <span>
-              Total Qty: <strong className="text-slate-900">{filteredList.reduce((acc, c) => acc + (Number(c.qty) || 0), 0).toLocaleString('id-ID')} Pcs</strong>
-            </span>
-            <span>
-              Total Upah: <strong className="text-emerald-700 font-bold">Rp {filteredList.reduce((acc, c) => acc + (Number(c.totalUpah) || 0), 0).toLocaleString('id-ID')}</strong>
-            </span>
+
+          {/* BOTTOM SUMMARY FOOTER TRANSAKSI */}
+          <div className="bg-[#f8fafc] border-t border-slate-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-600 gap-2">
+            <div>
+              Menampilkan <span className="font-bold text-slate-800">{filteredList.length}</span> dari{' '}
+              <span className="font-bold text-slate-800">{dataList.length}</span> data upah
+            </div>
+            <div className="flex items-center gap-4 font-semibold text-slate-700">
+              <span>
+                Total Qty: <strong className="text-slate-900">{filteredList.reduce((acc, c) => acc + (Number(c.qty) || 0), 0).toLocaleString('id-ID')} Pcs</strong>
+              </span>
+              <span>
+                Total Upah: <strong className="text-emerald-700 font-bold">Rp {filteredList.reduce((acc, c) => acc + (Number(c.totalUpah) || 0), 0).toLocaleString('id-ID')}</strong>
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 5. MODAL FORM PEMBAYARAN UPAH */}
       {isPayModalOpen && (
@@ -1065,6 +1492,275 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                     ( {slipItem.namaPetugas} )
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. MODAL SLIP GAJI KARYAWAN (FORMAT RESMI EMRA PRODUCTION) */}
+      {isSlipKaryawanModalOpen && currentSlipKaryawan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[95vh]">
+            {/* Top Toolbar */}
+            <div className="bg-[#0b1b36] text-white px-4 py-2.5 flex items-center justify-between shrink-0 print:hidden">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-amber-400" />
+                <h3 className="font-extrabold text-xs text-white">
+                  Slip Gaji Mingguan / Periode Karyawan
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrintSlip}
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak / PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsSlipKaryawanModalOpen(false)}
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Slip Content Paper (Emra Production Layout) */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 bg-white text-slate-800 font-sans" id="printable-slip">
+              {/* Slip Header Bordered Box */}
+              <div className="border border-slate-300 rounded-xl p-4 bg-slate-50/50">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black tracking-wider text-slate-900 uppercase">
+                      SLIP GAJI EMRA PRODUCTION
+                    </h2>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Ruang Konveksi Management System
+                    </p>
+
+                    <div className="mt-3 space-y-1 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-28 text-slate-500 font-medium">Tanggal Periode</span>
+                        <span className="font-bold text-slate-800">
+                          : {startDate || '-'} s.d {endDate || '-'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-28 text-slate-500 font-medium">Nama Karyawan</span>
+                        <div className="flex items-center gap-1 font-bold text-slate-900">
+                          <span>:</span>
+                          <select
+                            value={selectedKaryawanName}
+                            onChange={(e) => setSelectedKaryawanName(e.target.value)}
+                            className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-extrabold text-[#0369a1] cursor-pointer focus:outline-none print:appearance-none print:border-none print:p-0"
+                          >
+                            {rekapKaryawanList.map((k) => (
+                              <option key={k.namaPetugas} value={k.namaPetugas}>
+                                {k.namaPetugas} ({k.tahapan})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-28 text-slate-500 font-medium">Bagian / Divisi</span>
+                        <span className="font-bold text-slate-800">
+                          : {currentSlipKaryawan.tahapan || 'Konveksi'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Monogram / Logo Box */}
+                  <div className="w-16 h-16 rounded-xl border border-amber-300 bg-amber-50/60 flex flex-col items-center justify-center text-amber-800 shrink-0 shadow-2xs">
+                    <span className="font-serif font-black text-2xl tracking-tighter text-amber-700">
+                      EM
+                    </span>
+                    <span className="text-[8px] font-black tracking-widest text-amber-900 uppercase">
+                      PROD
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rincian Finansial (Box Rincian Sesuai Spreadsheet Emra) */}
+              <div className="border border-slate-300 rounded-xl p-4 bg-white space-y-2 text-xs">
+                <span className="font-bold text-slate-700 block uppercase tracking-wider text-[11px] pb-1 border-b border-slate-200">
+                  Rincian
+                </span>
+
+                <div className="flex items-center justify-between py-0.5">
+                  <span className="text-slate-600 font-medium">Total Pembayaran</span>
+                  <span className="font-mono font-bold text-slate-900 text-sm">
+                    Rp {currentSlipKaryawan.totalKotor.toLocaleString('id-ID')}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-0.5">
+                  <span className="text-slate-600 font-medium">Potongan Pinjaman (Kasbon)</span>
+                  <span className="font-mono font-bold text-amber-700">
+                    {currentSlipKaryawan.totalPotonganKasbon > 0
+                      ? `- Rp ${currentSlipKaryawan.totalPotonganKasbon.toLocaleString('id-ID')}`
+                      : '-'}
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-slate-300 flex items-center justify-between">
+                  <span className="font-extrabold text-slate-900 uppercase text-xs">
+                    * Total GAJI (Bersih Diterima)
+                  </span>
+                  <span className="font-mono font-black text-base text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
+                    Rp {currentSlipKaryawan.totalBersih.toLocaleString('id-ID')}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-0.5 text-slate-600">
+                  <span className="text-[11px] font-medium">* Sisa Pinjaman / Kasbon Aktif</span>
+                  <span className="font-mono font-bold text-slate-700">
+                    {currentSlipKaryawan.sisaPinjamanAktif > 0
+                      ? `Rp ${currentSlipKaryawan.sisaPinjamanAktif.toLocaleString('id-ID')}`
+                      : '-'}
+                  </span>
+                </div>
+
+                <div className="pt-1 text-[11px] text-slate-600">
+                  <span className="font-bold">* Terbilang : </span>
+                  <span className="font-semibold italic text-slate-800">
+                    "{angkaTerbilang(currentSlipKaryawan.totalBersih)}"
+                  </span>
+                </div>
+              </div>
+
+              {/* Rincian Pembayaran Table (Grand Total Qty & Breakdown) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-extrabold text-slate-800 uppercase tracking-wide">
+                    Rincian Pembayaran
+                  </span>
+                  <div className="font-bold text-rose-600 text-xs flex items-center gap-1">
+                    <span>* Grand Total QTY :</span>
+                    <span className="font-mono font-black text-sm text-rose-700 bg-rose-50 px-2 py-0.2 rounded border border-rose-200">
+                      {currentSlipKaryawan.totalQty.toLocaleString('id-ID')} Pcs
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border border-slate-300 rounded-xl overflow-hidden shadow-2xs">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead className="bg-[#1e293b] text-white font-extrabold text-[11px] uppercase">
+                      <tr>
+                        <th className="py-2 px-3 border-r border-slate-700 w-10 text-center">NO</th>
+                        <th className="py-2 px-3 border-r border-slate-700">MODEL</th>
+                        <th className="py-2 px-3 border-r border-slate-700">WARNA</th>
+                        <th className="py-2 px-3 border-r border-slate-700 text-right">HARGA</th>
+                        <th className="py-2 px-3 border-r border-slate-700 text-center">QTY</th>
+                        <th className="py-2 px-3 text-right">TOTAL</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-medium">
+                      {currentSlipKaryawan.items.map((item, idx) => (
+                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-1.5 px-3 text-center text-slate-400 font-mono text-[11px] border-r border-slate-200">
+                            {idx + 1}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 font-bold text-slate-900">
+                            {item.skuInduk || item.namaProduk}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700">
+                            {item.varian || '-'}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-right font-mono font-bold text-slate-800">
+                            Rp {Number(item.tarifPerPcs || 0).toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-black text-slate-900">
+                            {Number(item.qty || 0).toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-1.5 px-3 text-right font-mono font-black text-slate-900">
+                            Rp {Number(item.totalUpah || 0).toLocaleString('id-ID')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-slate-100 font-black border-t-2 border-slate-300 text-xs">
+                      <tr>
+                        <td colSpan="4" className="py-2 px-3 text-right uppercase text-slate-700">
+                          Total Qty & Total Upah:
+                        </td>
+                        <td className="py-2 px-3 text-center font-mono font-black text-rose-700">
+                          {currentSlipKaryawan.totalQty.toLocaleString('id-ID')} Pcs
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-black text-emerald-800 text-sm">
+                          Rp {currentSlipKaryawan.totalKotor.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* Tanda Tangan */}
+              <div className="grid grid-cols-2 gap-4 pt-4 text-center text-xs">
+                <div>
+                  <p className="text-slate-500 font-medium">Yang Menyerahkan (Admin / Kasir)</p>
+                  <div className="h-14 flex items-end justify-center font-bold text-slate-900">
+                    ( Admin Produksi )
+                  </div>
+                </div>
+                <div>
+                  <p className="text-slate-500 font-medium">Yang Menerima (Karyawan / Tim)</p>
+                  <div className="h-14 flex items-end justify-center font-bold text-slate-900">
+                    ( {currentSlipKaryawan.namaPetugas} )
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Modal Footer */}
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between print:hidden">
+              <span className="text-xs text-slate-500">
+                Status:{' '}
+                <strong
+                  className={
+                    currentSlipKaryawan.pendingCount === 0
+                      ? 'text-emerald-700'
+                      : 'text-rose-600'
+                  }
+                >
+                  {currentSlipKaryawan.pendingCount === 0
+                    ? 'Sudah Lunas'
+                    : `${currentSlipKaryawan.pendingCount} Order Belum Lunas`}
+                </strong>
+              </span>
+
+              <div className="flex items-center gap-2">
+                {currentSlipKaryawan.pendingCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSlipKaryawanModalOpen(false);
+                      handleOpenPay(
+                        currentSlipKaryawan.items.filter(
+                          (i) => i.statusBayar !== 'Lunas',
+                        ),
+                      );
+                    }}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Bayar Gaji Karyawan Ini</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsSlipKaryawanModalOpen(false)}
+                  className="px-4 py-1.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer transition-all"
+                >
+                  Tutup
+                </button>
               </div>
             </div>
           </div>

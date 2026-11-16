@@ -26,6 +26,11 @@ import {
   Minimize2,
   Sparkles,
   QrCode,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  ListFilter,
+  Folders,
 } from "lucide-react";
 import { api } from "../../services/api";
 import { Swal } from "../../utils/swal";
@@ -58,6 +63,11 @@ export default function Produk({
   const [filterToko, setFilterToko] = useState("");
   const [perPage, setPerPage] = useState("25");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // View Mode: 'etalase' (Shopee grouped per SKU Induk) | 'flat' (Tabel semua varian)
+  const [viewMode, setViewMode] = useState("etalase");
+  const [expandedSkuInduk, setExpandedSkuInduk] = useState({});
+  const [createPreset, setCreatePreset] = useState(null);
 
   // Checkbox Selection
   const [selectedIds, setSelectedIds] = useState([]);
@@ -138,6 +148,7 @@ export default function Produk({
         const q = searchTerm.toLowerCase();
         const match =
           item.sku.toLowerCase().includes(q) ||
+          (item.skuInduk && item.skuInduk.toLowerCase().includes(q)) ||
           item.skuBahan.toLowerCase().includes(q) ||
           item.namaProduk.toLowerCase().includes(q) ||
           item.varian.toLowerCase().includes(q) ||
@@ -167,7 +178,92 @@ export default function Produk({
     filterUkuran,
   ]);
 
-  // Pagination Logic
+  // Daftar unik SKU Induk untuk autocomplete
+  const allSkuIndukList = useMemo(() => {
+    const set = new Set();
+    products.forEach((p) => {
+      const val = (p.skuInduk || p.kategori || p.namaProduk || "").trim();
+      if (val) set.add(val);
+    });
+    return Array.from(set).sort();
+  }, [products]);
+
+  // Kelompokkan Produk per SKU Induk (Shopee Etalase Style)
+  const groupedSkuIndukList = useMemo(() => {
+    const map = new Map();
+    filteredProducts.forEach((item) => {
+      const key = (item.skuInduk || item.kategori || item.namaProduk || "LAINNYA").trim();
+      if (!map.has(key)) {
+        map.set(key, {
+          skuInduk: key,
+          namaProduk: item.namaProduk,
+          kategori: item.kategori || "-",
+          skuBahan: item.skuBahan || "-",
+          variants: [],
+          totalStok: 0,
+          minHarga: Infinity,
+          maxHarga: -Infinity,
+          minPotong: Infinity,
+          maxPotong: -Infinity,
+          colors: [],
+        });
+      }
+      const grp = map.get(key);
+      grp.variants.push(item);
+
+      const stok = Number(item.stok || 0);
+      grp.totalStok += stok;
+
+      const harga = Number(item.harga || 0);
+      if (harga < grp.minHarga) grp.minHarga = harga;
+      if (harga > grp.maxHarga) grp.maxHarga = harga;
+
+      const catMatch = categories.find((c) => c.nama === item.kategori);
+      const potong = Number(
+        item.hargaPotong !== undefined && item.hargaPotong !== null && Number(item.hargaPotong) > 0
+          ? item.hargaPotong
+          : catMatch && catMatch.hargaPotong
+            ? catMatch.hargaPotong
+            : HARGA_POTONG_MAP[item.kategori?.toUpperCase()] || 0
+      );
+      if (potong < grp.minPotong) grp.minPotong = potong;
+      if (potong > grp.maxPotong) grp.maxPotong = potong;
+
+      if (item.varian && !grp.colors.some((c) => c.name === item.varian)) {
+        grp.colors.push({ name: item.varian, hex: item.warnaHex || "#64748b" });
+      }
+    });
+
+    return Array.from(map.values()).map((g) => ({
+      ...g,
+      minHarga: g.minHarga === Infinity ? 0 : g.minHarga,
+      maxHarga: g.maxHarga === -Infinity ? 0 : g.maxHarga,
+      minPotong: g.minPotong === Infinity ? 0 : g.minPotong,
+      maxPotong: g.maxPotong === -Infinity ? 0 : g.maxPotong,
+    }));
+  }, [filteredProducts, categories]);
+
+  // Helper Expand / Collapse SKU Induk
+  const isExpanded = (skuIndukKey) => {
+    return expandedSkuInduk[skuIndukKey] !== false; // default true
+  };
+
+  const toggleExpand = (skuIndukKey) => {
+    setExpandedSkuInduk((prev) => ({
+      ...prev,
+      [skuIndukKey]: prev[skuIndukKey] === false ? true : false,
+    }));
+  };
+
+  const expandAll = (open) => {
+    const next = {};
+    groupedSkuIndukList.forEach((g) => {
+      next[g.skuInduk] = open;
+    });
+    setExpandedSkuInduk(next);
+  };
+
+  // Pagination Logic (untuk Flat Table)
   const pageSize = Number(perPage) || 25;
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
   const validCurrentPage = Math.min(currentPage, totalPages);
@@ -193,8 +289,9 @@ export default function Produk({
   };
 
   // CRUD Actions
-  const handleOpenCreate = () => {
+  const handleOpenCreate = (preset = null) => {
     setEditingProduct(null);
+    setCreatePreset(preset);
     setModalMode("create");
   };
 
@@ -389,8 +486,357 @@ export default function Produk({
         </div>
       </div>
 
-      {/* 4. TABEL PRODUK CARD (HIGH CONTRAST) */}
-      <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_6px_rgba(15,23,42,0.05)] overflow-hidden">
+      {/* TOOLBAR TAMPILAN: ETALASE SKU INDUK (SHOPEE STYLE) VS TABEL SEMUA VARIAN */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setViewMode("etalase")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "etalase"
+                ? "bg-[#0284c7] text-white shadow-2xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Etalase SKU Induk (Shopee Style)</span>
+            <span
+              className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded ${
+                viewMode === "etalase"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {groupedSkuIndukList.length} Model
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("flat")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "flat"
+                ? "bg-[#0284c7] text-white shadow-2xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+            }`}
+          >
+            <ListFilter className="w-3.5 h-3.5" />
+            <span>Tabel Semua Varian</span>
+            <span
+              className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded ${
+                viewMode === "flat"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {filteredProducts.length} Varian
+            </span>
+          </button>
+        </div>
+
+        {viewMode === "etalase" && (
+          <div className="flex items-center gap-1.5 self-end sm:self-auto">
+            <span className="text-[11px] text-slate-500 font-medium mr-1">
+              {filteredProducts.length} varian dalam {groupedSkuIndukList.length} etalase
+            </span>
+            <button
+              type="button"
+              onClick={() => expandAll(true)}
+              className="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded transition-colors cursor-pointer"
+            >
+              Buka Semua
+            </button>
+            <button
+              type="button"
+              onClick={() => expandAll(false)}
+              className="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded transition-colors cursor-pointer"
+            >
+              Tutup Semua
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* KONTEN SESUAI VIEW MODE */}
+      {viewMode === "etalase" ? (
+        <div className="space-y-3">
+          {groupedSkuIndukList.length === 0 ? (
+            <div className="bg-white border border-[#cbd5e1] rounded-xl p-12 text-center text-slate-400">
+              <PackageOpen className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+              <p className="text-xs font-bold text-slate-700">
+                Tidak ada SKU Induk ditemukan
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Coba ubah kata kunci pencarian atau filter kategori
+              </p>
+            </div>
+          ) : (
+            groupedSkuIndukList.map((group) => {
+              const expanded = isExpanded(group.skuInduk);
+
+              return (
+                <div
+                  key={group.skuInduk}
+                  className="bg-white border border-[#cbd5e1] rounded-xl shadow-xs overflow-hidden transition-all hover:border-[#94a3b8]"
+                >
+                  {/* Header SKU Induk / Etalase */}
+                  <div className="p-3 bg-gradient-to-r from-slate-50 via-sky-50/30 to-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(group.skuInduk)}
+                        className="w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-all cursor-pointer shadow-2xs shrink-0"
+                        title={expanded ? "Tutup varian" : "Buka varian"}
+                      >
+                        {expanded ? (
+                          <ChevronDown className="w-4 h-4 text-sky-600" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-slate-400" />
+                        )}
+                      </button>
+
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-black text-white bg-[#0369a1] px-2.5 py-0.5 rounded-md shadow-2xs tracking-wide">
+                            {group.skuInduk}
+                          </span>
+                          <span className="text-[10.5px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                            {group.kategori}
+                          </span>
+                          <span className="text-[10.5px] font-extrabold text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                            {group.variants.length} Varian SKU
+                          </span>
+                        </div>
+                        <div className="font-bold text-slate-900 text-xs mt-1 flex items-center gap-2">
+                          <span>{group.namaProduk}</span>
+                          {group.skuBahan && group.skuBahan !== "-" && (
+                            <span className="text-[10px] text-slate-500 font-mono font-normal">
+                              (Bahan: {group.skuBahan})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Metrik Finansial & Stok & Tombol Tambah Varian */}
+                    <div className="flex items-center gap-3 ml-auto">
+                      {/* Varian Warna Tersedia */}
+                      {group.colors.length > 0 && (
+                        <div className="hidden lg:flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                          <span className="text-[9.5px] font-bold text-slate-400 mr-1">
+                            Warna:
+                          </span>
+                          {group.colors.slice(0, 5).map((c, i) => (
+                            <span
+                              key={i}
+                              className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs inline-block"
+                              style={{ backgroundColor: c.hex }}
+                              title={c.name}
+                            />
+                          ))}
+                          {group.colors.length > 5 && (
+                            <span className="text-[9.5px] font-bold text-slate-500">
+                              +{group.colors.length - 5}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Rentang Harga */}
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 block font-medium">
+                          Harga Jual
+                        </span>
+                        <span className="text-xs font-extrabold text-slate-800 font-mono">
+                          {group.minHarga === group.maxHarga
+                            ? `Rp ${group.minHarga.toLocaleString("id-ID")}`
+                            : `Rp ${group.minHarga.toLocaleString("id-ID")} - ${group.maxHarga.toLocaleString("id-ID")}`}
+                        </span>
+                      </div>
+
+                      {/* Total Stok SKU Induk */}
+                      <div className="text-right pl-3 border-l border-slate-200">
+                        <span className="text-[10px] text-slate-400 block font-medium">
+                          Total Stok
+                        </span>
+                        <span
+                          className={`text-xs font-black font-mono px-2 py-0.5 rounded-md inline-block ${
+                            group.totalStok > 50
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : group.totalStok > 0
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-rose-50 text-rose-700 border border-rose-200"
+                          }`}
+                        >
+                          {group.totalStok.toLocaleString("id-ID")} Pcs
+                        </span>
+                      </div>
+
+                      {/* Tombol Tambah Varian ke SKU Induk Ini */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleOpenCreate({
+                            skuInduk: group.skuInduk,
+                            namaProduk: group.namaProduk,
+                            kategori: group.kategori,
+                            skuBahan: group.skuBahan,
+                          })
+                        }
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-md text-xs font-bold transition-all shadow-xs cursor-pointer ml-1"
+                        title="Tambah varian warna/ukuran baru ke SKU Induk ini"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">
+                          + Tambah Varian
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Child Variants Table */}
+                  {expanded && (
+                    <div className="overflow-x-auto bg-[#fafbfc]">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100/90 text-[#475569] font-bold text-[10px] uppercase border-b border-slate-200 divide-x divide-slate-200/60">
+                            <th className="py-2 px-3 w-12 text-center">NO</th>
+                            <th className="py-2 px-3 w-44">SKU & BAHAN</th>
+                            <th className="py-2 px-3">VARIAN & UKURAN</th>
+                            <th className="py-2 px-3 text-right w-32">HARGA JUAL</th>
+                            <th className="py-2 px-3 text-right w-28 bg-sky-50/50 text-[#0369a1]">
+                              ONGKOS POTONG
+                            </th>
+                            <th className="py-2 px-3 text-center w-24">STOK</th>
+                            <th className="py-2 px-3 text-center w-24">STATUS</th>
+                            <th className="py-2 px-3 text-center w-28">AKSI</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200/70">
+                          {group.variants.map((variant, vIdx) => {
+                            const catMatch = categories.find(
+                              (c) => c.nama === variant.kategori,
+                            );
+                            const hargaPotongVal = Number(
+                              variant.hargaPotong !== undefined &&
+                                variant.hargaPotong !== null &&
+                                Number(variant.hargaPotong) > 0
+                                ? variant.hargaPotong
+                                : catMatch && catMatch.hargaPotong
+                                  ? catMatch.hargaPotong
+                                  : HARGA_POTONG_MAP[
+                                      variant.kategori?.toUpperCase()
+                                    ] || 0,
+                            );
+
+                            return (
+                              <tr
+                                key={variant.id}
+                                className="hover:bg-sky-50/50 transition-colors divide-x divide-slate-200/60 font-medium"
+                              >
+                                <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">
+                                  {vIdx + 1}
+                                </td>
+                                <td className="py-2 px-3">
+                                  <div className="font-mono font-bold text-[#0284c7] text-xs">
+                                    {variant.sku}
+                                  </div>
+                                  {variant.skuBahan && (
+                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                      Bahan: {variant.skuBahan}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-2 px-3">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                                      style={{
+                                        backgroundColor:
+                                          variant.warnaHex || "#111827",
+                                      }}
+                                    />
+                                    <span className="font-semibold text-slate-800 text-xs">
+                                      {variant.varian || "-"}
+                                    </span>
+                                    <span className="ml-1 text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-300">
+                                      {variant.ukuran || "-"}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">
+                                  Rp {Number(variant.harga || 0).toLocaleString("id-ID")}
+                                </td>
+                                <td className="py-2 px-3 text-right font-mono font-bold text-[#0369a1] text-xs bg-sky-50/30">
+                                  Rp {hargaPotongVal.toLocaleString("id-ID")}
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  <span
+                                    className={`font-mono font-extrabold text-xs px-2 py-0.5 rounded-md inline-block ${
+                                      Number(variant.stok || 0) > 10
+                                        ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                                        : Number(variant.stok || 0) > 0
+                                          ? "text-amber-700 bg-amber-50 border border-amber-200"
+                                          : "text-rose-700 bg-rose-50 border border-rose-200"
+                                    }`}
+                                  >
+                                    {Number(variant.stok || 0)} Pcs
+                                  </span>
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getBadgeClass(
+                                      variant.status,
+                                    )}`}
+                                  >
+                                    {variant.status || "Aktif"}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewProduct(variant)}
+                                      className="p-1 rounded text-slate-500 hover:text-[#0284c7] hover:bg-sky-50 transition-colors cursor-pointer"
+                                      title="Lihat Detail"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEdit(variant)}
+                                      className="p-1 rounded text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                                      title="Edit Varian"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteProductPrompt(variant)
+                                      }
+                                      className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                      title="Hapus Varian"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        /* 4. TABEL PRODUK CARD (HIGH CONTRAST) */
+        <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_6px_rgba(15,23,42,0.05)] overflow-hidden">
         <div className="w-full overflow-hidden">
           <table className="w-full table-fixed text-left text-xs border-collapse">
             <thead>
@@ -476,6 +922,11 @@ export default function Produk({
                           <span className="font-mono text-xs font-bold text-[#0284c7] bg-[#eff6ff] px-2 py-0.5 rounded border border-[#bfdbfe] inline-block">
                             {item.sku}
                           </span>
+                          {item.skuInduk && (
+                            <span className="font-mono text-[9.5px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 inline-block">
+                              Induk: {item.skuInduk}
+                            </span>
+                          )}
                           <span className="font-mono text-[10.5px] text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 inline-flex items-center gap-1">
                             <Layers className="w-3 h-3 text-slate-400" />
                             {item.skuBahan}
@@ -706,19 +1157,22 @@ export default function Produk({
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 5. MODAL FORM TAMBAH / EDIT PRODUK */}
       {modalMode && (
         <FormModalProduk
           isOpen={Boolean(modalMode)}
           editingProduct={editingProduct}
+          createPreset={createPreset}
+          allSkuIndukList={allSkuIndukList}
           categories={categories}
           sizes={sizes}
           onOpenManageSizes={() => setIsManageSizesOpen(true)}
           onClose={() => {
             setModalMode(null);
             setEditingProduct(null);
+            setCreatePreset(null);
           }}
           onSave={handleSaveProduct}
         />
@@ -766,6 +1220,8 @@ export default function Produk({
 function FormModalProduk({
   isOpen,
   editingProduct,
+  createPreset,
+  allSkuIndukList = [],
   onClose,
   onSave,
   categories = [],
@@ -773,11 +1229,27 @@ function FormModalProduk({
   onOpenManageSizes,
 }) {
   const [formData, setFormData] = useState({
+    skuInduk:
+      editingProduct?.skuInduk ||
+      createPreset?.skuInduk ||
+      editingProduct?.kategori ||
+      createPreset?.kategori ||
+      categories[0]?.nama ||
+      "",
     sku: editingProduct?.sku || `PRD-${Math.floor(100 + Math.random() * 900)}`,
-    skuBahan: editingProduct?.skuBahan || "BHN-CT30S-BLK",
-    namaProduk: editingProduct?.namaProduk || "",
+    skuBahan:
+      editingProduct?.skuBahan ||
+      createPreset?.skuBahan ||
+      "BHN-CT30S-BLK",
+    namaProduk:
+      editingProduct?.namaProduk ||
+      createPreset?.namaProduk ||
+      "",
     kategori:
-      editingProduct?.kategori || categories[0]?.nama || "Kaos / T-Shirt",
+      editingProduct?.kategori ||
+      createPreset?.kategori ||
+      categories[0]?.nama ||
+      "Kaos / T-Shirt",
     varian: editingProduct?.varian || "Hitam Solid",
     warnaHex: editingProduct?.warnaHex || "#111827",
     ukuran:
@@ -796,10 +1268,18 @@ function FormModalProduk({
       Number(editingProduct.hargaPotong) > 0
         ? editingProduct.hargaPotong
         : categories.find(
-            (c) => c.nama === (editingProduct?.kategori || categories[0]?.nama),
+            (c) =>
+              c.nama ===
+              (editingProduct?.kategori ||
+                createPreset?.kategori ||
+                categories[0]?.nama),
           )?.hargaPotong ||
           HARGA_POTONG_MAP[
-            (editingProduct?.kategori || categories[0]?.nama)?.toUpperCase()
+            (
+              editingProduct?.kategori ||
+              createPreset?.kategori ||
+              categories[0]?.nama
+            )?.toUpperCase()
           ] ||
           0,
     stok: editingProduct?.stok || 0,
@@ -831,7 +1311,16 @@ function FormModalProduk({
       alert("SKU dan Nama Produk wajib diisi!");
       return;
     }
-    onSave(formData);
+    const finalSkuInduk = (
+      formData.skuInduk ||
+      formData.kategori ||
+      formData.namaProduk ||
+      ""
+    ).trim();
+    onSave({
+      ...formData,
+      skuInduk: finalSkuInduk,
+    });
   };
 
   return (
@@ -849,8 +1338,7 @@ function FormModalProduk({
                 : "Tambah Data Master Produk Baru"}
             </h2>
             <span className="hidden md:inline-block text-[11px] text-slate-400 truncate">
-              • Kelola spesifikasi SKU, bahan kain, varian warna, ukuran dan
-              live preview
+              • Kelola spesifikasi SKU Induk, etalase model, bahan kain, varian warna dan ukuran
             </span>
           </div>
 
@@ -881,11 +1369,47 @@ function FormModalProduk({
                 <span>1. IDENTITAS & SKU PRODUK</span>
               </div>
 
+              {/* SKU Induk / Etalase Model */}
+              <div>
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="text-[11px] font-bold text-slate-700">
+                    SKU Induk / Etalase Model <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[9.5px] font-bold text-[#0369a1] bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
+                    Etalase Model (Shopee)
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  list="sku-induk-list-modal"
+                  required
+                  value={formData.skuInduk}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    setFormData((prev) => ({
+                      ...prev,
+                      skuInduk: val,
+                      namaProduk: prev.namaProduk ? prev.namaProduk : val,
+                    }));
+                  }}
+                  placeholder="misal: SAMIRA, KAOS-COMBED30S, GAMIS-RAYON"
+                  className="w-full h-7 px-2 text-xs font-mono font-bold bg-amber-50/70 border border-amber-300 rounded text-amber-950 focus:outline-none focus:border-amber-500 shadow-2xs"
+                />
+                <datalist id="sku-induk-list-modal">
+                  {allSkuIndukList.map((induk) => (
+                    <option key={induk} value={induk} />
+                  ))}
+                </datalist>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  Semua varian warna & ukuran dengan SKU Induk sama dikelompokkan ke 1 etalase model.
+                </span>
+              </div>
+
               {/* Grid SKU */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-0.5">
-                    SKU Produk <span className="text-rose-500">*</span>
+                    SKU Produk (Varian) <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -897,7 +1421,7 @@ function FormModalProduk({
                         sku: e.target.value.toUpperCase(),
                       })
                     }
-                    placeholder="misal: PRD-TSH-001"
+                    placeholder="misal: SAM-KHAK-S"
                     className="w-full h-7 px-2 text-xs font-mono font-bold bg-[#eff6ff] border border-[#bfdbfe] rounded text-[#0369a1] focus:outline-none focus:border-[#0284c7]"
                   />
                 </div>
@@ -1384,14 +1908,19 @@ function DetailModalProduk({ product, onClose, getBadgeClass }) {
                 />
               </div>
               <div>
-                <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 inline-block mb-1">
-                  Kategori {product.kategori}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span className="text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded-md bg-[#0369a1] text-white font-mono shadow-2xs">
+                    SKU Induk: {product.skuInduk || product.kategori || product.namaProduk}
+                  </span>
+                  <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 inline-block">
+                    Kategori {product.kategori}
+                  </span>
+                </div>
                 <h2 className="text-xl font-black text-slate-900 leading-tight">
                   {product.namaProduk}
                 </h2>
                 <p className="text-slate-400 font-medium text-[11px] mt-0.5">
-                  Model Garment Konveksi
+                  Varian: {product.varian} • Ukuran: {product.ukuran}
                 </p>
               </div>
             </div>

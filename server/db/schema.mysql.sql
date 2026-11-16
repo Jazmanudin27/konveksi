@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS bahan (
 
 CREATE TABLE IF NOT EXISTS products (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  sku_induk VARCHAR(100),
   sku VARCHAR(60) NOT NULL UNIQUE,
   sku_bahan VARCHAR(60),
   nama_produk VARCHAR(150) NOT NULL,
@@ -38,7 +39,8 @@ CREATE TABLE IF NOT EXISTS products (
   hpp DECIMAL(14,2) NOT NULL DEFAULT 0,
   harga_potong DECIMAL(12,2) NOT NULL DEFAULT 0,
   tanggal_update DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_prod_kategori (kategori)
+  INDEX idx_prod_kategori (kategori),
+  INDEX idx_prod_sku_induk (sku_induk)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS employees (

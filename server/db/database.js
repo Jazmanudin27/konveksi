@@ -143,6 +143,22 @@ async function initMysql() {
       } catch (_) {}
     }
 
+    // Pastikan kolom sku_induk tersedia di products (Etalase SKU Induk)
+    try {
+      const [colCheck] = await connection.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'products' AND COLUMN_NAME = 'sku_induk' AND TABLE_SCHEMA = DATABASE()"
+      );
+      if (!colCheck || colCheck.length === 0) {
+        await connection.query("ALTER TABLE products ADD COLUMN sku_induk VARCHAR(100) NULL AFTER id");
+      }
+      // Isi default sku_induk dari kategori atau nama_produk jika masih kosong
+      await connection.query(`
+        UPDATE products 
+        SET sku_induk = COALESCE(NULLIF(TRIM(kategori), ''), TRIM(nama_produk))
+        WHERE sku_induk IS NULL OR TRIM(sku_induk) = ''
+      `);
+    } catch (_) {}
+
     // Pastikan nilai default total_bersih terisi sesuai total_upah jika belum ada potongan kasbon
     try {
       await connection.query(`

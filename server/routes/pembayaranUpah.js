@@ -11,63 +11,78 @@ function generateNoPembayaran() {
 }
 
 // 1. GET /api/pembayaran-upah
-// List seluruh data upah dengan filter tahapan, status bayar, petugas, dan pencarian
+// List seluruh data upah dengan filter tahapan, status bayar, petugas, pencarian, dan rentang tanggal
 router.get("/", async (req, res) => {
   try {
-    const { tahapan, status_bayar, petugas, search } = req.query;
+    const { tahapan, status_bayar, petugas, search, startDate, endDate } = req.query;
 
     let sql = `
       SELECT 
-        id,
-        no_pembayaran as noPembayaran,
-        antrean_id as antreanId,
-        no_antrian as noAntrian,
-        sku,
-        nama_produk as namaProduk,
-        tahapan,
-        nama_petugas as namaPetugas,
-        qty,
-        tarif_per_pcs as tarifPerPcs,
-        total_upah as totalUpah,
-        COALESCE(potongan_kasbon, 0) as potonganKasbon,
+        pu.id,
+        pu.no_pembayaran as noPembayaran,
+        pu.antrean_id as antreanId,
+        pu.no_antrian as noAntrian,
+        pu.sku,
+        pu.nama_produk as namaProduk,
+        COALESCE(p.sku_induk, p.kategori, pu.nama_produk) as skuInduk,
+        COALESCE(p.varian, '-') as varian,
+        p.warna_hex as warnaHex,
+        p.ukuran as ukuran,
+        pu.tahapan,
+        pu.nama_petugas as namaPetugas,
+        pu.qty,
+        pu.tarif_per_pcs as tarifPerPcs,
+        pu.total_upah as totalUpah,
+        COALESCE(pu.potongan_kasbon, 0) as potonganKasbon,
         CASE 
-          WHEN total_bersih IS NOT NULL AND total_bersih > 0 THEN total_bersih 
-          ELSE GREATEST(0, total_upah - COALESCE(potongan_kasbon, 0)) 
+          WHEN pu.total_bersih IS NOT NULL AND pu.total_bersih > 0 THEN pu.total_bersih 
+          ELSE GREATEST(0, pu.total_upah - COALESCE(pu.potongan_kasbon, 0)) 
         END as totalBersih,
-        status_bayar as statusBayar,
-        tgl_bayar as tglBayar,
-        metode_bayar as metodeBayar,
-        catatan,
-        created_at as createdAt,
-        updated_at as updatedAt
-      FROM pembayaran_upah
+        pu.status_bayar as statusBayar,
+        pu.tgl_bayar as tglBayar,
+        pu.metode_bayar as metodeBayar,
+        pu.catatan,
+        pu.created_at as createdAt,
+        pu.updated_at as updatedAt
+      FROM pembayaran_upah pu
+      LEFT JOIN products p ON pu.sku = p.sku
       WHERE 1=1
     `;
 
     const params = [];
 
     if (tahapan && tahapan !== "Semua") {
-      sql += ` AND tahapan = ?`;
+      sql += ` AND pu.tahapan = ?`;
       params.push(tahapan);
     }
 
     if (status_bayar && status_bayar !== "Semua") {
-      sql += ` AND status_bayar = ?`;
+      sql += ` AND pu.status_bayar = ?`;
       params.push(status_bayar);
     }
 
     if (petugas) {
-      sql += ` AND nama_petugas LIKE ?`;
+      sql += ` AND pu.nama_petugas LIKE ?`;
       params.push(`%${petugas}%`);
+    }
+
+    if (startDate) {
+      sql += ` AND (DATE(pu.created_at) >= ? OR pu.tgl_bayar >= ?)`;
+      params.push(startDate, startDate);
+    }
+
+    if (endDate) {
+      sql += ` AND (DATE(pu.created_at) <= ? OR pu.tgl_bayar <= ?)`;
+      params.push(endDate, endDate);
     }
 
     if (search && search.trim()) {
       const q = `%${search.trim()}%`;
-      sql += ` AND (no_pembayaran LIKE ? OR no_antrian LIKE ? OR sku LIKE ? OR nama_produk LIKE ? OR nama_petugas LIKE ?)`;
-      params.push(q, q, q, q, q);
+      sql += ` AND (pu.no_pembayaran LIKE ? OR pu.no_antrian LIKE ? OR pu.sku LIKE ? OR pu.nama_produk LIKE ? OR pu.nama_petugas LIKE ? OR p.sku_induk LIKE ?)`;
+      params.push(q, q, q, q, q, q);
     }
 
-    sql += ` ORDER BY id DESC`;
+    sql += ` ORDER BY pu.id DESC`;
 
     const rows = await db.all(sql, params);
     res.json(rows);

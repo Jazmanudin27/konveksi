@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
 
       return {
         id: r.id,
+        skuInduk: r.sku_induk || r.kategori || r.nama_produk,
         sku: r.sku,
         skuBahan: r.sku_bahan,
         namaProduk: r.nama_produk,
@@ -37,17 +38,18 @@ router.get('/', async (req, res) => {
 
 // POST create product
 router.post('/', async (req, res) => {
-  const { sku, skuBahan, namaProduk, kategori, varian, warnaHex, ukuran, stok, status, harga, hpp, hargaPotong } = req.body;
+  const { skuInduk, sku, skuBahan, namaProduk, kategori, varian, warnaHex, ukuran, stok, status, harga, hpp, hargaPotong } = req.body;
   const hppValue = hpp !== undefined && hpp !== null && Number(hpp) > 0
     ? Number(hpp)
     : Math.round(Number(harga || 0) * 0.70);
+  const skuIndukVal = (skuInduk || kategori || namaProduk || '').trim();
 
   try {
     const info = await db.run(`
-      INSERT INTO products (sku, sku_bahan, nama_produk, kategori, varian, warna_hex, ukuran, stok, status, harga, hpp, harga_potong)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, Number(stok || 0), status || 'Aktif', Number(harga || 0), hppValue, Number(hargaPotong || 0)]);
-    res.status(201).json({ id: Number(info.insertId), ...req.body, hpp: hppValue, hargaPotong: Number(hargaPotong || 0) });
+      INSERT INTO products (sku_induk, sku, sku_bahan, nama_produk, kategori, varian, warna_hex, ukuran, stok, status, harga, hpp, harga_potong)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [skuIndukVal, sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, Number(stok || 0), status || 'Aktif', Number(harga || 0), hppValue, Number(hargaPotong || 0)]);
+    res.status(201).json({ id: Number(info.insertId), ...req.body, skuInduk: skuIndukVal, hpp: hppValue, hargaPotong: Number(hargaPotong || 0) });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -56,18 +58,19 @@ router.post('/', async (req, res) => {
 // PUT update product
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { sku, skuBahan, namaProduk, kategori, varian, warnaHex, ukuran, stok, status, harga, hpp, hargaPotong } = req.body;
+  const { skuInduk, sku, skuBahan, namaProduk, kategori, varian, warnaHex, ukuran, stok, status, harga, hpp, hargaPotong } = req.body;
   const hppValue = hpp !== undefined && hpp !== null && Number(hpp) > 0
     ? Number(hpp)
     : Math.round(Number(harga || 0) * 0.70);
+  const skuIndukVal = (skuInduk || kategori || namaProduk || '').trim();
 
   try {
     await db.run(`
       UPDATE products
-      SET sku = ?, sku_bahan = ?, nama_produk = ?, kategori = ?, varian = ?, warna_hex = ?, ukuran = ?, stok = ?, status = ?, harga = ?, hpp = ?, harga_potong = ?
+      SET sku_induk = ?, sku = ?, sku_bahan = ?, nama_produk = ?, kategori = ?, varian = ?, warna_hex = ?, ukuran = ?, stok = ?, status = ?, harga = ?, hpp = ?, harga_potong = ?
       WHERE id = ?
-    `, [sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, Number(stok || 0), status || 'Aktif', Number(harga || 0), hppValue, Number(hargaPotong || 0), id]);
-    res.json({ success: true, id: Number(id), hpp: hppValue, hargaPotong: Number(hargaPotong || 0) });
+    `, [skuIndukVal, sku, skuBahan || null, namaProduk, kategori, varian || null, warnaHex || null, ukuran || null, Number(stok || 0), status || 'Aktif', Number(harga || 0), hppValue, Number(hargaPotong || 0), id]);
+    res.json({ success: true, id: Number(id), skuInduk: skuIndukVal, hpp: hppValue, hargaPotong: Number(hargaPotong || 0) });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

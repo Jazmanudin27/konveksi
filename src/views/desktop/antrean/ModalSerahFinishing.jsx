@@ -47,16 +47,22 @@ export default function ModalSerahFinishing({
 
   // State List Tim Finishing (Bisa Search, Edit & Tambah Baru, tersimpan di localStorage)
   const [customTeams, setCustomTeams] = useState(() => {
-    try {
-      const cached = localStorage.getItem('konveksi_custom_finishing_teams');
-      if (cached) return JSON.parse(cached);
-    } catch (_) {}
     const defaultList = [
-      ...finishingEmployees.map(e => `Tim ${e.nama} (${e.bagian || 'Finishing'})`),
+      ...finishingEmployees.map(e => e.nama || e.namaTim),
       'Tim Finishing & Packing 1 (Uap & Lipat)',
       'Tim Finishing 2 (Hangtag & Plastik OPP)',
       'Gudang Packing Akhir'
-    ];
+    ].filter(Boolean);
+
+    try {
+      const cached = localStorage.getItem('konveksi_custom_finishing_teams');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        // Buang data lama yang mengandung nama penjahit (seperti CEPI) agar tidak tercampur
+        const cleaned = parsed.filter(name => !name.toUpperCase().includes('CEPI') && !name.toLowerCase().includes('jahit'));
+        if (cleaned.length > 0) return Array.from(new Set([...cleaned, ...defaultList]));
+      }
+    } catch (_) {}
     return Array.from(new Set(defaultList));
   });
 

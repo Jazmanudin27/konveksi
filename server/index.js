@@ -18,6 +18,8 @@ import antreanRouter from "./routes/antrean.js";
 import mutasiGudangJadiRouter from "./routes/mutasiGudangJadi.js";
 import sizesRouter from "./routes/sizes.js";
 import pembayaranUpahRouter from "./routes/pembayaranUpah.js";
+import penjahitRouter from "./routes/penjahit.js";
+import timFinishingRouter from "./routes/timFinishing.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -47,6 +49,8 @@ app.use("/api/antrean", antreanRouter);
 app.use("/api/mutasi-gudang-jadi", mutasiGudangJadiRouter);
 app.use("/api/sizes", sizesRouter);
 app.use("/api/pembayaran-upah", pembayaranUpahRouter);
+app.use("/api/penjahit", penjahitRouter);
+app.use("/api/tim-finishing", timFinishingRouter);
 
 // Static Frontend Serve & SPA Fallback (Produksi VPS - Express 4 & 5 Compatible)
 app.use(express.static(distPath));

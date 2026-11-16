@@ -124,6 +124,32 @@ async function initMysql() {
       } catch (_) {}
     }
 
+    // Pastikan data awal tabel penjahit tersedia
+    try {
+      const [penjahitRows] = await connection.query("SELECT COUNT(*) as cnt FROM penjahit");
+      if (penjahitRows[0].cnt === 0) {
+        await connection.query(`
+          INSERT IGNORE INTO penjahit (nik, nama, kategori, spesialisasi, tarif_per_pcs, telepon) VALUES
+          ('JHT-001', 'CEPI', 'Borongan', 'Jahit Kaos & Busana', 3500, '0812-1111-2222'),
+          ('JHT-002', 'Siti Aminah', 'Tetap', 'Jahit Gamis & Obras', 3500, '0813-2222-3333'),
+          ('JHT-003', 'Budi Santoso', 'Borongan', 'Perakitan & Stik Balik', 3500, '0815-3333-4444')
+        `);
+      }
+    } catch (_) {}
+
+    // Pastikan data awal tabel tim_finishing tersedia (Terpisah murni dari penjahit)
+    try {
+      const [finishingRows] = await connection.query("SELECT COUNT(*) as cnt FROM tim_finishing");
+      if (finishingRows[0].cnt === 0) {
+        await connection.query(`
+          INSERT IGNORE INTO tim_finishing (kode_tim, nama_tim, kategori, spesialisasi, kapasitas_harian, telepon) VALUES
+          ('FIN-001', 'Tim Finishing 1 (Uap & Lipat)', 'Internal', 'Setrika Uap & Lipat Presisi', 300, '0812-4444-5555'),
+          ('FIN-002', 'Tim Finishing 2 (Hangtag & Plastik OPP)', 'Internal', 'Pemasangan Hangtag & Packing OPP', 250, '0813-5555-6666'),
+          ('FIN-003', 'Gudang Packing Akhir', 'Borongan', 'Finishing Akhir & Box Karton', 500, '0817-6666-7777')
+        `);
+      }
+    } catch (_) {}
+
     connection.release();
   } catch (err) {
     console.error("❌ Gagal inisialisasi MySQL Database:", err.message);

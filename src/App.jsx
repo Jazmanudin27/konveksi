@@ -10,6 +10,8 @@ import MutasiGudangJadi from './views/desktop/MutasiGudangJadi';
 import Antrean from './views/desktop/Antrean';
 import LaporanStokGudang from './views/desktop/LaporanStokGudang';
 import PembayaranUpah from './views/desktop/PembayaranUpah';
+import Penjahit from './views/desktop/Penjahit';
+import TimFinishing from './views/desktop/TimFinishing';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
 import MobileApp from './views/mobile/MobileApp';
 import CustomerTracking from './views/tracking/CustomerTracking';
@@ -47,6 +49,8 @@ export default function App() {
     'dashboard',
     'products',
     'categories',
+    'penjahit',
+    'tim-finishing',
     'employees',
     'bahan',
     'mutasi-bahan',
@@ -358,6 +362,8 @@ export default function App() {
               onDeleteCategory={handleDeleteCategory}
             />
           )}
+          {activeMenu === 'penjahit' && <Penjahit />}
+          {activeMenu === 'tim-finishing' && <TimFinishing />}
           {activeMenu === 'employees' && (
             <Karyawan
               employees={employees}

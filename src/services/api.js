@@ -97,6 +97,18 @@ export const api = {
   updateSize: (id, data) => request(`/sizes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSize: (id) => request(`/sizes/${id}`, { method: 'DELETE' }),
 
+  // Penjahit (Terpisah dari Tim Finishing)
+  getPenjahit: () => request('/penjahit'),
+  createPenjahit: (data) => request('/penjahit', { method: 'POST', body: JSON.stringify(data) }),
+  updatePenjahit: (id, data) => request(`/penjahit/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePenjahit: (id) => request(`/penjahit/${id}`, { method: 'DELETE' }),
+
+  // Tim Finishing & Packing (Terpisah Murni dari Penjahit)
+  getTimFinishing: () => request('/tim-finishing'),
+  createTimFinishing: (data) => request('/tim-finishing', { method: 'POST', body: JSON.stringify(data) }),
+  updateTimFinishing: (id, data) => request(`/tim-finishing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTimFinishing: (id) => request(`/tim-finishing/${id}`, { method: 'DELETE' }),
+
   // Pembayaran Upah Pemotong, Penjahit, QC & Finishing
   getPembayaranUpah: (params = {}) => {
     const q = new URLSearchParams(params).toString();

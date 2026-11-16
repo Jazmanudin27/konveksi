@@ -261,14 +261,34 @@ export default function Antrean({
     return list.length > 0 ? list : employees;
   }, [employees]);
 
-  // List Tim Jahit dari Master Karyawan
+  // State Tabel Terpisah Khusus Penjahit & Tim Finishing
+  const [penjahitList, setPenjahitList] = useState([]);
+  const [timFinishingList, setTimFinishingList] = useState([]);
+
+  useEffect(() => {
+    api.getPenjahit().then(data => {
+      if (Array.isArray(data)) setPenjahitList(data);
+    }).catch(() => {});
+    api.getTimFinishing().then(data => {
+      if (Array.isArray(data)) setTimFinishingList(data);
+    }).catch(() => {});
+  }, []);
+
+  // List Tim Jahit: Khusus dari Data Penjahit (Terpisah dari Finishing)
   const jahitEmployees = useMemo(() => {
-    const list = employees.filter(e => {
+    if (penjahitList.length > 0) {
+      return penjahitList.map(p => ({
+        id: p.id,
+        nama: p.nama,
+        bagian: 'Penjahit',
+        tarif: p.tarifPerPcs
+      }));
+    }
+    return employees.filter(e => {
       const b = (e.bagian || '').toLowerCase();
       return b.includes('jahit') || b.includes('sew');
     });
-    return list.length > 0 ? list : employees;
-  }, [employees]);
+  }, [penjahitList, employees]);
 
   // List Tim QC dari Master Karyawan
   const qcEmployees = useMemo(() => {
@@ -279,14 +299,27 @@ export default function Antrean({
     return list.length > 0 ? list : employees;
   }, [employees]);
 
-  // List Tim Finishing dari Master Karyawan
+  // List Tim Finishing: Khusus dari Master Tim Finishing (TIDAK BOLEH campur Penjahit!)
   const finishingEmployees = useMemo(() => {
-    const list = employees.filter(e => {
+    if (timFinishingList.length > 0) {
+      return timFinishingList.map(f => ({
+        id: f.id,
+        nama: f.namaTim,
+        bagian: 'Finishing & Packing',
+        kapasitas: f.kapasitasHarian
+      }));
+    }
+    const fromEmp = employees.filter(e => {
       const b = (e.bagian || '').toLowerCase();
       return b.includes('finish') || b.includes('pack');
     });
-    return list.length > 0 ? list : employees;
-  }, [employees]);
+    if (fromEmp.length > 0) return fromEmp;
+    return [
+      { id: 1, nama: 'Tim Finishing & Packing 1 (Uap & Lipat)', bagian: 'Finishing' },
+      { id: 2, nama: 'Tim Finishing 2 (Hangtag & Plastik OPP)', bagian: 'Finishing' },
+      { id: 3, nama: 'Gudang Packing Akhir', bagian: 'Packing' },
+    ];
+  }, [timFinishingList, employees]);
 
   // Default Tarif Cutting dari Master Jasa
   const defaultTarifCutting = useMemo(() => {
@@ -727,12 +760,13 @@ export default function Antrean({
     if (!items || items.length === 0) return;
     setFinishingTargetItems(items);
     const totalQty = items.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+    const defaultTim = finishingEmployees[0]?.nama || 'Tim Finishing & Packing 1 (Uap & Lipat)';
     setFinishingForm({
       qtyPassQc: totalQty,
       qtyRejectQc: 0,
       catatanRejectQc: '',
       tglSerahFinishing: new Date().toISOString().slice(0, 10),
-      timFinishing: finishingEmployees[0]?.nama ? `Tim ${finishingEmployees[0].nama} (Finishing)` : 'Tim Finishing & Packing 1 (Uap & Lipat)',
+      timFinishing: defaultTim,
       catatanFinishing: ''
     });
     setIsFinishingModalOpen(true);
@@ -1658,7 +1692,7 @@ export default function Antrean({
                 <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] border border-[#cbd5e1]">SUMBER & REFF</th>
                 <th className="py-2.5 px-3 min-w-[240px] border border-[#cbd5e1]">RINCIAN MODEL PRODUK (SKU)</th>
                 <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">TARGET & PRIORITAS</th>
-                <th className="py-2.5 px-3 text-center min-w-[180px] border border-[#cbd5e1]">STATUS & HISTORI TAHAPAN</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">STATUS</th>
                 <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[150px] border border-[#cbd5e1]">AKSI</th>
               </tr>
             </thead>
@@ -1782,11 +1816,11 @@ export default function Antrean({
                         </div>
                       </td>
 
-                      {/* 6. STATUS & HISTORI CUTTING / JAHIT */}
-                      <td className="py-2 px-3 text-center border border-[#cbd5e1]">
-                        <div className="flex flex-col items-center gap-1.5">
+                      {/* 6. STATUS & TGL PROSES */}
+                      <td className="py-2 px-3 text-center border border-[#cbd5e1] whitespace-nowrap">
+                        <div className="flex flex-col items-center gap-1">
                           <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold border ${
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
                               item.status === 'Menunggu Cutting'
                                 ? 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]'
                                 : item.status === 'Proses Cutting' || item.status === 'Sedang Diproses'
@@ -1804,87 +1838,30 @@ export default function Antrean({
                           >
                             {item.status === 'Sedang Diproses' ? 'Proses Cutting' : item.status === 'Menunggu Penerimaan Gudang' ? 'Selesai' : item.status}
                           </span>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
-                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span>s/d {item.deadline}</span>
+
+                          {/* Tanggal Update / Masuk Tahapan Proses */}
+                          <div className="flex items-center gap-1 text-[11px] text-slate-600 font-mono">
+                            <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>
+                              {item.status === 'Proses Finishing'
+                                ? (item.tglSerahFinishing || item.tglMasuk)
+                                : item.status === 'Proses QC'
+                                ? (item.tglSerahQc || item.tglMasuk)
+                                : item.status === 'Proses Jahit'
+                                ? (item.tglSerahJahit || item.tglMasuk)
+                                : item.status === 'Proses Cutting' || item.status === 'Sedang Diproses'
+                                ? (item.tglSerahCutting || item.tglMasuk)
+                                : item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang'
+                                ? (item.tglSerahGudang || item.tglMasuk)
+                                : item.tglMasuk}
+                            </span>
                           </div>
 
-                          {/* HISTORI PENYERAHAN TIM CUTTING JIKA SUDAH DISERAHKAN */}
-                          {item.tglSerahCutting && (
-                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f0f9ff] border border-[#bae6fd] text-left leading-snug text-[11px]">
-                              <div className="font-extrabold text-[#0369a1] flex items-center gap-1.5 text-xs">
-                                <Scissors className="w-3 h-3 shrink-0" />
-                                <span className="truncate" title={item.timCutting}>{item.timCutting || 'Tim Cutting'}</span>
-                              </div>
-                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
-                                Tgl: {item.tglSerahCutting}
-                              </div>
-                              <div className="text-emerald-700 font-mono font-bold text-[11px] mt-0.5">
-                                @Rp {(Number(item.tarifCutting) || 1500).toLocaleString('id-ID')} • Tot: Rp {(Number(item.totalBiayaCutting) || ((item.qty || 0) * (item.tarifCutting || 1500))).toLocaleString('id-ID')}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* HISTORI PENYERAHAN TIM JAHIT JIKA SUDAH DISERAHKAN */}
-                          {item.tglSerahJahit && (
-                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f5f3ff] border border-[#ddd6fe] text-left leading-snug text-[11px]">
-                              <div className="font-extrabold text-[#6d28d9] flex items-center gap-1.5 text-xs">
-                                <SewingMachineIcon className="w-3 h-3 shrink-0" />
-                                <span className="truncate" title={item.timJahit}>{item.timJahit || 'Tim Jahit'}</span>
-                              </div>
-                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
-                                Tgl: {item.tglSerahJahit}
-                              </div>
-                              <div className="text-purple-700 font-mono font-bold text-[11px] mt-0.5">
-                                @Rp {(Number(item.tarifJahit) || 3500).toLocaleString('id-ID')} • Tot: Rp {(Number(item.totalBiayaJahit) || ((item.qty || 0) * (item.tarifJahit || 3500))).toLocaleString('id-ID')}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* HISTORI PENYERAHAN TIM QC JIKA SUDAH DISERAHKAN */}
-                          {item.tglSerahQc && (
-                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f0fdfa] border border-[#99f6e4] text-left leading-snug text-[11px]">
-                              <div className="font-extrabold text-[#0f766e] flex items-center gap-1.5 text-xs">
-                                <ShieldCheck className="w-3 h-3 shrink-0" />
-                                <span className="truncate" title={item.timQc}>{item.timQc || 'Tim QC'}</span>
-                              </div>
-                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
-                                Tgl QC: {item.tglSerahQc}
-                              </div>
-                              <div className="text-teal-700 font-semibold text-[11px] mt-0.5">
-                                Status: {item.statusQc || 'Pemeriksaan'}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* HISTORI HASIL QC & PENYERAHAN TIM FINISHING */}
-                          {item.tglSerahFinishing && (
-                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#ecfdf5] border border-[#a7f3d0] text-left leading-snug text-[11px]">
-                              <div className="font-extrabold text-[#047857] flex items-center gap-1.5 text-xs">
-                                <PackageCheck className="w-3 h-3 shrink-0" />
-                                <span className="truncate" title={item.timFinishing}>{item.timFinishing || 'Tim Finishing'}</span>
-                              </div>
-                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
-                                Tgl Finishing: {item.tglSerahFinishing}
-                              </div>
-                              <div className="text-emerald-700 font-mono font-bold text-[11px] mt-0.5">
-                                ✅ Lolos: {Number(item.qtyPassQc || (item.qty || 0)).toLocaleString('id-ID')} Pcs
-                                {Number(item.qtyRejectQc) > 0 && (
-                                  <span className="text-rose-600 ml-1">• ❌ Reject: {Number(item.qtyRejectQc).toLocaleString('id-ID')}</span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          {/* HISTORI PENYERAHAN KE GUDANG JADI */}
-                          {item.tglSerahGudang && (
-                            <div className="w-full mt-1 px-2 py-1.5 rounded bg-[#f0fdf4] border border-[#bbf7d0] text-left leading-snug text-[11px]">
-                              <div className="font-extrabold text-[#15803d] flex items-center gap-1.5 text-xs">
-                                <Warehouse className="w-3 h-3 shrink-0" />
-                                <span>Gudang Jadi (Selesai)</span>
-                              </div>
-                              <div className="text-slate-600 font-mono text-[11px] mt-0.5">
-                                Tgl Serah: {item.tglSerahGudang}
-                              </div>
+                          {/* Estimasi Selesai / Deadline */}
+                          {item.deadline && (
+                            <div className="flex items-center gap-1 text-[10.5px] text-slate-400 font-mono">
+                              <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span>s/d {item.deadline}</span>
                             </div>
                           )}
                         </div>

@@ -263,7 +263,12 @@ export default function LanjutTahapModalMobile({
       const b = (e.bagian || "").toLowerCase();
       return b.includes("finish") || b.includes("pack") || b.includes("lipat");
     });
-    return list.length > 0 ? list : employees;
+    if (list.length > 0) return list;
+    return [
+      { id: 1, nama: "Tim Finishing 1 (Uap & Lipat)", bagian: "Finishing" },
+      { id: 2, nama: "Tim Finishing 2 (Hangtag & Plastik OPP)", bagian: "Finishing" },
+      { id: 3, nama: "Gudang Packing Akhir", bagian: "Packing" },
+    ];
   }, [employees]);
 
   // State Form

@@ -17,6 +17,7 @@ import {
   Layers,
   Sparkles,
   Coins,
+  PackageCheck,
 } from 'lucide-react';
 
 export default function DashboardMobile({
@@ -246,7 +247,7 @@ export default function DashboardMobile({
 
             {/* 5. Tim Jahit / Karyawan (Teal) */}
             <button
-              onClick={() => onNavigate('karyawan')}
+              onClick={() => onNavigate('penjahit')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
             >
               <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#0d9488] to-[#14b8a6] text-white flex items-center justify-center shadow-md shadow-teal-500/25">
@@ -257,7 +258,20 @@ export default function DashboardMobile({
               </span>
             </button>
 
-            {/* 6. Gudang Jadi (Sky Blue) */}
+            {/* 6. Tim Finishing (Emerald / Cyan) */}
+            <button
+              onClick={() => onNavigate('tim-finishing')}
+              className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
+            >
+              <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#059669] to-[#10b981] text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
+                <PackageCheck className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
+                Finishing
+              </span>
+            </button>
+
+            {/* 7. Gudang Jadi (Sky Blue) */}
             <button
               onClick={() => onNavigate('laporan')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
@@ -270,7 +284,7 @@ export default function DashboardMobile({
               </span>
             </button>
 
-            {/* 7. Kategori Produk (Rose / Merah) */}
+            {/* 8. Kategori Produk (Rose / Merah) */}
             <button
               onClick={() => onNavigate('kategori')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
@@ -283,7 +297,7 @@ export default function DashboardMobile({
               </span>
             </button>
 
-            {/* 8. Pembayaran Upah (Emas / Kuning) */}
+            {/* 9. Pembayaran Upah (Emas / Kuning) */}
             <button
               onClick={() => onNavigate('pembayaran-upah')}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
@@ -296,7 +310,7 @@ export default function DashboardMobile({
               </span>
             </button>
 
-            {/* 9. Mode PC Desktop (Dark Slate) */}
+            {/* 10. Mode PC Desktop (Dark Slate) */}
             <button
               onClick={onSwitchToDesktop}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"

@@ -20,6 +20,8 @@ import {
   Warehouse,
   FileSpreadsheet,
   Coins,
+  Scissors,
+  PackageCheck,
   X
 } from 'lucide-react';
 
@@ -163,20 +165,33 @@ export default function Sidebar({ isOpen, onClose, activeMenu, onSelectMenu }) {
                   <span>Kategori Produk</span>
                 </button>
 
-                {/* 3. Karyawan */}
+                {/* 3. Data Penjahit (Terpisah) */}
                 <button
-                  onClick={() => handleMenuClick('employees')}
+                  onClick={() => handleMenuClick('penjahit')}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                    activeMenu === 'employees'
-                      ? 'bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950'
+                    activeMenu === 'penjahit'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm shadow-purple-950'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                   }`}
                 >
-                  <Users className="w-3.5 h-3.5 shrink-0" />
-                  <span>Karyawan</span>
+                  <Scissors className="w-3.5 h-3.5 shrink-0 text-purple-400" />
+                  <span>Data Penjahit</span>
                 </button>
 
-                {/* 4. Bahan */}
+                {/* 4. Tim Finishing & Packing (Terpisah) */}
+                <button
+                  onClick={() => handleMenuClick('tim-finishing')}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                    activeMenu === 'tim-finishing'
+                      ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm shadow-teal-950'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  <PackageCheck className="w-3.5 h-3.5 shrink-0 text-teal-400" />
+                  <span>Tim Finishing</span>
+                </button>
+
+                {/* 5. Bahan Baku */}
                 <button
                   onClick={() => handleMenuClick('bahan')}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
@@ -187,6 +202,19 @@ export default function Sidebar({ isOpen, onClose, activeMenu, onSelectMenu }) {
                 >
                   <Boxes className="w-3.5 h-3.5 shrink-0" />
                   <span>Bahan Baku</span>
+                </button>
+
+                {/* 6. Semua Karyawan */}
+                <button
+                  onClick={() => handleMenuClick('employees')}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                    activeMenu === 'employees'
+                      ? 'bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  <span>Semua Karyawan</span>
                 </button>
               </div>
             )}

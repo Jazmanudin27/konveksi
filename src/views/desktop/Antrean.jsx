@@ -42,7 +42,8 @@ import {
   Undo2,
   Warehouse,
   Settings,
-  Edit2
+  Edit2,
+  Share2
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -61,6 +62,7 @@ import ModalSerahQC from './antrean/ModalSerahQC';
 import ModalSerahFinishing from './antrean/ModalSerahFinishing';
 import ModalSelesaiGudangJadi from './antrean/ModalSelesaiGudangJadi';
 import ModalHistoriCutting from './antrean/ModalHistoriCutting';
+import ShareTrackingModal from '../../components/common/ShareTrackingModal';
 
 export default function Antrean({
   antreanList = [],
@@ -73,6 +75,7 @@ export default function Antrean({
   const [filterSumber, setFilterSumber] = useState('');
   const [filterPrioritas, setFilterPrioritas] = useState('');
   const [activeTab, setActiveTab] = useState('Semua Antrean'); // 'Semua Antrean' | 'Menunggu Cutting' | 'Proses Cutting' | 'Proses Jahit' | 'Proses QC' | 'Proses Finishing' | 'Selesai'
+  const [shareTrackingItem, setShareTrackingItem] = useState(null);
 
   // State Manajemen List Sumber Permintaan (Tersinkron ke Database SQLite)
   const [sumberOptions, setSumberOptions] = useState(() => {
@@ -1944,6 +1947,16 @@ export default function Antrean({
                             <Eye className="w-3.5 h-3.5" />
                           </button>
 
+                          {/* Tombol Bagikan Link Tracking Customer */}
+                          <button
+                            type="button"
+                            onClick={() => setShareTrackingItem(item)}
+                            className="w-7 h-7 rounded bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                            title="Bagikan Link Live Tracking ke Pelanggan (WhatsApp / Link)"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Tombol Edit & Hapus HANYA muncul jika status 'Menunggu Cutting' */}
                           {item.status === 'Menunggu Cutting' ? (
                             <>
@@ -2721,6 +2734,13 @@ export default function Antrean({
           </div>
         </div>
       )}
+
+      {/* Modal Share Tracking Link Customer */}
+      <ShareTrackingModal
+        isOpen={Boolean(shareTrackingItem)}
+        item={shareTrackingItem}
+        onClose={() => setShareTrackingItem(null)}
+      />
     </div>
   );
 }

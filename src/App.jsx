@@ -11,6 +11,7 @@ import Antrean from './views/desktop/Antrean';
 import LaporanStokGudang from './views/desktop/LaporanStokGudang';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
 import MobileApp from './views/mobile/MobileApp';
+import CustomerTracking from './views/tracking/CustomerTracking';
 import { api } from './services/api';
 import { HARGA_POTONG_MAP } from './constants/appConstants';
 
@@ -50,6 +51,23 @@ export default function App() {
   ];
 
   // Ambil menu aktif terakhir dari URL hash atau localStorage agar tidak reset saat refresh
+  const getTrackingInfoFromHash = () => {
+    try {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash.startsWith('track/') || hash.startsWith('tracking/')) {
+        const parts = hash.split('/');
+        return { isTracking: true, noAntrian: decodeURIComponent(parts.slice(1).join('/') || '') };
+      }
+      if (hash === 'track' || hash === 'tracking') {
+        const urlParams = new URLSearchParams(window.location.search);
+        return { isTracking: true, noAntrian: urlParams.get('no') || '' };
+      }
+    } catch (_) {}
+    return { isTracking: false, noAntrian: '' };
+  };
+
+  const [trackingInfo, setTrackingInfo] = useState(getTrackingInfoFromHash);
+
   const getInitialMenu = () => {
     try {
       const hash = window.location.hash.replace('#', '').trim();
@@ -76,6 +94,10 @@ export default function App() {
   // Sinkronisasi event navigasi URL Hash & tombol Back/Forward browser
   useEffect(() => {
     const onHashChange = () => {
+      const track = getTrackingInfoFromHash();
+      setTrackingInfo(track);
+      if (track.isTracking) return;
+
       const hash = window.location.hash.replace('#', '').trim();
       if (hash && VALID_MENUS.includes(hash)) {
         setActiveMenuState(hash);
@@ -88,7 +110,7 @@ export default function App() {
     window.addEventListener('hashchange', onHashChange);
 
     try {
-      if (!window.location.hash && activeMenu) {
+      if (!window.location.hash && !trackingInfo.isTracking && activeMenu) {
         window.history.replaceState(null, '', `#${activeMenu}`);
       }
       localStorage.setItem('konveksi_active_menu', activeMenu);
@@ -218,6 +240,19 @@ export default function App() {
     setCategories((prev) => prev.filter((c) => c.id !== catId));
     api.deleteCategory(catId).catch((e) => console.warn('Gagal hapus kategori dari API SQLite:', e));
   };
+
+  // Tampilan Khusus Live Tracking Pesanan Pelanggan (Public Customer Portal)
+  if (trackingInfo.isTracking) {
+    return (
+      <CustomerTracking
+        initialNoAntrian={trackingInfo.noAntrian}
+        onBackToApp={() => {
+          window.location.hash = '#dashboard';
+          setTrackingInfo({ isTracking: false, noAntrian: '' });
+        }}
+      />
+    );
+  }
 
   if (isMobileView) {
     return (

@@ -1,4 +1,4 @@
--- Skema Database MySQL Sistem Manajemen Konveksi
+
 CREATE TABLE IF NOT EXISTS categories (
   id INT AUTO_INCREMENT PRIMARY KEY,
   kode VARCHAR(50) NOT NULL UNIQUE,
@@ -165,5 +165,3 @@ CREATE TABLE IF NOT EXISTS sizes (
   urutan INT DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-

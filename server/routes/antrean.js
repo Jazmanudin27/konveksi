@@ -101,7 +101,56 @@ router.delete('/sumber-permintaan/:nama', async (req, res) => {
   }
 });
 
-// 1b. GET antrean by id
+// 1b. GET Public Customer Tracking by noAntrian or id (no authentication / no wage leak)
+router.get('/track/:query', async (req, res) => {
+  try {
+    const q = decodeURIComponent(req.params.query).trim();
+    const rows = await getAntreanSelect(
+      'WHERE a.no_antrian = ? OR a.no_reff = ? OR a.id = ?',
+      [q, q, q]
+    );
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: 'Pesanan tidak ditemukan. Periksa kembali nomor antrean.' });
+    }
+    const a = rows[0];
+    // Return sanitized public tracking data (protect private wage/cost data)
+    res.json({
+      id: a.id,
+      noAntrian: a.noAntrian,
+      tglMasuk: a.tglMasuk,
+      sumberPermintaan: a.sumberPermintaan,
+      noReff: a.noReff,
+      sku: a.sku,
+      namaProduk: a.namaProduk,
+      kategori: a.kategori,
+      varian: a.varian,
+      ukuran: a.ukuran,
+      qty: a.qty,
+      status: a.status,
+      prioritas: a.prioritas,
+      deadline: a.deadline,
+      catatan: a.catatan,
+      tglSerahCutting: a.tglSerahCutting,
+      timCutting: a.timCutting,
+      tglSerahJahit: a.tglSerahJahit,
+      timJahit: a.timJahit,
+      tglSerahQc: a.tglSerahQc,
+      timQc: a.timQc,
+      statusQc: a.statusQc,
+      qtyPassQc: a.qtyPassQc,
+      qtyRejectQc: a.qtyRejectQc,
+      tglSerahFinishing: a.tglSerahFinishing,
+      timFinishing: a.timFinishing,
+      tglSerahGudang: a.tglSerahGudang,
+      createdAt: a.createdAt,
+    });
+  } catch (err) {
+    console.error('❌ Error GET /api/antrean/track/:query:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 1c. GET antrean by id
 router.get('/:id', async (req, res) => {
   try {
     const rows = await getAntreanSelect('WHERE a.id = ?', [req.params.id]);

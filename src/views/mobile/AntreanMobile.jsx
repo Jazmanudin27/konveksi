@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Scissors, ChevronRight } from 'lucide-react';
+import { Search, Plus, Scissors, ChevronRight, Share2 } from 'lucide-react';
+import ShareTrackingModal from '../../components/common/ShareTrackingModal';
 
 export default function AntreanMobile({
   antreanList = [],
@@ -8,6 +9,7 @@ export default function AntreanMobile({
 }) {
   const [antreanSearch, setAntreanSearch] = useState('');
   const [antreanFilterStatus, setAntreanFilterStatus] = useState('SEMUA');
+  const [shareItem, setShareItem] = useState(null);
 
   const normalizedList = useMemo(() => {
     return antreanList.map((item) => {
@@ -65,25 +67,16 @@ export default function AntreanMobile({
 
   return (
     <div className="space-y-3 pb-6">
-      {/* Search & Tambah */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            placeholder="Cari no antrean / SKU / nama..."
-            value={antreanSearch}
-            onChange={(e) => setAntreanSearch(e.target.value)}
-            className="w-full bg-white pl-9 pr-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#064e3b]"
-          />
-        </div>
-        <button
-          onClick={onOpenAddAntrean}
-          className="p-2.5 bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 text-white rounded-2xl shadow-xs shrink-0 cursor-pointer transition-colors"
-          title="Tambah Antrean Baru"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+      {/* Search Bar Full Width */}
+      <div className="relative">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Cari no antrean / SKU / nama..."
+          value={antreanSearch}
+          onChange={(e) => setAntreanSearch(e.target.value)}
+          className="w-full bg-white pl-9 pr-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#064e3b]"
+        />
       </div>
 
       {/* Filter Tabs Horizontal */}
@@ -145,8 +138,17 @@ export default function AntreanMobile({
                 <span className="font-black text-slate-900">{item.qty || 50} Pcs</span>
               </div>
 
-                {/* Aksi Cepat Buka Modal Serah Tahapan SOP */}
+                {/* Aksi Cepat Buka Modal Serah Tahapan SOP & Share Tracking */}
                 <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShareItem(item)}
+                    className="p-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 active:scale-95 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                    title="Bagikan Link Live Tracking ke Pelanggan"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-emerald-700" />
+                  </button>
+
                   {item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
                     <button
                       onClick={() => onNextStatus(item)}
@@ -173,6 +175,26 @@ export default function AntreanMobile({
           </div>
         )}
       </div>
+
+      {/* Floating Action Button (FAB) Tambah Antrean di Kanan Bawah seperti Live Chat */}
+      <button
+        type="button"
+        onClick={onOpenAddAntrean}
+        className="fixed bottom-20 right-4 z-40 h-12 px-4 rounded-full bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] hover:from-[#04362d] hover:to-[#032922] text-white font-extrabold text-xs shadow-2xl shadow-emerald-950/50 flex items-center gap-2 border-2 border-white/90 active:scale-95 transition-all cursor-pointer group"
+        title="Tambah Antrean Produksi Baru"
+      >
+        <div className="w-6 h-6 rounded-full bg-emerald-500/30 flex items-center justify-center">
+          <Plus className="w-4 h-4 stroke-[3] text-emerald-200 group-hover:rotate-90 transition-transform" />
+        </div>
+        <span className="tracking-wide">Tambah</span>
+      </button>
+
+      {/* Modal Share Tracking Link Customer */}
+      <ShareTrackingModal
+        isOpen={Boolean(shareItem)}
+        item={shareItem}
+        onClose={() => setShareItem(null)}
+      />
     </div>
   );
 }

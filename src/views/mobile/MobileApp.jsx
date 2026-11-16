@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { api } from '../../services/api';
 import {
   Scissors,
@@ -26,6 +26,7 @@ import LaporanMobile from './LaporanMobile';
 import MobileMenuSheet from './MobileMenuSheet';
 import AddAntreanModalMobile from './AddAntreanModalMobile';
 import LanjutTahapModalMobile from './LanjutTahapModalMobile';
+import MobileNotificationModal from './MobileNotificationModal';
 
 export default function MobileApp({
   products,
@@ -51,18 +52,54 @@ export default function MobileApp({
   // Sub-view untuk Menu Tambahan (misal: 'karyawan', 'bahan', 'kategori', 'laporan')
   const [activeSubView, setActiveSubView] = useState(null);
 
-  // State Modal Drawer & Modal Tambah Antrean
+  // State Modal Drawer, Tambah Antrean & Pusat Notifikasi
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddAntreanOpen, setIsAddAntreanOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   // Hitung jumlah order aktif & urgent
-  const activeOrderCount = antreanList.filter(
-    (a) => (a.status || a.statusTahapan) !== 'Selesai Gudang' && (a.status || a.statusTahapan) !== 'Selesai'
-  ).length;
+  const activeOrderCount = useMemo(() => {
+    return antreanList.filter(
+      (a) => (a.status || a.statusTahapan) !== 'Selesai Gudang' && (a.status || a.statusTahapan) !== 'Selesai'
+    ).length;
+  }, [antreanList]);
 
-  const activeUrgentCount = antreanList.filter(
-    (a) => (a.prioritas || '').toLowerCase() === 'urgent' && (a.status || a.statusTahapan) !== 'Selesai Gudang'
-  ).length;
+  const activeUrgentCount = useMemo(() => {
+    return antreanList.filter(
+      (a) =>
+        ((a.prioritas || '').toLowerCase() === 'urgent' ||
+          (a.prioritas || '').toLowerCase() === 'tinggi') &&
+        (a.status || a.statusTahapan) !== 'Selesai Gudang' &&
+        (a.status || a.statusTahapan) !== 'Selesai'
+    ).length;
+  }, [antreanList]);
+
+  // Perhitungan Notifikasi Peringatan Operasional Menyeluruh
+  const notificationCount = useMemo(() => {
+    let count = 0;
+    // 1. Order urgent atau siap potong
+    count += antreanList.filter(
+      (a) =>
+        (a.status || a.statusTahapan) !== 'Selesai Gudang' &&
+        (a.status || a.statusTahapan) !== 'Selesai' &&
+        (((a.prioritas || '').toLowerCase() === 'urgent' ||
+          (a.prioritas || '').toLowerCase() === 'tinggi') ||
+          (a.status || a.statusTahapan) === 'Menunggu Cutting' ||
+          (a.status || a.statusTahapan) === 'Draft')
+    ).length;
+
+    // 2. Bahan baku menipis
+    count += bahan.filter(
+      (b) => Number(b.stokSaatIni ?? b.stok ?? 0) <= Number(b.stokMinimum ?? 20)
+    ).length;
+
+    // 3. Produk habis
+    count += products.filter(
+      (p) => Number(p.stok || 0) === 0 || p.status === 'Habis'
+    ).length;
+
+    return count;
+  }, [antreanList, bahan, products]);
 
   // State Modal Lanjut Tahap Produksi SOP Mobile
   const [selectedNextStatusItem, setSelectedNextStatusItem] = useState(null);
@@ -93,7 +130,7 @@ export default function MobileApp({
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#f1f5f9] text-slate-800 overflow-hidden font-sans select-none">
-      {/* 1. STICKY SUB-HEADER HANYA UNTUK MENU NON-BERANDA */}
+      {/* 1. STICKY SUB-HEADER UNTUK MENU NON-BERANDA DENGAN NOTIFIKASI BELL */}
       {activeSubView ? (
         <MobileSubHeader
           title={
@@ -134,6 +171,8 @@ export default function MobileApp({
           }
           onBack={() => setActiveSubView(null)}
           onSwitchToDesktop={onSwitchToDesktop}
+          onOpenNotifications={() => setIsNotificationOpen(true)}
+          notificationCount={notificationCount}
         />
       ) : (
         mobileTab !== 'home' && (
@@ -146,15 +185,8 @@ export default function MobileApp({
                 badgeText={`${antreanList.length} Total`}
                 onBack={() => setMobileTab('home')}
                 onSwitchToDesktop={onSwitchToDesktop}
-                rightAction={
-                  <button
-                    onClick={() => setIsAddAntreanOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 active:scale-95 text-[#064e3b] text-xs font-black shadow-md transition-all cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                    <span>Tambah</span>
-                  </button>
-                }
+                onOpenNotifications={() => setIsNotificationOpen(true)}
+                notificationCount={notificationCount}
               />
             )}
 
@@ -166,6 +198,8 @@ export default function MobileApp({
                 badgeText={`${mutasiList.length + mutasiGudangJadiList.length} Mutasi`}
                 onBack={() => setMobileTab('home')}
                 onSwitchToDesktop={onSwitchToDesktop}
+                onOpenNotifications={() => setIsNotificationOpen(true)}
+                notificationCount={notificationCount}
               />
             )}
 
@@ -177,6 +211,8 @@ export default function MobileApp({
                 badgeText={`${products.length} SKU`}
                 onBack={() => setMobileTab('home')}
                 onSwitchToDesktop={onSwitchToDesktop}
+                onOpenNotifications={() => setIsNotificationOpen(true)}
+                notificationCount={notificationCount}
               />
             )}
           </>
@@ -202,6 +238,8 @@ export default function MobileApp({
                   dbConnected={dbConnected}
                   onSwitchToDesktop={onSwitchToDesktop}
                   activeUrgentCount={activeUrgentCount}
+                  notificationCount={notificationCount}
+                  onOpenNotifications={() => setIsNotificationOpen(true)}
                 />
                 <div className="px-3.5">
                   <DashboardMobile
@@ -226,7 +264,7 @@ export default function MobileApp({
               </div>
             )}
 
-            {/* TAB UTAMA ANTREAN PRODUKSI */}
+            {/* TAB ANTREAN PRODUKSI */}
             {mobileTab === 'antrean' && (
               <div className="p-3.5">
                 <AntreanMobile
@@ -237,7 +275,7 @@ export default function MobileApp({
               </div>
             )}
 
-            {/* TAB UTAMA MUTASI */}
+            {/* TAB MUTASI STOK BAHAN & GUDANG JADI */}
             {mobileTab === 'mutasi' && (
               <div className="p-3.5">
                 <MutasiMobile
@@ -247,13 +285,10 @@ export default function MobileApp({
               </div>
             )}
 
-            {/* TAB UTAMA KATALOG SKU */}
+            {/* TAB KATALOG PRODUK */}
             {mobileTab === 'produk' && (
               <div className="p-3.5">
-                <ProdukMobile
-                  products={products}
-                  categories={categories}
-                />
+                <ProdukMobile products={products} categories={categories} />
               </div>
             )}
           </>
@@ -305,6 +340,27 @@ export default function MobileApp({
           onSuccess={handleRefreshAntrean}
         />
       )}
+
+      {/* 7. MODAL PUSAT NOTIFIKASI OPERASIONAL MOBILE */}
+      <MobileNotificationModal
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        antreanList={antreanList}
+        bahan={bahan}
+        products={products}
+        onNavigateToAntrean={() => {
+          setActiveSubView(null);
+          setMobileTab('antrean');
+        }}
+        onNavigateToBahan={() => {
+          setMobileTab('menu');
+          setActiveSubView('bahan');
+        }}
+        onNavigateToProduk={() => {
+          setActiveSubView(null);
+          setMobileTab('produk');
+        }}
+      />
     </div>
   );
 }

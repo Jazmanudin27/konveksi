@@ -12,9 +12,11 @@ import {
   PackageCheck,
   RotateCcw,
   Warehouse,
-  Send
+  Send,
+  Share2
 } from 'lucide-react';
 import SewingMachineIcon from './SewingMachineIcon';
+import ShareTrackingModal from '../../../components/common/ShareTrackingModal';
 
 export default function ModalShowAntrean({
   antrean,
@@ -28,6 +30,7 @@ export default function ModalShowAntrean({
   onSelesaiFinishing,
   onRollbackTahap
 }) {
+  const [isShareOpen, setIsShareOpen] = React.useState(false);
   if (!antrean) return null;
   const isUrgent = antrean.prioritas === 'Urgent';
   const prod = products.find(p => p.sku === antrean.sku) || null;
@@ -180,6 +183,17 @@ export default function ModalShowAntrean({
               <span>Batalkan Tahap (Undo)</span>
             </button>
           )}
+          {/* Tombol Bagikan Link Tracking */}
+          <button
+            type="button"
+            onClick={() => setIsShareOpen(true)}
+            className="flex items-center gap-1 px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-xs font-bold transition-all cursor-pointer shadow-xs"
+            title="Bagikan Tautan Tracking Live ke Customer"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>Bagikan Tracking PO</span>
+          </button>
+
           <button
             type="button"
             onClick={onClose}
@@ -666,6 +680,13 @@ export default function ModalShowAntrean({
           <span>Kembali ke Daftar Antrean</span>
         </button>
       </div>
+
+      {/* Modal Share Tracking */}
+      <ShareTrackingModal
+        isOpen={isShareOpen}
+        item={antrean}
+        onClose={() => setIsShareOpen(false)}
+      />
     </div>
   );
 }

@@ -5,7 +5,11 @@ export default function MobileHeader({
   dbConnected,
   onSwitchToDesktop,
   activeUrgentCount = 0,
+  onOpenNotifications,
+  notificationCount = 0,
 }) {
+  const displayCount = notificationCount > 0 ? notificationCount : activeUrgentCount;
+
   return (
     <header className="bg-gradient-to-b from-[#064e3b] via-[#054338] to-[#04362d] text-white px-4 pt-4 pb-14 rounded-b-[2.2rem] shadow-md select-none relative z-10">
       <div className="flex items-center justify-between">
@@ -41,19 +45,20 @@ export default function MobileHeader({
             </span>
           </div>
 
-          {/* Notifikasi Order Urgent */}
-          <div
-            onClick={() => onSwitchToDesktop && onSwitchToDesktop()}
-            className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center relative cursor-pointer active:scale-95 transition-transform"
-            title={`${activeUrgentCount} Order Prioritas Urgent`}
+          {/* Notifikasi Operasional */}
+          <button
+            type="button"
+            onClick={onOpenNotifications || onSwitchToDesktop}
+            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center relative cursor-pointer active:scale-95 transition-transform"
+            title={`${displayCount} Peringatan Operasional`}
           >
             <Bell className="w-4 h-4 text-emerald-200" />
-            {activeUrgentCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#054338] animate-pulse">
-                {activeUrgentCount}
+            {displayCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black rounded-full min-w-4 h-4 px-1 flex items-center justify-center border-2 border-[#054338] animate-pulse">
+                {displayCount > 99 ? '99+' : displayCount}
               </span>
             )}
-          </div>
+          </button>
 
           {/* Tombol Beralih ke Desktop */}
           <button

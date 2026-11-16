@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Monitor, Sparkles } from 'lucide-react';
+import { ArrowLeft, Monitor, Sparkles, Bell } from 'lucide-react';
 
 export default function MobileSubHeader({
   title,
@@ -10,6 +10,8 @@ export default function MobileSubHeader({
   onBack,
   rightAction,
   onSwitchToDesktop,
+  onOpenNotifications,
+  notificationCount = 0,
 }) {
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] text-white px-4 py-3 rounded-b-2xl shadow-md border-b border-emerald-900/50 flex items-center justify-between select-none">
@@ -52,9 +54,26 @@ export default function MobileSubHeader({
         </div>
       </div>
 
-      {/* Bagian Kanan: Aksi Cepat & Switch Desktop */}
+      {/* Bagian Kanan: Aksi Cepat, Notifikasi & Switch Desktop */}
       <div className="flex items-center gap-2 shrink-0 ml-2">
         {rightAction}
+
+        {/* Tombol Notifikasi Bell */}
+        {onOpenNotifications && (
+          <button
+            type="button"
+            onClick={onOpenNotifications}
+            className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs relative"
+            title={`${notificationCount} Notifikasi Operasional`}
+          >
+            <Bell className="w-4 h-4 text-emerald-200" />
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black rounded-full min-w-4 h-4 px-1 flex items-center justify-center border-2 border-[#064e3b] animate-pulse">
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </span>
+            )}
+          </button>
+        )}
 
         {onSwitchToDesktop && (
           <button

@@ -71,6 +71,7 @@ export const api = {
   // Antrean Produksi (Tahap 1 SOP)
   getAntrean: () => request('/antrean'),
   getAntreanById: (id) => request(`/antrean/${id}`),
+  trackOrder: (noAntrian) => request(`/antrean/track/${encodeURIComponent(noAntrian)}`),
   createAntrean: (data) => request('/antrean', { method: 'POST', body: JSON.stringify(data) }),
   updateAntrean: (id, data) => request(`/antrean/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAntrean: (id) => request(`/antrean/${id}`, { method: 'DELETE' }),

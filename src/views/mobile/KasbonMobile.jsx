@@ -55,7 +55,8 @@ export default function KasbonMobile({ onBack }) {
   const [riwayatList, setRiwayatList] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Suggestions
+  // Suggestions & List Penjahit
+  const [penjahitList, setPenjahitList] = useState([]);
   const [petugasSuggestions, setPetugasSuggestions] = useState([]);
 
   // Fetch Data
@@ -71,6 +72,7 @@ export default function KasbonMobile({ onBack }) {
 
       if (Array.isArray(list)) setKasbonList(list);
       if (rekapData) setRekap(rekapData);
+      if (Array.isArray(penjahit)) setPenjahitList(penjahit);
 
       const names = new Set();
       if (Array.isArray(penjahit)) {
@@ -509,25 +511,32 @@ export default function KasbonMobile({ onBack }) {
             </div>
 
             <form onSubmit={handleSave} className="space-y-3 text-xs">
-              {/* Nama Petugas with Datalist */}
+              {/* Pilih Penjahit via Select Option */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Nama Karyawan / Petugas <span className="text-rose-500">*</span>
+                  Pilih Penjahit (Penerima Kasbon) <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  list="petugas-suggestions-mobile"
-                  placeholder="Ketik nama karyawan..."
                   value={formData.namaPetugas}
                   onChange={(e) => setFormData({ ...formData, namaPetugas: e.target.value })}
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-amber-500 focus:outline-none"
-                />
-                <datalist id="petugas-suggestions-mobile">
-                  {petugasSuggestions.map((name, i) => (
-                    <option key={i} value={name} />
-                  ))}
-                </datalist>
+                  className="w-full h-9 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:border-amber-500 focus:outline-none cursor-pointer"
+                >
+                  <option value="">-- Pilih Nama Penjahit --</option>
+                  {penjahitList.length > 0 ? (
+                    penjahitList.map((p) => (
+                      <option key={p.id || p.nama} value={p.nama}>
+                        🧵 {p.nama} {p.tarifPerPcs ? `(Tarif: Rp ${Number(p.tarifPerPcs).toLocaleString('id-ID')})` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    petugasSuggestions.map((name, i) => (
+                      <option key={i} value={name}>
+                        🧵 {name}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               {/* Bagian / Kategori */}
@@ -538,14 +547,9 @@ export default function KasbonMobile({ onBack }) {
                 <select
                   value={formData.kategoriPetugas}
                   onChange={(e) => setFormData({ ...formData, kategoriPetugas: e.target.value })}
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-amber-500 focus:outline-none"
+                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 text-xs focus:border-amber-500 focus:outline-none"
                 >
                   <option value="Penjahit">🧵 Penjahit</option>
-                  <option value="Pemotong">✂️ Pemotong (Cutting)</option>
-                  <option value="QC">🔍 Tim QC</option>
-                  <option value="Finishing">📦 Finishing & Packing</option>
-                  <option value="Gudang">🏬 Tim Gudang</option>
-                  <option value="Staf / Lainnya">👤 Staf / Lainnya</option>
                 </select>
               </div>
 

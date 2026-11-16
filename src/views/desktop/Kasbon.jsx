@@ -55,7 +55,8 @@ export default function Kasbon() {
   const [riwayatList, setRiwayatList] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // List Suggestions Petugas dari Penjahit & Karyawan
+  // List Penjahit untuk Select Option
+  const [penjahitList, setPenjahitList] = useState([]);
   const [petugasSuggestions, setPetugasSuggestions] = useState([]);
 
   // Fetch Data
@@ -71,6 +72,7 @@ export default function Kasbon() {
 
       if (Array.isArray(list)) setKasbonList(list);
       if (rekapData) setRekap(rekapData);
+      if (Array.isArray(penjahit)) setPenjahitList(penjahit);
 
       // Gabungkan nama unik untuk suggestions
       const names = new Set();
@@ -525,22 +527,32 @@ export default function Kasbon() {
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Nama Penerima Kasbon <span className="text-rose-500">*</span>
+                  Pilih Penjahit (Penerima Kasbon) <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  list="petugas-list"
-                  placeholder="Ketik atau pilih nama petugas (Cth: CEPI, Siti Aminah)..."
                   value={formData.namaPetugas}
                   onChange={(e) => setFormData({ ...formData, namaPetugas: e.target.value })}
-                  className="w-full px-2.5 py-2 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-amber-600"
-                />
-                <datalist id="petugas-list">
-                  {petugasSuggestions.map((name) => (
-                    <option key={name} value={name} />
-                  ))}
-                </datalist>
+                  className="w-full px-2.5 py-2 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-amber-600 bg-white text-slate-800 cursor-pointer"
+                >
+                  <option value="">-- Pilih Nama Penjahit --</option>
+                  {penjahitList.length > 0 ? (
+                    penjahitList.map((p) => (
+                      <option key={p.id || p.nama} value={p.nama}>
+                        🧵 {p.nama} {p.tarifPerPcs ? `(Tarif: Rp ${Number(p.tarifPerPcs).toLocaleString('id-ID')})` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    petugasSuggestions.map((name) => (
+                      <option key={name} value={name}>
+                        🧵 {name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  * Nama otomatis diambil dari Master Data Penjahit.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -551,13 +563,9 @@ export default function Kasbon() {
                   <select
                     value={formData.kategoriPetugas}
                     onChange={(e) => setFormData({ ...formData, kategoriPetugas: e.target.value })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-amber-600"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-amber-600 bg-slate-50 text-slate-700"
                   >
-                    <option value="Penjahit">Penjahit</option>
-                    <option value="Cutting">Pemotong (Cutting)</option>
-                    <option value="QC">Quality Control (QC)</option>
-                    <option value="Finishing">Finishing & Packing</option>
-                    <option value="Karyawan">Karyawan Lainnya</option>
+                    <option value="Penjahit">🧵 Penjahit</option>
                   </select>
                 </div>
 

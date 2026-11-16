@@ -30,7 +30,10 @@ router.get("/", async (req, res) => {
         tarif_per_pcs as tarifPerPcs,
         total_upah as totalUpah,
         COALESCE(potongan_kasbon, 0) as potonganKasbon,
-        COALESCE(total_bersih, total_upah) as totalBersih,
+        CASE 
+          WHEN total_bersih IS NOT NULL AND total_bersih > 0 THEN total_bersih 
+          ELSE GREATEST(0, total_upah - COALESCE(potongan_kasbon, 0)) 
+        END as totalBersih,
         status_bayar as statusBayar,
         tgl_bayar as tglBayar,
         metode_bayar as metodeBayar,
@@ -367,11 +370,11 @@ router.post("/sync-from-antrean", async (req, res) => {
           await connection.query(`
             INSERT INTO pembayaran_upah (
               no_pembayaran, antrean_id, no_antrian, sku, nama_produk,
-              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, status_bayar
-            ) VALUES (?, ?, ?, ?, ?, 'Cutting', ?, ?, ?, ?, 'Belum Lunas')
+              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, total_bersih, status_bayar
+            ) VALUES (?, ?, ?, ?, ?, 'Cutting', ?, ?, ?, ?, ?, 'Belum Lunas')
           `, [
             generateNoPembayaran(), a.id, a.no_antrian, a.sku, namaProd,
-            a.tim_cutting, qtyCut, tarifCut, totCut
+            a.tim_cutting, qtyCut, tarifCut, totCut, totCut
           ]);
           createdCount++;
         }
@@ -391,11 +394,11 @@ router.post("/sync-from-antrean", async (req, res) => {
           await connection.query(`
             INSERT INTO pembayaran_upah (
               no_pembayaran, antrean_id, no_antrian, sku, nama_produk,
-              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, status_bayar
-            ) VALUES (?, ?, ?, ?, ?, 'Jahit', ?, ?, ?, ?, 'Belum Lunas')
+              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, total_bersih, status_bayar
+            ) VALUES (?, ?, ?, ?, ?, 'Jahit', ?, ?, ?, ?, ?, 'Belum Lunas')
           `, [
             generateNoPembayaran(), a.id, a.no_antrian, a.sku, namaProd,
-            a.tim_jahit, qtyJahit, tarifJahit, totJahit
+            a.tim_jahit, qtyJahit, tarifJahit, totJahit, totJahit
           ]);
           createdCount++;
         }
@@ -417,11 +420,11 @@ router.post("/sync-from-antrean", async (req, res) => {
           await connection.query(`
             INSERT INTO pembayaran_upah (
               no_pembayaran, antrean_id, no_antrian, sku, nama_produk,
-              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, status_bayar
-            ) VALUES (?, ?, ?, ?, ?, 'QC', ?, ?, ?, ?, 'Belum Lunas')
+              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, total_bersih, status_bayar
+            ) VALUES (?, ?, ?, ?, ?, 'QC', ?, ?, ?, ?, ?, 'Belum Lunas')
           `, [
             generateNoPembayaran(), a.id, a.no_antrian, a.sku, namaProd,
-            a.tim_qc, qtyQc, tarifQc, totQc
+            a.tim_qc, qtyQc, tarifQc, totQc, totQc
           ]);
           createdCount++;
         }
@@ -441,15 +444,22 @@ router.post("/sync-from-antrean", async (req, res) => {
           await connection.query(`
             INSERT INTO pembayaran_upah (
               no_pembayaran, antrean_id, no_antrian, sku, nama_produk,
-              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, status_bayar
-            ) VALUES (?, ?, ?, ?, ?, 'Finishing', ?, ?, ?, ?, 'Belum Lunas')
+              tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, total_bersih, status_bayar
+            ) VALUES (?, ?, ?, ?, ?, 'Finishing', ?, ?, ?, ?, ?, 'Belum Lunas')
           `, [
             generateNoPembayaran(), a.id, a.no_antrian, a.sku, namaProd,
-            a.tim_finishing, qtyFin, tarifFin, totFin
+            a.tim_finishing, qtyFin, tarifFin, totFin, totFin
           ]);
           createdCount++;
         }
       }
+
+    // Auto-heal nilai total_bersih untuk transaksi belum lunas
+    await connection.query(`
+      UPDATE pembayaran_upah 
+      SET total_bersih = total_upah 
+      WHERE (total_bersih IS NULL OR total_bersih = 0) AND (potongan_kasbon IS NULL OR potongan_kasbon = 0)
+    `);
     }
 
     await connection.commit();

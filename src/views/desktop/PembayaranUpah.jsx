@@ -625,11 +625,16 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                       <td className="py-2 px-3 text-right border border-slate-200 whitespace-nowrap">
                         <div className="flex flex-col items-end">
                           <span className="font-mono font-black text-xs sm:text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block">
-                            Rp {Number(item.totalBersih ?? item.totalUpah).toLocaleString('id-ID')}
+                            Rp {Number(item.totalUpah || 0).toLocaleString('id-ID')}
                           </span>
                           {Number(item.potonganKasbon) > 0 && (
-                            <span className="text-[10px] text-amber-700 font-mono mt-0.5" title={`Upah Kotor: Rp ${Number(item.totalUpah).toLocaleString('id-ID')}`}>
+                            <span className="text-[10px] text-amber-700 font-mono mt-0.5">
                               (Potong Kasbon: -Rp {Number(item.potonganKasbon).toLocaleString('id-ID')})
+                            </span>
+                          )}
+                          {Number(item.potonganKasbon) > 0 && (
+                            <span className="text-[10px] text-emerald-700 font-mono font-bold">
+                              Bersih: Rp {Number(item.totalBersih || (Number(item.totalUpah) - Number(item.potonganKasbon))).toLocaleString('id-ID')}
                             </span>
                           )}
                         </div>

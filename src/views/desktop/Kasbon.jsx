@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Wallet,
   Clock,
@@ -17,9 +17,9 @@ import {
   Coins,
   ArrowDownRight,
   TrendingUp,
-} from 'lucide-react';
-import { api } from '../../services/api';
-import { Swal } from '../../utils/swal';
+} from "lucide-react";
+import { api } from "../../services/api";
+import { Swal } from "../../utils/swal";
 
 export default function Kasbon() {
   const [kasbonList, setKasbonList] = useState([]);
@@ -34,19 +34,19 @@ export default function Kasbon() {
   const [loading, setLoading] = useState(false);
 
   // Filter State
-  const [activeTab, setActiveTab] = useState('Belum Lunas'); // 'Semua' | 'Belum Lunas' | 'Lunas'
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterKategori, setFilterKategori] = useState('');
+  const [activeTab, setActiveTab] = useState("Belum Lunas"); // 'Semua' | 'Belum Lunas' | 'Lunas'
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterKategori, setFilterKategori] = useState("");
 
   // Modal Create/Edit State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
-    namaPetugas: '',
-    kategoriPetugas: 'Penjahit',
+    namaPetugas: "",
+    kategoriPetugas: "Penjahit",
     tglKasbon: new Date().toISOString().slice(0, 10),
-    nominal: '',
-    keperluan: '',
+    nominal: "",
+    keperluan: "",
   });
 
   // Modal Riwayat Potongan State
@@ -84,7 +84,7 @@ export default function Kasbon() {
       }
       setPetugasSuggestions(Array.from(names));
     } catch (err) {
-      console.warn('Gagal memuat data kasbon:', err);
+      console.warn("Gagal memuat data kasbon:", err);
     } finally {
       setLoading(false);
     }
@@ -97,16 +97,19 @@ export default function Kasbon() {
   // Filtered List
   const filteredList = useMemo(() => {
     return kasbonList.filter((item) => {
-      if (activeTab === 'Belum Lunas' && item.status !== 'Belum Lunas') return false;
-      if (activeTab === 'Lunas' && item.status !== 'Lunas') return false;
-      if (filterKategori && item.kategoriPetugas !== filterKategori) return false;
+      if (activeTab === "Belum Lunas" && item.status !== "Belum Lunas")
+        return false;
+      if (activeTab === "Lunas" && item.status !== "Lunas") return false;
+      if (filterKategori && item.kategoriPetugas !== filterKategori)
+        return false;
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const no = (item.noKasbon || '').toLowerCase();
-        const nama = (item.namaPetugas || '').toLowerCase();
-        const kep = (item.keperluan || '').toLowerCase();
-        if (!no.includes(q) && !nama.includes(q) && !kep.includes(q)) return false;
+        const no = (item.noKasbon || "").toLowerCase();
+        const nama = (item.namaPetugas || "").toLowerCase();
+        const kep = (item.keperluan || "").toLowerCase();
+        if (!no.includes(q) && !nama.includes(q) && !kep.includes(q))
+          return false;
       }
       return true;
     });
@@ -114,38 +117,57 @@ export default function Kasbon() {
 
   // Helper Format Rupiah Input
   const formatRupiahDisplay = (val) => {
-    if (!val && val !== 0) return '';
-    const clean = String(val).replace(/\D/g, '');
-    return clean ? Number(clean).toLocaleString('id-ID') : '';
+    if (!val && val !== 0) return "";
+    const clean = String(val).replace(/\D/g, "");
+    return clean ? Number(clean).toLocaleString("id-ID") : "";
   };
 
   // Helper Terbilang Ringkas
   const getTerbilang = (number) => {
-    const nom = Number(String(number).replace(/\D/g, ''));
-    if (!nom || nom <= 0) return '';
-    const satuan = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'];
+    const nom = Number(String(number).replace(/\D/g, ""));
+    if (!nom || nom <= 0) return "";
+    const satuan = [
+      "",
+      "Satu",
+      "Dua",
+      "Tiga",
+      "Empat",
+      "Lima",
+      "Enam",
+      "Tujuh",
+      "Delapan",
+      "Sembilan",
+      "Sepuluh",
+      "Sebelas",
+    ];
     const toWords = (n) => {
       if (n < 12) return satuan[n];
-      if (n < 20) return toWords(n - 10) + ' Belas';
-      if (n < 100) return toWords(Math.floor(n / 10)) + ' Puluh ' + toWords(n % 10);
-      if (n < 200) return 'Seratus ' + toWords(n - 100);
-      if (n < 1000) return toWords(Math.floor(n / 100)) + ' Ratus ' + toWords(n % 100);
-      if (n < 2000) return 'Seribu ' + toWords(n - 1000);
-      if (n < 1000000) return toWords(Math.floor(n / 1000)) + ' Ribu ' + toWords(n % 1000);
-      if (n < 1000000000) return toWords(Math.floor(n / 1000000)) + ' Juta ' + toWords(n % 1000000);
-      return '';
+      if (n < 20) return toWords(n - 10) + " Belas";
+      if (n < 100)
+        return toWords(Math.floor(n / 10)) + " Puluh " + toWords(n % 10);
+      if (n < 200) return "Seratus " + toWords(n - 100);
+      if (n < 1000)
+        return toWords(Math.floor(n / 100)) + " Ratus " + toWords(n % 100);
+      if (n < 2000) return "Seribu " + toWords(n - 1000);
+      if (n < 1000000)
+        return toWords(Math.floor(n / 1000)) + " Ribu " + toWords(n % 1000);
+      if (n < 1000000000)
+        return (
+          toWords(Math.floor(n / 1000000)) + " Juta " + toWords(n % 1000000)
+        );
+      return "";
     };
-    return toWords(nom).trim().replace(/\s+/g, ' ') + ' Rupiah';
+    return toWords(nom).trim().replace(/\s+/g, " ") + " Rupiah";
   };
 
   // Open Create Modal
   const handleOpenCreate = () => {
     setFormData({
-      namaPetugas: '',
-      kategoriPetugas: 'Penjahit',
+      namaPetugas: "",
+      kategoriPetugas: "Penjahit",
       tglKasbon: new Date().toISOString().slice(0, 10),
-      nominal: '',
-      keperluan: '',
+      nominal: "",
+      keperluan: "",
     });
     setEditingId(null);
     setIsModalOpen(true);
@@ -155,18 +177,18 @@ export default function Kasbon() {
   const handleOpenEdit = (item) => {
     if (Number(item.terbayar) > 0) {
       Swal.fire(
-        'Perhatian',
-        'Kasbon yang sudah terpotong sebagian dari upah tidak dapat diubah nominalnya.',
-        'warning'
+        "Perhatian",
+        "Kasbon yang sudah terpotong sebagian dari upah tidak dapat diubah nominalnya.",
+        "warning",
       );
       return;
     }
     setFormData({
       namaPetugas: item.namaPetugas,
-      kategoriPetugas: item.kategoriPetugas || 'Penjahit',
+      kategoriPetugas: item.kategoriPetugas || "Penjahit",
       tglKasbon: item.tglKasbon,
       nominal: item.nominal,
-      keperluan: item.keperluan || '',
+      keperluan: item.keperluan || "",
     });
     setEditingId(item.id);
     setIsModalOpen(true);
@@ -175,9 +197,13 @@ export default function Kasbon() {
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const cleanNominal = Number(String(formData.nominal).replace(/\D/g, ''));
+    const cleanNominal = Number(String(formData.nominal).replace(/\D/g, ""));
     if (!formData.namaPetugas.trim() || !cleanNominal || cleanNominal <= 0) {
-      Swal.fire('Perhatian', 'Pilih nama penjahit dan isi nominal kasbon yang valid.', 'warning');
+      Swal.fire(
+        "Perhatian",
+        "Pilih nama penjahit dan isi nominal kasbon yang valid.",
+        "warning",
+      );
       return;
     }
 
@@ -190,18 +216,18 @@ export default function Kasbon() {
       if (editingId) {
         await api.updateKasbon(editingId, payload);
         Swal.fire({
-          icon: 'success',
-          title: 'Berhasil Diperbarui',
-          text: 'Data kasbon telah diupdate.',
+          icon: "success",
+          title: "Berhasil Diperbarui",
+          text: "Data kasbon telah diupdate.",
           timer: 1500,
           showConfirmButton: false,
         });
       } else {
         await api.createKasbon(payload);
         Swal.fire({
-          icon: 'success',
-          title: 'Kasbon Dicatat',
-          text: `Kasbon sebesar Rp ${cleanNominal.toLocaleString('id-ID')} atas nama ${formData.namaPetugas} berhasil dicatat. Akan otomatis dipotong saat pembayaran upah.`,
+          icon: "success",
+          title: "Kasbon Dicatat",
+          text: `Kasbon sebesar Rp ${cleanNominal.toLocaleString("id-ID")} atas nama ${formData.namaPetugas} berhasil dicatat. Akan otomatis dipotong saat pembayaran upah.`,
           timer: 2000,
           showConfirmButton: false,
         });
@@ -209,7 +235,7 @@ export default function Kasbon() {
       setIsModalOpen(false);
       await fetchData();
     } catch (err) {
-      Swal.fire('Error', err.message || 'Gagal menyimpan kasbon', 'error');
+      Swal.fire("Error", err.message || "Gagal menyimpan kasbon", "error");
     }
   };
 
@@ -217,22 +243,22 @@ export default function Kasbon() {
   const handleDelete = async (item) => {
     if (Number(item.terbayar) > 0) {
       Swal.fire(
-        'Tidak Dapat Dihapus',
-        'Kasbon ini sudah memiliki riwayat pemotongan upah. Batalkan terlebih dahulu transaksi pembayaran upahnya.',
-        'warning'
+        "Tidak Dapat Dihapus",
+        "Kasbon ini sudah memiliki riwayat pemotongan upah. Batalkan terlebih dahulu transaksi pembayaran upahnya.",
+        "warning",
       );
       return;
     }
 
     const res = await Swal.fire({
-      title: 'Hapus Kasbon?',
+      title: "Hapus Kasbon?",
       text: `Hapus catatan kasbon "${item.noKasbon}" atas nama ${item.namaPetugas}?`,
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#e11d48',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Ya, Hapus',
-      cancelButtonText: 'Batal',
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
     });
 
     if (res.isConfirmed) {
@@ -240,14 +266,14 @@ export default function Kasbon() {
         await api.deleteKasbon(item.id);
         await fetchData();
         Swal.fire({
-          icon: 'success',
-          title: 'Dihapus',
-          text: 'Data kasbon berhasil dihapus.',
+          icon: "success",
+          title: "Dihapus",
+          text: "Data kasbon berhasil dihapus.",
           timer: 1400,
           showConfirmButton: false,
         });
       } catch (err) {
-        Swal.fire('Error', err.message || 'Gagal menghapus kasbon', 'error');
+        Swal.fire("Error", err.message || "Gagal menghapus kasbon", "error");
       }
     }
   };
@@ -285,7 +311,8 @@ export default function Kasbon() {
               </span>
             </div>
             <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
-              Pencatatan pinjaman sementara tenaga kerja yang otomatis terpotong saat pembayaran upah borongan
+              Pencatatan pinjaman sementara tenaga kerja yang otomatis terpotong
+              saat pembayaran upah borongan
             </p>
           </div>
         </div>
@@ -296,7 +323,9 @@ export default function Kasbon() {
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer border border-white/25"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+            />
             <span>Refresh</span>
           </button>
           <button
@@ -317,7 +346,7 @@ export default function Kasbon() {
             <Clock className="w-3.5 h-3.5 text-amber-600" />
           </div>
           <div className="text-lg font-black text-amber-950 mt-1 font-mono leading-none">
-            Rp {(rekap.totalSisa || 0).toLocaleString('id-ID')}
+            Rp {(rekap.totalSisa || 0).toLocaleString("id-ID")}
           </div>
           <div className="text-[10px] text-amber-700/80 mt-0.5">
             {rekap.countBelumLunas || 0} pinjaman belum lunas
@@ -330,7 +359,7 @@ export default function Kasbon() {
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
           </div>
           <div className="text-lg font-black text-emerald-950 mt-1 font-mono leading-none">
-            Rp {(rekap.totalTerbayar || 0).toLocaleString('id-ID')}
+            Rp {(rekap.totalTerbayar || 0).toLocaleString("id-ID")}
           </div>
           <div className="text-[10px] text-emerald-700/80 mt-0.5">
             Sudah dipotong saat gajian
@@ -343,7 +372,7 @@ export default function Kasbon() {
             <Wallet className="w-3.5 h-3.5 text-slate-500" />
           </div>
           <div className="text-lg font-black text-slate-900 mt-1 font-mono leading-none">
-            Rp {(rekap.totalKasbon || 0).toLocaleString('id-ID')}
+            Rp {(rekap.totalKasbon || 0).toLocaleString("id-ID")}
           </div>
           <div className="text-[10px] text-slate-500 mt-0.5">
             Akumulasi seluruh kasbon
@@ -356,7 +385,8 @@ export default function Kasbon() {
             <User className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           <div className="text-lg font-black text-indigo-950 mt-1 font-mono leading-none">
-            {rekap.jumlahPeminjamAktif || 0} <span className="text-xs font-semibold text-indigo-500">Orang</span>
+            {rekap.jumlahPeminjamAktif || 0}{" "}
+            <span className="text-xs font-semibold text-indigo-500">Orang</span>
           </div>
           <div className="text-[10px] text-indigo-600/80 mt-0.5">
             Memiliki saldo kasbon
@@ -367,23 +397,29 @@ export default function Kasbon() {
       {/* 3. TABS FILTER */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
         {[
-          { key: 'Belum Lunas', label: 'Belum Lunas (Aktif)', count: rekap.countBelumLunas },
-          { key: 'Lunas', label: 'Sudah Lunas', count: rekap.countLunas },
-          { key: 'Semua', label: 'Semua Riwayat', count: rekap.totalTransaksi },
+          {
+            key: "Belum Lunas",
+            label: "Belum Lunas (Aktif)",
+            count: rekap.countBelumLunas,
+          },
+          { key: "Lunas", label: "Sudah Lunas", count: rekap.countLunas },
+          { key: "Semua", label: "Semua Riwayat", count: rekap.totalTransaksi },
         ].map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
               activeTab === tab.key
-                ? 'bg-amber-700 text-white shadow-xs font-extrabold'
-                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-50'
+                ? "bg-amber-700 text-white shadow-xs font-extrabold"
+                : "bg-white text-slate-600 border border-slate-300 hover:bg-slate-50"
             }`}
           >
             <span>{tab.label}</span>
             <span
               className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                activeTab === tab.key
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-100 text-slate-600"
               }`}
             >
               {tab.count || 0}
@@ -427,33 +463,63 @@ export default function Kasbon() {
           <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
             <thead>
               <tr className="bg-[#f8fafc] text-[#334155] font-extrabold text-xs tracking-wider uppercase">
-                <th className="py-2 px-2 text-center w-10 border border-[#cbd5e1]">NO</th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">NO KASBON</th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[100px] border border-[#cbd5e1]">TGL KASBON</th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[160px] border border-[#cbd5e1]">NAMA PETUGAS</th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">DIVISI</th>
-                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">NOMINAL</th>
-                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">TERPOTONG</th>
-                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">SISA KASBON</th>
-                <th className="py-2 px-3 text-center whitespace-nowrap min-w-[95px] border border-[#cbd5e1]">STATUS</th>
-                <th className="py-2 px-3 min-w-[180px] border border-[#cbd5e1]">KEPERLUAN</th>
-                <th className="py-2 px-2.5 text-center whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">AKSI</th>
+                <th className="py-2 px-2 text-center w-10 border border-[#cbd5e1]">
+                  NO
+                </th>
+                <th className="py-2 px-3 whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">
+                  NO KASBON
+                </th>
+                <th className="py-2 px-3 whitespace-nowrap min-w-[100px] border border-[#cbd5e1]">
+                  TGL KASBON
+                </th>
+                <th className="py-2 px-3 whitespace-nowrap min-w-[160px] border border-[#cbd5e1]">
+                  NAMA PETUGAS
+                </th>
+                <th className="py-2 px-3 whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">
+                  DIVISI
+                </th>
+                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">
+                  NOMINAL
+                </th>
+                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">
+                  TERPOTONG
+                </th>
+                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">
+                  SISA KASBON
+                </th>
+                <th className="py-2 px-3 text-center whitespace-nowrap min-w-[95px] border border-[#cbd5e1]">
+                  STATUS
+                </th>
+                <th className="py-2 px-3 min-w-[180px] border border-[#cbd5e1]">
+                  KEPERLUAN
+                </th>
+                <th className="py-2 px-2.5 text-center whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">
+                  AKSI
+                </th>
               </tr>
             </thead>
             <tbody className="font-medium text-slate-700 divide-y divide-[#cbd5e1]">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="11" className="py-8 text-center text-slate-400 border border-[#cbd5e1]">
-                    {loading ? 'Memuat data kasbon...' : 'Tidak ada data kasbon yang sesuai.'}
+                  <td
+                    colSpan="11"
+                    className="py-8 text-center text-slate-400 border border-[#cbd5e1]"
+                  >
+                    {loading
+                      ? "Memuat data kasbon..."
+                      : "Tidak ada data kasbon yang sesuai."}
                   </td>
                 </tr>
               ) : (
                 filteredList.map((item, idx) => {
-                  const isLunas = item.status === 'Lunas';
+                  const isLunas = item.status === "Lunas";
                   const sisa = Number(item.sisa) || 0;
 
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                    <tr
+                      key={item.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
                       <td className="py-2 px-2 text-center font-bold text-slate-500 border border-[#cbd5e1]">
                         {idx + 1}
                       </td>
@@ -472,29 +538,33 @@ export default function Kasbon() {
                         </span>
                       </td>
                       <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 border border-[#cbd5e1]">
-                        Rp {Number(item.nominal).toLocaleString('id-ID')}
+                        Rp {Number(item.nominal).toLocaleString("id-ID")}
                       </td>
                       <td className="py-2 px-3 text-right font-mono text-emerald-700 font-bold border border-[#cbd5e1]">
-                        Rp {Number(item.terbayar).toLocaleString('id-ID')}
+                        Rp {Number(item.terbayar).toLocaleString("id-ID")}
                       </td>
                       <td className="py-2 px-3 text-right font-mono font-black border border-[#cbd5e1]">
-                        <span className={sisa > 0 ? 'text-amber-700' : 'text-slate-400'}>
-                          Rp {sisa.toLocaleString('id-ID')}
+                        <span
+                          className={
+                            sisa > 0 ? "text-amber-700" : "text-slate-400"
+                          }
+                        >
+                          Rp {sisa.toLocaleString("id-ID")}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center border border-[#cbd5e1]">
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
                             isLunas
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
                           }`}
                         >
                           {item.status}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-slate-600 text-[11px] border border-[#cbd5e1]">
-                        {item.keperluan || '-'}
+                        {item.keperluan || "-"}
                       </td>
                       <td className="py-2 px-2.5 text-center border border-[#cbd5e1]">
                         <div className="flex items-center justify-center gap-1.5">
@@ -542,7 +612,9 @@ export default function Kasbon() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-black text-white leading-tight">
-                    {editingId ? 'Edit Catatan Kasbon' : 'Catat Kasbon Penjahit'}
+                    {editingId
+                      ? "Edit Catatan Kasbon"
+                      : "Catat Kasbon Penjahit"}
                   </h3>
                   <p className="text-[10.5px] text-amber-100/90 font-medium">
                     Otomatis potong saat pembayaran upah borongan
@@ -560,11 +632,17 @@ export default function Kasbon() {
             </div>
 
             {/* 2. Form Content (Scrollable jika layar laptop pendek) */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 scrollbar-thin">
+            <form
+              onSubmit={handleSubmit}
+              className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 scrollbar-thin"
+            >
               {/* 1. Pilih Penjahit via Select Option */}
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                  <span>Pilih Penjahit (Penerima Kasbon) <span className="text-rose-500">*</span></span>
+                  <span>
+                    Pilih Penjahit (Penerima Kasbon){" "}
+                    <span className="text-rose-500">*</span>
+                  </span>
                   <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                     Master Penjahit
                   </span>
@@ -572,23 +650,26 @@ export default function Kasbon() {
                 <select
                   required
                   value={formData.namaPetugas}
-                  onChange={(e) => setFormData({ ...formData, namaPetugas: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, namaPetugas: e.target.value })
+                  }
                   className="w-full h-10 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 cursor-pointer transition-all"
                 >
                   <option value="">-- Pilih Nama Penjahit --</option>
-                  {penjahitList.length > 0 ? (
-                    penjahitList.map((p) => (
-                      <option key={p.id || p.nama} value={p.nama}>
-                        🧵 {p.nama} {p.tarifPerPcs ? `• (Tarif: Rp ${Number(p.tarifPerPcs).toLocaleString('id-ID')})` : ''}
-                      </option>
-                    ))
-                  ) : (
-                    petugasSuggestions.map((name) => (
-                      <option key={name} value={name}>
-                        🧵 {name}
-                      </option>
-                    ))
-                  )}
+                  {penjahitList.length > 0
+                    ? penjahitList.map((p) => (
+                        <option key={p.id || p.nama} value={p.nama}>
+                          🧵 {p.nama}{" "}
+                          {p.tarifPerPcs
+                            ? `• (Tarif: Rp ${Number(p.tarifPerPcs).toLocaleString("id-ID")})`
+                            : ""}
+                        </option>
+                      ))
+                    : petugasSuggestions.map((name) => (
+                        <option key={name} value={name}>
+                          🧵 {name}
+                        </option>
+                      ))}
                 </select>
 
                 {/* Card Info Penjahit Terpilih */}
@@ -598,7 +679,9 @@ export default function Kasbon() {
                       <div className="w-5 h-5 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-[10px]">
                         🧵
                       </div>
-                      <span className="font-extrabold text-amber-950">{formData.namaPetugas}</span>
+                      <span className="font-extrabold text-amber-950">
+                        {formData.namaPetugas}
+                      </span>
                     </div>
                     <span className="font-mono text-[10.5px] font-bold text-emerald-800 bg-white px-2 py-0.2 rounded border border-emerald-200">
                       Penjahit Aktif
@@ -617,7 +700,9 @@ export default function Kasbon() {
                     type="date"
                     required
                     value={formData.tglKasbon}
-                    onChange={(e) => setFormData({ ...formData, tglKasbon: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tglKasbon: e.target.value })
+                    }
                     className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 text-xs focus:bg-white focus:border-amber-600 focus:outline-none"
                   />
                 </div>
@@ -636,7 +721,8 @@ export default function Kasbon() {
               <div className="bg-gradient-to-br from-amber-50/90 to-orange-50/80 p-3 sm:p-3.5 rounded-2xl border border-amber-300 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-extrabold text-amber-950 uppercase tracking-wider block">
-                    Nominal Pinjaman / Kasbon <span className="text-rose-500">*</span>
+                    Nominal Pinjaman / Kasbon{" "}
+                    <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[9.5px] font-bold text-amber-800 bg-amber-200/60 px-1.5 py-0.2 rounded">
                     Format Rupiah
@@ -654,8 +740,11 @@ export default function Kasbon() {
                     placeholder="0"
                     value={formatRupiahDisplay(formData.nominal)}
                     onChange={(e) => {
-                      const raw = e.target.value.replace(/\D/g, '');
-                      setFormData({ ...formData, nominal: raw ? Number(raw) : '' });
+                      const raw = e.target.value.replace(/\D/g, "");
+                      setFormData({
+                        ...formData,
+                        nominal: raw ? Number(raw) : "",
+                      });
                     }}
                     className="w-full h-10 pl-10 pr-3.5 bg-white border-2 border-amber-400 rounded-xl font-mono font-black text-lg text-slate-900 text-right focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 shadow-inner tracking-tight"
                   />
@@ -664,8 +753,12 @@ export default function Kasbon() {
                 {/* Terbilang Rupiah */}
                 {Number(formData.nominal) > 0 && (
                   <div className="p-1.5 bg-white/90 rounded-lg border border-amber-200 text-[10.5px] text-amber-950 font-medium italic flex items-center gap-1.5 animate-in fade-in">
-                    <span className="font-bold text-amber-700 not-italic shrink-0">Terbilang:</span>
-                    <span className="line-clamp-1">"{getTerbilang(formData.nominal)}"</span>
+                    <span className="font-bold text-amber-700 not-italic shrink-0">
+                      Terbilang:
+                    </span>
+                    <span className="line-clamp-1">
+                      "{getTerbilang(formData.nominal)}"
+                    </span>
                   </div>
                 )}
 
@@ -681,12 +774,12 @@ export default function Kasbon() {
                       }}
                       className="px-2 py-0.5 bg-white hover:bg-amber-100 active:scale-95 border border-amber-300 rounded text-[10px] font-mono font-bold text-amber-900 shadow-2xs transition-all cursor-pointer"
                     >
-                      +{(val / 1000).toLocaleString('id-ID')}Rb
+                      +{(val / 1000).toLocaleString("id-ID")}Rb
                     </button>
                   ))}
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, nominal: '' })}
+                    onClick={() => setFormData({ ...formData, nominal: "" })}
                     className="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded text-[10px] font-bold text-slate-600 transition-all cursor-pointer ml-auto"
                     title="Reset Nominal ke 0"
                   >
@@ -704,7 +797,9 @@ export default function Kasbon() {
                   rows="2"
                   placeholder="Misal: Biaya berobat, keperluan mendesak keluarga, bensin..."
                   value={formData.keperluan}
-                  onChange={(e) => setFormData({ ...formData, keperluan: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, keperluan: e.target.value })
+                  }
                   className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-amber-600 focus:outline-none text-xs text-slate-800"
                 />
               </div>
@@ -713,7 +808,9 @@ export default function Kasbon() {
               <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-[10.5px] text-amber-900 leading-snug flex items-start gap-1.5">
                 <span className="text-sm leading-none shrink-0">💡</span>
                 <div>
-                  <strong>Otomatis Potong Upah:</strong> Nominal kasbon ini akan otomatis muncul sebagai opsi pemotongan saat admin membayar upah penjahit bersangkutan.
+                  <strong>Otomatis Potong Upah:</strong> Nominal kasbon ini akan
+                  otomatis muncul sebagai opsi pemotongan saat admin membayar
+                  upah penjahit bersangkutan.
                 </div>
               </div>
             </form>
@@ -733,7 +830,7 @@ export default function Kasbon() {
                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-amber-700 to-orange-600 hover:from-amber-700 hover:to-orange-700 active:scale-95 text-white font-black text-xs shadow-md shadow-amber-600/30 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Wallet className="w-4 h-4" />
-                <span>{editingId ? 'Simpan Perubahan' : 'Simpan Kasbon'}</span>
+                <span>{editingId ? "Simpan Perubahan" : "Simpan Kasbon"}</span>
               </button>
             </div>
           </div>
@@ -769,30 +866,40 @@ export default function Kasbon() {
             {/* Status Sisa Pinjaman */}
             <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
               <div>
-                <span className="text-[10px] text-slate-500 block">Nominal Kasbon:</span>
+                <span className="text-[10px] text-slate-500 block">
+                  Nominal Kasbon:
+                </span>
                 <span className="font-mono font-bold text-slate-900 text-xs">
-                  Rp {Number(selectedKasbon.nominal).toLocaleString('id-ID')}
+                  Rp {Number(selectedKasbon.nominal).toLocaleString("id-ID")}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-emerald-600 block">Total Terpotong:</span>
+                <span className="text-[10px] text-emerald-600 block">
+                  Total Terpotong:
+                </span>
                 <span className="font-mono font-bold text-emerald-700 text-xs">
-                  Rp {Number(selectedKasbon.terbayar).toLocaleString('id-ID')}
+                  Rp {Number(selectedKasbon.terbayar).toLocaleString("id-ID")}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-amber-600 block">Sisa Belum Lunas:</span>
+                <span className="text-[10px] text-amber-600 block">
+                  Sisa Belum Lunas:
+                </span>
                 <span className="font-mono font-black text-amber-800 text-xs">
-                  Rp {Number(selectedKasbon.sisa).toLocaleString('id-ID')}
+                  Rp {Number(selectedKasbon.sisa).toLocaleString("id-ID")}
                 </span>
               </div>
             </div>
 
             {/* List Riwayat Pemotongan */}
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              <div className="text-[11px] font-bold text-slate-700">Daftar Transaksi Pemotongan:</div>
+              <div className="text-[11px] font-bold text-slate-700">
+                Daftar Transaksi Pemotongan:
+              </div>
               {loadingHistory ? (
-                <div className="p-4 text-center text-slate-400">Memuat riwayat...</div>
+                <div className="p-4 text-center text-slate-400">
+                  Memuat riwayat...
+                </div>
               ) : riwayatList.length === 0 ? (
                 <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-slate-400 text-xs">
                   Belum ada potongan upah yang dilakukan untuk kasbon ini.
@@ -814,7 +921,7 @@ export default function Kasbon() {
                     </div>
                     <div className="text-right">
                       <span className="font-mono font-black text-emerald-700 text-xs block">
-                        - Rp {Number(rw.nominalPotong).toLocaleString('id-ID')}
+                        - Rp {Number(rw.nominalPotong).toLocaleString("id-ID")}
                       </span>
                       <span className="text-[9.5px] text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                         Terpotong
@@ -840,4 +947,3 @@ export default function Kasbon() {
     </div>
   );
 }
-

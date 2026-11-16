@@ -143,6 +143,15 @@ async function initMysql() {
       } catch (_) {}
     }
 
+    // Pastikan nilai default total_bersih terisi sesuai total_upah jika belum ada potongan kasbon
+    try {
+      await connection.query(`
+        UPDATE pembayaran_upah 
+        SET total_bersih = total_upah 
+        WHERE (total_bersih IS NULL OR total_bersih = 0) AND (potongan_kasbon IS NULL OR potongan_kasbon = 0)
+      `);
+    } catch (_) {}
+
     // Pastikan data awal tabel penjahit tersedia
     try {
       const [penjahitRows] = await connection.query("SELECT COUNT(*) as cnt FROM penjahit");

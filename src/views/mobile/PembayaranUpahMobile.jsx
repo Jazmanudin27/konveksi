@@ -415,11 +415,16 @@ export default function PembayaranUpahMobile({ onBack }) {
                     {item.qty} Pcs × Rp {Number(item.tarif_per_pcs).toLocaleString('id-ID')}
                   </div>
                   <div className="text-sm font-black text-[#064e3b] font-mono leading-tight mt-0.5">
-                    Rp {Number(item.total_bersih ?? item.total_upah).toLocaleString('id-ID')}
+                    Rp {Number(item.total_upah || 0).toLocaleString('id-ID')}
                   </div>
                   {Number(item.potongan_kasbon) > 0 && (
-                    <div className="text-[10px] text-amber-700 font-mono">
-                      (Potong Kasbon: -Rp {Number(item.potongan_kasbon).toLocaleString('id-ID')})
+                    <div className="text-[10px] text-amber-700 font-mono mt-0.5">
+                      Potong Kasbon: -Rp {Number(item.potongan_kasbon).toLocaleString('id-ID')}
+                    </div>
+                  )}
+                  {Number(item.potongan_kasbon) > 0 && (
+                    <div className="text-[10px] text-emerald-700 font-mono font-bold">
+                      Bersih: Rp {Number(item.total_bersih || (Number(item.total_upah) - Number(item.potongan_kasbon))).toLocaleString('id-ID')}
                     </div>
                   )}
                 </div>

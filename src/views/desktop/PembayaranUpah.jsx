@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Eye,
   Filter,
+  Wallet,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -58,6 +59,10 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   // Slip Modal State
   const [isSlipModalOpen, setIsSlipModalOpen] = useState(false);
   const [slipItem, setSlipItem] = useState(null);
+
+  // Kasbon State
+  const [kasbonInfo, setKasbonInfo] = useState(null);
+  const [potonganKasbon, setPotonganKasbon] = useState(0);
 
   // Fetch Data dari API
   const fetchData = async () => {
@@ -154,7 +159,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   };
 
   // Open Pay Modal (Single / Batch)
-  const handleOpenPay = (items) => {
+  const handleOpenPay = async (items) => {
     if (!items || items.length === 0) return;
     setTargetPayItems(items);
     setPayForm({
@@ -162,6 +167,32 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
       metodeBayar: 'Tunai / Cash',
       catatan: '',
     });
+
+    const totalGross = items.reduce((acc, c) => acc + (Number(c.totalUpah) || 0), 0);
+    const uniquePetugas = [...new Set(items.map(i => (i.namaPetugas || i.nama_petugas || '').trim()))].filter(Boolean);
+
+    // Cek saldo kasbon petugas jika bayar untuk 1 orang petugas
+    if (uniquePetugas.length === 1) {
+      try {
+        const saldoData = await api.getKasbonSaldo(uniquePetugas[0]);
+        if (saldoData && saldoData.totalSisa > 0) {
+          setKasbonInfo(saldoData);
+          // Default otomatis potong sebesar sisa kasbon atau maksimal total upah
+          const defaultPotong = Math.min(totalGross, saldoData.totalSisa);
+          setPotonganKasbon(defaultPotong);
+        } else {
+          setKasbonInfo(null);
+          setPotonganKasbon(0);
+        }
+      } catch (_) {
+        setKasbonInfo(null);
+        setPotonganKasbon(0);
+      }
+    } else {
+      setKasbonInfo(null);
+      setPotonganKasbon(0);
+    }
+
     setIsPayModalOpen(true);
   };
 
@@ -177,16 +208,19 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
         tglBayar: payForm.tglBayar,
         metodeBayar: payForm.metodeBayar,
         catatan: payForm.catatan,
+        potonganKasbon: Number(potonganKasbon) || 0,
       });
 
       setIsPayModalOpen(false);
+      setKasbonInfo(null);
+      setPotonganKasbon(0);
       setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
       await fetchData();
 
       Swal.fire({
         icon: 'success',
         title: 'Pembayaran Berhasil Dicatat!',
-        text: `${ids.length} tagihan upah telah ditandai Lunas.`,
+        text: `${ids.length} tagihan upah telah ditandai Lunas.${Number(potonganKasbon) > 0 ? ` (Dipotong Kasbon: Rp ${Number(potonganKasbon).toLocaleString('id-ID')})` : ''}`,
         timer: 1800,
         showConfirmButton: false,
       });
@@ -589,9 +623,16 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
                       {/* Total Upah */}
                       <td className="py-2 px-3 text-right border border-slate-200 whitespace-nowrap">
-                        <span className="font-mono font-black text-xs sm:text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block">
-                          Rp {Number(item.totalUpah).toLocaleString('id-ID')}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="font-mono font-black text-xs sm:text-sm text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block">
+                            Rp {Number(item.totalBersih ?? item.totalUpah).toLocaleString('id-ID')}
+                          </span>
+                          {Number(item.potonganKasbon) > 0 && (
+                            <span className="text-[10px] text-amber-700 font-mono mt-0.5" title={`Upah Kotor: Rp ${Number(item.totalUpah).toLocaleString('id-ID')}`}>
+                              (Potong Kasbon: -Rp {Number(item.potonganKasbon).toLocaleString('id-ID')})
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Status Bayar */}
@@ -709,22 +750,87 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
             {/* Form Body */}
             <form onSubmit={handleConfirmPay} className="p-4 sm:p-5 space-y-3.5 text-xs">
               {/* Ringkasan Total yang Harus Dibayar */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
-                <div>
-                  <span className="text-[10.5px] font-extrabold text-emerald-800 uppercase tracking-wider block">
-                    TOTAL NOMINAL DIBAYAR
-                  </span>
-                  <span className="text-xs text-slate-500 font-medium">
-                    {targetPayItems.length} Tagihan • {targetPayItems.reduce((acc, c) => acc + (Number(c.qty) || 0), 0)} Pcs
-                  </span>
-                </div>
-                <div className="font-mono font-black text-lg text-emerald-800">
-                  Rp{' '}
-                  {targetPayItems
-                    .reduce((acc, c) => acc + (Number(c.totalUpah) || 0), 0)
-                    .toLocaleString('id-ID')}
-                </div>
-              </div>
+              {(() => {
+                const totalGross = targetPayItems.reduce((acc, c) => acc + (Number(c.totalUpah) || 0), 0);
+                const potongVal = Number(potonganKasbon) || 0;
+                const netPay = Math.max(0, totalGross - potongVal);
+
+                return (
+                  <div className="space-y-2">
+                    <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10.5px] font-extrabold text-emerald-800 uppercase tracking-wider block">
+                          UPAH KOTOR (GROSS)
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">
+                          {targetPayItems.length} Tagihan • {targetPayItems.reduce((acc, c) => acc + (Number(c.qty) || 0), 0)} Pcs
+                        </span>
+                      </div>
+                      <div className="font-mono font-black text-lg text-emerald-800">
+                        Rp {totalGross.toLocaleString('id-ID')}
+                      </div>
+                    </div>
+
+                    {/* ALERT & INPUT POTONG KASBON JIKA ADA SALDO KASBON AKTIF */}
+                    {kasbonInfo && kasbonInfo.totalSisa > 0 && (
+                      <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 space-y-2 animate-in fade-in">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-bold text-amber-900 text-xs">
+                            <Wallet className="w-4 h-4 text-amber-600" />
+                            <span>Ada Kasbon Belum Lunas</span>
+                          </div>
+                          <span className="font-mono font-black text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded text-[11px]">
+                            Sisa: Rp {Number(kasbonInfo.totalSisa).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Potongan Kasbon Periode Ini (Rp)
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min="0"
+                              max={Math.min(totalGross, Number(kasbonInfo.totalSisa))}
+                              value={potonganKasbon}
+                              onChange={(e) => setPotonganKasbon(Math.max(0, Number(e.target.value) || 0))}
+                              className="w-full h-8 px-2.5 bg-white border border-amber-300 rounded-lg font-mono font-bold text-xs text-slate-900 focus:outline-none focus:border-amber-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setPotonganKasbon(Math.min(totalGross, Number(kasbonInfo.totalSisa)))}
+                              className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold whitespace-nowrap cursor-pointer"
+                              title="Potong penuh sesuai sisa kasbon atau maksimal upah"
+                            >
+                              Potong Maksimal
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPotonganKasbon(0)}
+                              className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[10px] font-bold whitespace-nowrap cursor-pointer"
+                              title="Jangan potong kasbon sekarang"
+                            >
+                              Nol (0)
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-amber-800 mt-1">
+                            * Nilai ini akan langsung dipotong dari total upah dan mengurangi sisa saldo kasbon karyawan.
+                          </p>
+                        </div>
+
+                        {/* RINGKASAN NET PAY */}
+                        <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between font-bold">
+                          <span className="text-slate-700 text-xs uppercase">Upah Bersih Diterima:</span>
+                          <span className="font-mono font-black text-base text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-300">
+                            Rp {netPay.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Tanggal Bayar */}
               <div>
@@ -881,14 +987,43 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                     </tr>
                   </tbody>
                   <tfoot className="bg-slate-50 border-t border-slate-300 font-black">
-                    <tr>
-                      <td colSpan="3" className="p-2.5 text-right uppercase text-slate-600">
-                        Total Upah Bersih:
-                      </td>
-                      <td className="p-2.5 text-right font-mono text-emerald-800 text-sm">
-                        Rp {Number(slipItem.totalUpah).toLocaleString('id-ID')}
-                      </td>
-                    </tr>
+                    {Number(slipItem.potonganKasbon) > 0 ? (
+                      <>
+                        <tr className="border-b border-slate-200">
+                          <td colSpan="3" className="p-2 text-right uppercase text-slate-500 font-semibold text-[11px]">
+                            Subtotal Upah Kotor:
+                          </td>
+                          <td className="p-2 text-right font-mono text-slate-700 text-xs">
+                            Rp {Number(slipItem.totalUpah).toLocaleString('id-ID')}
+                          </td>
+                        </tr>
+                        <tr className="border-b border-slate-200">
+                          <td colSpan="3" className="p-2 text-right uppercase text-amber-700 font-bold text-[11px]">
+                            Potongan Kasbon / Pinjaman:
+                          </td>
+                          <td className="p-2 text-right font-mono text-amber-700 text-xs">
+                            - Rp {Number(slipItem.potonganKasbon).toLocaleString('id-ID')}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan="3" className="p-2.5 text-right uppercase text-emerald-800">
+                            Total Upah Bersih Diterima:
+                          </td>
+                          <td className="p-2.5 text-right font-mono text-emerald-800 text-sm">
+                            Rp {Number(slipItem.totalBersih ?? (Number(slipItem.totalUpah) - Number(slipItem.potonganKasbon))).toLocaleString('id-ID')}
+                          </td>
+                        </tr>
+                      </>
+                    ) : (
+                      <tr>
+                        <td colSpan="3" className="p-2.5 text-right uppercase text-slate-600">
+                          Total Upah Bersih:
+                        </td>
+                        <td className="p-2.5 text-right font-mono text-emerald-800 text-sm">
+                          Rp {Number(slipItem.totalUpah).toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    )}
                   </tfoot>
                 </table>
               </div>

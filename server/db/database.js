@@ -124,6 +124,25 @@ async function initMysql() {
       } catch (_) {}
     }
 
+    // Pastikan kolom potongan kasbon tersedia di pembayaran_upah
+    const upahCols = [
+      { name: 'potongan_kasbon', def: 'DECIMAL(14,2) DEFAULT 0' },
+      { name: 'total_bersih', def: 'DECIMAL(14,2) DEFAULT 0' },
+      { name: 'kasbon_id', def: 'INT NULL' }
+    ];
+
+    for (const col of upahCols) {
+      try {
+        const [colCheck] = await connection.query(
+          "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'pembayaran_upah' AND COLUMN_NAME = ? AND TABLE_SCHEMA = DATABASE()",
+          [col.name]
+        );
+        if (!colCheck || colCheck.length === 0) {
+          await connection.query(`ALTER TABLE pembayaran_upah ADD COLUMN ${col.name} ${col.def}`);
+        }
+      } catch (_) {}
+    }
+
     // Pastikan data awal tabel penjahit tersedia
     try {
       const [penjahitRows] = await connection.query("SELECT COUNT(*) as cnt FROM penjahit");

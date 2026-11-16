@@ -22,6 +22,7 @@ import {
   Coins,
   Scissors,
   PackageCheck,
+  Wallet,
   X
 } from 'lucide-react';
 
@@ -272,6 +273,18 @@ export default function Sidebar({ isOpen, onClose, activeMenu, onSelectMenu }) {
               >
                 <Coins className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>Pembayaran Upah</span>
+              </button>
+
+              <button
+                onClick={() => handleMenuClick('kasbon')}
+                className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                  activeMenu === 'kasbon'
+                    ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-sm shadow-amber-950'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                <Wallet className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>Kasbon Karyawan</span>
               </button>
             </div>
           </div>

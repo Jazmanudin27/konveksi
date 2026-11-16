@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Database,
   Coins,
+  Wallet,
 } from 'lucide-react';
 
 export default function MobileMenuSheet({
@@ -126,17 +127,34 @@ export default function MobileMenuSheet({
               onSelectSubView('pembayaran-upah');
               onClose();
             }}
-            className="p-3 bg-amber-50 hover:bg-amber-100/80 rounded-2xl border border-amber-200/80 flex items-center gap-2.5 text-left transition-colors cursor-pointer col-span-2"
+            className="p-3 bg-emerald-50 hover:bg-emerald-100/80 rounded-2xl border border-emerald-200/80 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
               <Coins className="w-4 h-4" />
             </div>
             <div className="flex-1">
               <div className="font-bold text-slate-900 flex items-center justify-between">
-                <span>Pembayaran Upah</span>
-                <span className="text-[10px] bg-amber-200/80 text-amber-900 font-extrabold px-1.5 py-0.2 rounded-full">Baru</span>
+                <span>Upah Kerja</span>
               </div>
-              <div className="text-[10px] text-slate-500">Upah Cutting, Jahit, QC & Finishing</div>
+              <div className="text-[10px] text-slate-500">Gajian Borongan</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectSubView('kasbon');
+              onClose();
+            }}
+            className="p-3 bg-amber-50 hover:bg-amber-100/80 rounded-2xl border border-amber-200/80 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+          >
+            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Wallet className="w-4 h-4" />
+            </div>
+            <div className="flex-1">
+              <div className="font-bold text-slate-900 flex items-center justify-between">
+                <span>Kasbon Karyawan</span>
+              </div>
+              <div className="text-[10px] text-slate-500">Pinjam & Potong Upah</div>
             </div>
           </button>
         </div>

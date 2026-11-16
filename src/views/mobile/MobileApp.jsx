@@ -24,6 +24,7 @@ import BahanMobile from './BahanMobile';
 import KategoriMobile from './KategoriMobile';
 import LaporanMobile from './LaporanMobile';
 import PembayaranUpahMobile from './PembayaranUpahMobile';
+import KasbonMobile from './KasbonMobile';
 import MobileMenuSheet from './MobileMenuSheet';
 import AddAntreanModalMobile from './AddAntreanModalMobile';
 import LanjutTahapModalMobile from './LanjutTahapModalMobile';
@@ -47,6 +48,8 @@ function resolveMobileRouteFromHash() {
       return { tab: 'menu', sub: 'laporan' };
     if (hash === 'pembayaran-upah' || hash === 'upah')
       return { tab: 'menu', sub: 'pembayaran-upah' };
+    if (hash === 'kasbon')
+      return { tab: 'menu', sub: 'kasbon' };
     if (hash === 'dashboard' || hash === 'home') return { tab: 'home', sub: null };
 
     // Cek localStorage jika hash kosong
@@ -95,6 +98,7 @@ export default function MobileApp({
       else if (sub === 'kategori') targetHash = 'categories';
       else if (sub === 'laporan') targetHash = 'laporan-stok-gudang';
       else if (sub === 'pembayaran-upah') targetHash = 'pembayaran-upah';
+      else if (sub === 'kasbon') targetHash = 'kasbon';
     } else {
       if (tab === 'antrean') targetHash = 'antrean';
       else if (tab === 'mutasi') targetHash = 'mutasi';
@@ -230,6 +234,8 @@ export default function MobileApp({
               ? 'Kategori Produk'
               : activeSubView === 'pembayaran-upah'
               ? 'Pembayaran Upah'
+              : activeSubView === 'kasbon'
+              ? 'Kasbon Karyawan'
               : 'Laporan Gudang Jadi'
           }
           subtitle={
@@ -241,6 +247,8 @@ export default function MobileApp({
               ? 'Master Kelompok & Ongkos'
               : activeSubView === 'pembayaran-upah'
               ? 'Upah Cutting, Jahit, QC & Finishing'
+              : activeSubView === 'kasbon'
+              ? 'Pinjaman & Potong Upah'
               : 'Stok Fisik Siap Jual'
           }
           badgeText={
@@ -252,6 +260,8 @@ export default function MobileApp({
               ? `${categories.length} Kategori`
               : activeSubView === 'pembayaran-upah'
               ? 'Borongan'
+              : activeSubView === 'kasbon'
+              ? 'Kasbon'
               : `${products.length} SKU`
           }
           onBack={() => navigateMobile('home', null)}
@@ -301,6 +311,9 @@ export default function MobileApp({
             {activeSubView === 'pembayaran-upah' && (
               <PembayaranUpahMobile onBack={() => navigateMobile('home', null)} />
             )}
+            {activeSubView === 'kasbon' && (
+              <KasbonMobile onBack={() => navigateMobile('home', null)} />
+            )}
           </div>
         ) : (
           <>
@@ -322,7 +335,7 @@ export default function MobileApp({
                     employees={employees}
                     categories={categories}
                     onNavigate={(tab) => {
-                      if (['karyawan', 'bahan', 'kategori', 'laporan', 'pembayaran-upah'].includes(tab)) {
+                      if (['karyawan', 'bahan', 'kategori', 'laporan', 'pembayaran-upah', 'kasbon'].includes(tab)) {
                         navigateMobile('menu', tab);
                       } else {
                         navigateMobile(tab, null);

@@ -118,6 +118,18 @@ export const api = {
   bayarUpah: (data) => request('/pembayaran-upah/bayar', { method: 'POST', body: JSON.stringify(data) }),
   batalBayarUpah: (id) => request('/pembayaran-upah/batal-bayar', { method: 'POST', body: JSON.stringify({ id }) }),
   syncUpahFromAntrean: () => request('/pembayaran-upah/sync-from-antrean', { method: 'POST' }),
+
+  // Kasbon & Pinjaman Karyawan / Penjahit (Potong Otomatis Saat Upah)
+  getKasbon: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/kasbon${q ? `?${q}` : ''}`);
+  },
+  getKasbonRekap: () => request('/kasbon/rekap'),
+  getKasbonSaldo: (petugas) => request(`/kasbon/saldo/${encodeURIComponent(petugas)}`),
+  createKasbon: (data) => request('/kasbon', { method: 'POST', body: JSON.stringify(data) }),
+  updateKasbon: (id, data) => request(`/kasbon/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteKasbon: (id) => request(`/kasbon/${id}`, { method: 'DELETE' }),
+  getKasbonRiwayat: (id) => request(`/kasbon/${id}/riwayat`),
 };
 
 

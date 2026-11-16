@@ -29,6 +29,8 @@ router.get("/", async (req, res) => {
         qty,
         tarif_per_pcs as tarifPerPcs,
         total_upah as totalUpah,
+        COALESCE(potongan_kasbon, 0) as potonganKasbon,
+        COALESCE(total_bersih, total_upah) as totalBersih,
         status_bayar as statusBayar,
         tgl_bayar as tglBayar,
         metode_bayar as metodeBayar,
@@ -133,9 +135,9 @@ router.get("/rekap", async (req, res) => {
 });
 
 // 3. POST /api/pembayaran-upah/bayar
-// Memproses pembayaran upah untuk 1 atau beberapa transaksi (Batch Payment)
+// Memproses pembayaran upah untuk 1 atau beberapa transaksi (Batch Payment) + Potong Kasbon Otomatis
 router.post("/bayar", async (req, res) => {
-  const { ids, tglBayar, metodeBayar, catatan } = req.body;
+  const { ids, tglBayar, metodeBayar, catatan, potonganKasbon } = req.body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Pilih minimal 1 data tagihan upah." });
@@ -143,6 +145,7 @@ router.post("/bayar", async (req, res) => {
 
   const payDate = tglBayar || new Date().toISOString().slice(0, 10);
   const payMethod = metodeBayar || "Tunai / Cash";
+  let nominalPotongKasbon = Number(potonganKasbon) || 0;
   const connection = await pool.getConnection();
 
   try {
@@ -156,14 +159,72 @@ router.post("/bayar", async (req, res) => {
       const item = rows[0];
       if (!item) continue;
 
+      const totalUpah = Number(item.total_upah) || 0;
+      let potonganItem = 0;
+
+      // Jika ada permohonan potong kasbon untuk transaksi ini
+      if (nominalPotongKasbon > 0 && item.nama_petugas) {
+        // Ambil daftar kasbon belum lunas milik petugas ini
+        const [activeKasbon] = await connection.query(
+          `SELECT * FROM kasbon 
+           WHERE LOWER(TRIM(nama_petugas)) = LOWER(TRIM(?)) AND status = 'Belum Lunas' AND sisa > 0 
+           ORDER BY id ASC`,
+          [item.nama_petugas]
+        );
+
+        let sisaDibutuhkan = Math.min(nominalPotongKasbon, totalUpah);
+
+        for (const k of activeKasbon) {
+          if (sisaDibutuhkan <= 0) break;
+          const sisaKasbon = Number(k.sisa) || 0;
+          const potongNominal = Math.min(sisaKasbon, sisaDibutuhkan);
+
+          if (potongNominal > 0) {
+            // Update kasbon: tambah terbayar, kurangi sisa
+            await connection.query(
+              `UPDATE kasbon 
+               SET terbayar = terbayar + ?, 
+                   sisa = sisa - ?, 
+                   status = CASE WHEN sisa <= 0 THEN 'Lunas' ELSE 'Belum Lunas' END 
+               WHERE id = ?`,
+              [potongNominal, potongNominal, k.id]
+            );
+
+            // Catat ke audit trail kasbon_pembayaran
+            await connection.query(
+              `INSERT INTO kasbon_pembayaran 
+               (kasbon_id, pembayaran_upah_id, no_pembayaran_upah, nama_petugas, tgl_potong, nominal_potong, catatan) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [
+                k.id,
+                item.id,
+                item.no_pembayaran,
+                item.nama_petugas,
+                payDate,
+                potongNominal,
+                catatan || `Dipotong langsung dari pembayaran upah ${item.no_pembayaran}`,
+              ]
+            );
+
+            sisaDibutuhkan -= potongNominal;
+            potonganItem += potongNominal;
+            nominalPotongKasbon -= potongNominal;
+          }
+        }
+      }
+
+      const totalBersih = Math.max(0, totalUpah - potonganItem);
+
       await connection.query(
         `UPDATE pembayaran_upah 
          SET status_bayar = 'Lunas', 
              tgl_bayar = ?, 
              metode_bayar = ?, 
+             potongan_kasbon = ?,
+             total_bersih = ?,
              catatan = COALESCE(?, catatan)
          WHERE id = ?`,
-        [payDate, payMethod, catatan || null, id]
+        [payDate, payMethod, potonganItem, totalBersih, catatan || null, id]
       );
 
       // Sinkronkan ke kolom status_bayar_{tahapan} di antrean jika ada
@@ -212,11 +273,37 @@ router.post("/batal-bayar", async (req, res) => {
       return res.status(404).json({ error: "Data pembayaran tidak ditemukan." });
     }
 
+    // Rollback potongan kasbon jika sebelumnya ada potongan dari pembayaran ini
+    const [kpRows] = await connection.query(
+      "SELECT * FROM kasbon_pembayaran WHERE pembayaran_upah_id = ?",
+      [id]
+    );
+
+    for (const kp of kpRows) {
+      await connection.query(
+        `UPDATE kasbon 
+         SET terbayar = GREATEST(0, terbayar - ?), 
+             sisa = sisa + ?, 
+             status = 'Belum Lunas' 
+         WHERE id = ?`,
+        [Number(kp.nominal_potong), Number(kp.nominal_potong), kp.kasbon_id]
+      );
+    }
+
+    if (kpRows.length > 0) {
+      await connection.query(
+        "DELETE FROM kasbon_pembayaran WHERE pembayaran_upah_id = ?",
+        [id]
+      );
+    }
+
     await connection.query(
       `UPDATE pembayaran_upah 
        SET status_bayar = 'Belum Lunas', 
            tgl_bayar = NULL, 
-           metode_bayar = NULL 
+           metode_bayar = NULL,
+           potongan_kasbon = 0,
+           total_bersih = total_upah
        WHERE id = ?`,
       [id]
     );

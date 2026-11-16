@@ -216,3 +216,34 @@ CREATE TABLE IF NOT EXISTS tim_finishing (
   catatan TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS kasbon (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  no_kasbon VARCHAR(60) NOT NULL UNIQUE,
+  tgl_kasbon VARCHAR(30) NOT NULL,
+  nama_petugas VARCHAR(150) NOT NULL,
+  kategori_petugas VARCHAR(50) DEFAULT 'Penjahit',
+  nominal DECIMAL(14,2) NOT NULL DEFAULT 0,
+  terbayar DECIMAL(14,2) NOT NULL DEFAULT 0,
+  sisa DECIMAL(14,2) NOT NULL DEFAULT 0,
+  status VARCHAR(30) NOT NULL DEFAULT 'Belum Lunas',
+  keperluan TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_kasbon_petugas (nama_petugas),
+  INDEX idx_kasbon_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS kasbon_pembayaran (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  kasbon_id INT NOT NULL,
+  pembayaran_upah_id INT,
+  no_pembayaran_upah VARCHAR(60),
+  nama_petugas VARCHAR(150),
+  tgl_potong VARCHAR(30) NOT NULL,
+  nominal_potong DECIMAL(14,2) NOT NULL DEFAULT 0,
+  catatan TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_kp_kasbon (kasbon_id),
+  INDEX idx_kp_upah (pembayaran_upah_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

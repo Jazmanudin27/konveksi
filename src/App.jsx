@@ -10,6 +10,7 @@ import MutasiGudangJadi from './views/desktop/MutasiGudangJadi';
 import Antrean from './views/desktop/Antrean';
 import LaporanStokGudang from './views/desktop/LaporanStokGudang';
 import PembayaranUpah from './views/desktop/PembayaranUpah';
+import Kasbon from './views/desktop/Kasbon';
 import Penjahit from './views/desktop/Penjahit';
 import TimFinishing from './views/desktop/TimFinishing';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
@@ -58,6 +59,7 @@ export default function App() {
     'antrean',
     'laporan-stok-gudang',
     'pembayaran-upah',
+    'kasbon',
   ];
 
   // Ambil menu aktif terakhir dari URL hash atau localStorage agar tidak reset saat refresh
@@ -411,6 +413,11 @@ export default function App() {
             <PembayaranUpah
               employees={employees}
               antreanList={antreanList}
+            />
+          )}
+          {activeMenu === 'kasbon' && (
+            <Kasbon
+              employees={employees}
             />
           )}
         </main>

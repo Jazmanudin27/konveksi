@@ -266,7 +266,11 @@ export default function LanjutTahapModalMobile({
     if (list.length > 0) return list;
     return [
       { id: 1, nama: "Tim Finishing 1 (Uap & Lipat)", bagian: "Finishing" },
-      { id: 2, nama: "Tim Finishing 2 (Hangtag & Plastik OPP)", bagian: "Finishing" },
+      {
+        id: 2,
+        nama: "Tim Finishing 2 (Hangtag & Plastik OPP)",
+        bagian: "Finishing",
+      },
       { id: 3, nama: "Gudang Packing Akhir", bagian: "Packing" },
     ];
   }, [employees]);
@@ -314,7 +318,9 @@ export default function LanjutTahapModalMobile({
   const [timFinishing, setTimFinishing] = useState(
     finishingEmployees[0]?.nama || item.timFinishing || "Tim Finishing 1",
   );
-  const [tarifFinishing, setTarifFinishing] = useState(item.tarifFinishing || 1000);
+  const [tarifFinishing, setTarifFinishing] = useState(
+    item.tarifFinishing || 1000,
+  );
   const [catatanFinishing, setCatatanFinishing] = useState(
     item.catatanFinishing || "",
   );
@@ -713,7 +719,10 @@ export default function LanjutTahapModalMobile({
                   Total Estimasi Upah Finishing ({qtyPassQc || qty} Pcs):
                 </span>
                 <span className="text-xs font-black font-mono text-teal-700">
-                  Rp {((qtyPassQc || qty) * Number(tarifFinishing || 0)).toLocaleString("id-ID")}
+                  Rp{" "}
+                  {(
+                    (qtyPassQc || qty) * Number(tarifFinishing || 0)
+                  ).toLocaleString("id-ID")}
                 </span>
               </div>
 

@@ -20,6 +20,7 @@ import sizesRouter from "./routes/sizes.js";
 import pembayaranUpahRouter from "./routes/pembayaranUpah.js";
 import penjahitRouter from "./routes/penjahit.js";
 import timFinishingRouter from "./routes/timFinishing.js";
+import kasbonRouter from "./routes/kasbon.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -51,6 +52,7 @@ app.use("/api/sizes", sizesRouter);
 app.use("/api/pembayaran-upah", pembayaranUpahRouter);
 app.use("/api/penjahit", penjahitRouter);
 app.use("/api/tim-finishing", timFinishingRouter);
+app.use("/api/kasbon", kasbonRouter);
 
 // Static Frontend Serve & SPA Fallback (Produksi VPS - Express 4 & 5 Compatible)
 app.use(express.static(distPath));

@@ -18,6 +18,7 @@ import {
   Sparkles,
   Coins,
   PackageCheck,
+  Wallet,
 } from 'lucide-react';
 
 export default function DashboardMobile({
@@ -307,6 +308,19 @@ export default function DashboardMobile({
               </div>
               <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
                 Bayar Upah
+              </span>
+            </button>
+
+            {/* 10. Kasbon Karyawan (Amber / Orange) */}
+            <button
+              onClick={() => onNavigate('kasbon')}
+              className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
+            >
+              <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#b45309] to-[#d97706] text-white flex items-center justify-center shadow-md shadow-amber-600/25">
+                <Wallet className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
+                Kasbon
               </span>
             </button>
 

@@ -21,6 +21,7 @@ import {
   Receipt,
   ChevronRight,
   Filter,
+  Wallet,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -53,6 +54,10 @@ export default function PembayaranUpahMobile({ onBack }) {
   // Slip Modal State
   const [isSlipModalOpen, setIsSlipModalOpen] = useState(false);
   const [slipItem, setSlipItem] = useState(null);
+
+  // Kasbon State
+  const [kasbonInfo, setKasbonInfo] = useState(null);
+  const [potonganKasbon, setPotonganKasbon] = useState(0);
 
   // Fetch data dari API
   const fetchData = async () => {
@@ -121,13 +126,36 @@ export default function PembayaranUpahMobile({ onBack }) {
   }, [dataList, activeTahapTab, filterStatus, searchQuery]);
 
   // Open Bayar Modal
-  const handleOpenPay = (item) => {
+  const handleOpenPay = async (item) => {
     setTargetItem(item);
     setPayForm({
       tglBayar: new Date().toISOString().slice(0, 10),
       metodeBayar: 'Tunai / Cash',
       catatan: '',
     });
+
+    const petugasName = (item.nama_petugas || item.namaPetugas || '').trim();
+    const totalGross = Number(item.total_upah || item.totalUpah) || 0;
+
+    if (petugasName) {
+      try {
+        const saldoData = await api.getKasbonSaldo(petugasName);
+        if (saldoData && saldoData.totalSisa > 0) {
+          setKasbonInfo(saldoData);
+          setPotonganKasbon(Math.min(totalGross, saldoData.totalSisa));
+        } else {
+          setKasbonInfo(null);
+          setPotonganKasbon(0);
+        }
+      } catch (_) {
+        setKasbonInfo(null);
+        setPotonganKasbon(0);
+      }
+    } else {
+      setKasbonInfo(null);
+      setPotonganKasbon(0);
+    }
+
     setIsPayModalOpen(true);
   };
 
@@ -135,18 +163,22 @@ export default function PembayaranUpahMobile({ onBack }) {
   const handleConfirmPay = async () => {
     if (!targetItem) return;
     try {
-      await api.bayarUpah([targetItem.id], {
-        tgl_bayar: payForm.tglBayar,
-        metode_bayar: payForm.metodeBayar,
+      await api.bayarUpah({
+        ids: [targetItem.id],
+        tglBayar: payForm.tglBayar,
+        metodeBayar: payForm.metodeBayar,
         catatan: payForm.catatan,
+        potonganKasbon: Number(potonganKasbon) || 0,
       });
 
       setIsPayModalOpen(false);
+      setKasbonInfo(null);
+      setPotonganKasbon(0);
       await fetchData();
       Swal.fire({
         icon: 'success',
         title: 'Pembayaran Berhasil',
-        text: `Upah ${targetItem.nama_petugas} sebesar Rp ${Number(targetItem.total_upah).toLocaleString('id-ID')} telah dibayar!`,
+        text: `Upah ${targetItem.nama_petugas} telah dibayar!${Number(potonganKasbon) > 0 ? ` (Dipotong Kasbon: Rp ${Number(potonganKasbon).toLocaleString('id-ID')})` : ''}`,
         timer: 1600,
         showConfirmButton: false,
       });
@@ -383,8 +415,13 @@ export default function PembayaranUpahMobile({ onBack }) {
                     {item.qty} Pcs × Rp {Number(item.tarif_per_pcs).toLocaleString('id-ID')}
                   </div>
                   <div className="text-sm font-black text-[#064e3b] font-mono leading-tight mt-0.5">
-                    Rp {Number(item.total_upah).toLocaleString('id-ID')}
+                    Rp {Number(item.total_bersih ?? item.total_upah).toLocaleString('id-ID')}
                   </div>
+                  {Number(item.potongan_kasbon) > 0 && (
+                    <div className="text-[10px] text-amber-700 font-mono">
+                      (Potong Kasbon: -Rp {Number(item.potongan_kasbon).toLocaleString('id-ID')})
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -483,11 +520,62 @@ export default function PembayaranUpahMobile({ onBack }) {
                 </span>
               </div>
               <div className="flex justify-between pt-1.5 border-t border-slate-200">
-                <span className="font-bold text-slate-700">Total Upah:</span>
-                <span className="text-base font-black text-[#064e3b] font-mono">
+                <span className="font-bold text-slate-700">Total Upah (Gross):</span>
+                <span className="text-sm font-black text-slate-800 font-mono">
                   Rp {Number(targetItem.total_upah).toLocaleString('id-ID')}
                 </span>
               </div>
+
+              {/* KASBON NOTIFICATION & DEDUCTION INPUT */}
+              {kasbonInfo && kasbonInfo.totalSisa > 0 && (
+                <div className="mt-2 p-2.5 bg-amber-50 rounded-xl border border-amber-300 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-900 text-[11px] flex items-center gap-1">
+                      <Wallet className="w-3.5 h-3.5 text-amber-600" /> Kasbon Belum Lunas
+                    </span>
+                    <span className="font-mono font-bold text-amber-800 text-[10px] bg-amber-200/80 px-1.5 py-0.2 rounded">
+                      Sisa: Rp {Number(kasbonInfo.totalSisa).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                      Potong Kasbon (Rp)
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.min(Number(targetItem.total_upah), Number(kasbonInfo.totalSisa))}
+                        value={potonganKasbon}
+                        onChange={(e) => setPotonganKasbon(Math.max(0, Number(e.target.value) || 0))}
+                        className="w-full px-2 py-1 rounded-lg border border-amber-300 font-mono font-bold text-xs bg-white focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPotonganKasbon(Math.min(Number(targetItem.total_upah), Number(kasbonInfo.totalSisa)))}
+                        className="px-2 py-1 bg-amber-600 text-white rounded text-[9px] font-bold shrink-0"
+                      >
+                        Maks
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPotonganKasbon(0)}
+                        className="px-2 py-1 bg-slate-200 text-slate-700 rounded text-[9px] font-bold shrink-0"
+                      >
+                        Nol
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-1 border-t border-amber-200 flex justify-between items-center text-xs">
+                    <span className="font-bold text-slate-700">Diterima Bersih:</span>
+                    <span className="font-black text-[#064e3b] font-mono text-sm">
+                      Rp {Math.max(0, Number(targetItem.total_upah) - (Number(potonganKasbon) || 0)).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Form Input Pembayaran */}
@@ -620,11 +708,36 @@ export default function PembayaranUpahMobile({ onBack }) {
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-dashed border-slate-300 flex justify-between items-center text-xs font-sans">
-                <span className="font-black text-slate-800">TOTAL DIBAYAR:</span>
-                <span className="text-base font-black text-[#064e3b] font-mono">
-                  Rp {Number(slipItem.total_upah).toLocaleString('id-ID')}
-                </span>
+              <div className="pt-2 border-t border-dashed border-slate-300 space-y-1 text-xs font-sans">
+                {Number(slipItem.potongan_kasbon) > 0 ? (
+                  <>
+                    <div className="flex justify-between items-center text-[11px] text-slate-500">
+                      <span>Subtotal Upah Kotor:</span>
+                      <span className="font-mono font-bold text-slate-800">
+                        Rp {Number(slipItem.total_upah).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-amber-700">
+                      <span>Potongan Kasbon:</span>
+                      <span className="font-mono font-bold">
+                        - Rp {Number(slipItem.potongan_kasbon).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1 border-t border-dashed border-slate-200">
+                      <span className="font-black text-slate-800">TOTAL BERSIH DITERIMA:</span>
+                      <span className="text-base font-black text-[#064e3b] font-mono">
+                        Rp {Number(slipItem.total_bersih ?? (Number(slipItem.total_upah) - Number(slipItem.potongan_kasbon))).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <span className="font-black text-slate-800">TOTAL DIBAYAR:</span>
+                    <span className="text-base font-black text-[#064e3b] font-mono">
+                      Rp {Number(slipItem.total_upah).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 text-[10px] text-slate-500 border-t border-dashed border-slate-200 space-y-0.5">

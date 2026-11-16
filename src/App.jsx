@@ -35,6 +35,10 @@ export default function App() {
     try {
       localStorage.setItem('konveksi_view_mode', mobile ? 'mobile' : 'desktop');
     } catch (_) {}
+    // Sinkronisasi data real-time saat berpindah antara mobile & desktop
+    api.getAntrean().then((fresh) => {
+      if (Array.isArray(fresh)) setAntreanList(fresh);
+    }).catch(() => {});
   };
 
   // Daftar menu navigasi yang valid
@@ -209,8 +213,36 @@ export default function App() {
     }
 
     fetchFromDatabase();
+
+    // Auto-sync polling setiap 6 detik & saat tab/jendela aktif agar Mobile & Desktop selalu realtime sinkron
+    const syncInterval = setInterval(() => {
+      api.getAntrean()
+        .then((fresh) => {
+          if (isMounted && Array.isArray(fresh)) {
+            setAntreanList(fresh);
+          }
+        })
+        .catch(() => {});
+    }, 6000);
+
+    const handleFocusSync = () => {
+      api.getAntrean()
+        .then((fresh) => {
+          if (isMounted && Array.isArray(fresh)) {
+            setAntreanList(fresh);
+          }
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener('focus', handleFocusSync);
+    document.addEventListener('visibilitychange', handleFocusSync);
+
     return () => {
       isMounted = false;
+      clearInterval(syncInterval);
+      window.removeEventListener('focus', handleFocusSync);
+      document.removeEventListener('visibilitychange', handleFocusSync);
     };
   }, []);
 

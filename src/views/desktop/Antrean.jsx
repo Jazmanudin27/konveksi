@@ -87,8 +87,20 @@ export default function Antrean({
     }
   });
 
-  // Ambil list sumber permintaan real dari database SQLite
+  // Ambil list sumber permintaan real dari database SQLite & Sinkronisasi Antrean Real-time
   useEffect(() => {
+    // Sinkronisasi data antrean langsung dari database saat komponen desktop dimuat
+    api.getAntrean()
+      .then(list => {
+        if (Array.isArray(list)) {
+          setAntreanList(list);
+          try {
+            localStorage.setItem('konveksi_antrean_list', JSON.stringify(list));
+          } catch (_) {}
+        }
+      })
+      .catch(() => {});
+
     api.getSumberPermintaan()
       .then(list => {
         if (Array.isArray(list) && list.length > 0) {

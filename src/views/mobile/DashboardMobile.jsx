@@ -180,47 +180,7 @@ export default function DashboardMobile({
         </div>
       </div>
 
-      {/* 2. KARTU VOLUME TARGET ORDER PRODUKSI (DATA ASLI DARI ANTREAN REAL-TIME) */}
-      <div className="bg-gradient-to-br from-[#1d4ed8] via-[#2563eb] to-[#1e40af] text-white rounded-3xl p-4 sm:p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden">
-        {/* Konten Utama Angka Besar */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-[10px] font-extrabold uppercase tracking-wider text-blue-200 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>TOTAL TARGET VOLUME ORDER</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">
-              {Number(stats.totalTargetPcs || 0).toLocaleString('id-ID')} Pcs
-            </div>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
-            <Scissors className="w-5 h-5 text-blue-100" />
-          </div>
-        </div>
-
-        {/* Dua Sub-Kotak Putih di Bawah Kartu Biru */}
-        <div className="grid grid-cols-2 gap-2.5 mt-4">
-          <div className="bg-white rounded-2xl p-3 text-slate-800 shadow-xs">
-            <div className="text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">
-              POTONG & JAHIT
-            </div>
-            <div className="text-sm sm:text-base font-black text-blue-600 mt-0.5">
-              {Number(stats.targetPotongJahit || 0).toLocaleString('id-ID')} Pcs
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-3 text-slate-800 shadow-xs">
-            <div className="text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">
-              FINISHING & GUDANG
-            </div>
-            <div className="text-sm sm:text-base font-black text-amber-600 mt-0.5">
-              {Number(stats.targetFinishing || 0).toLocaleString('id-ID')} Pcs
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. MENU OPERASIONAL KONVEKSI (Menggantikan Menu Layanan Santri) */}
+      {/* 2. MENU OPERASIONAL KONVEKSI (Menggantikan Menu Layanan Santri) */}
       <div className="space-y-2.5">
         <div className="flex items-center gap-1.5 px-0.5">
           <span className="w-1.5 h-4 rounded-full bg-[#064e3b]" />

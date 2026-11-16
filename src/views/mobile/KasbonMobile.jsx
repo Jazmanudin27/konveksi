@@ -111,6 +111,32 @@ export default function KasbonMobile({ onBack }) {
     });
   }, [kasbonList, activeTab, searchQuery]);
 
+  // Helper Format Rupiah Input
+  const formatRupiahDisplay = (val) => {
+    if (!val && val !== 0) return '';
+    const clean = String(val).replace(/\D/g, '');
+    return clean ? Number(clean).toLocaleString('id-ID') : '';
+  };
+
+  // Helper Terbilang Ringkas
+  const getTerbilang = (number) => {
+    const nom = Number(String(number).replace(/\D/g, ''));
+    if (!nom || nom <= 0) return '';
+    const satuan = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'];
+    const toWords = (n) => {
+      if (n < 12) return satuan[n];
+      if (n < 20) return toWords(n - 10) + ' Belas';
+      if (n < 100) return toWords(Math.floor(n / 10)) + ' Puluh ' + toWords(n % 10);
+      if (n < 200) return 'Seratus ' + toWords(n - 100);
+      if (n < 1000) return toWords(Math.floor(n / 100)) + ' Ratus ' + toWords(n % 100);
+      if (n < 2000) return 'Seribu ' + toWords(n - 1000);
+      if (n < 1000000) return toWords(Math.floor(n / 1000)) + ' Ribu ' + toWords(n % 1000);
+      if (n < 1000000000) return toWords(Math.floor(n / 1000000)) + ' Juta ' + toWords(n % 1000000);
+      return '';
+    };
+    return toWords(nom).trim().replace(/\s+/g, ' ') + ' Rupiah';
+  };
+
   // Open Add Modal
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -141,11 +167,11 @@ export default function KasbonMobile({ onBack }) {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.namaPetugas.trim()) {
-      Swal.fire('Perhatian', 'Nama karyawan / petugas wajib diisi.', 'warning');
+      Swal.fire('Perhatian', 'Pilih nama penjahit terlebih dahulu.', 'warning');
       return;
     }
-    const nom = Number(formData.nominal);
-    if (!nom || nom <= 0) {
+    const cleanNominal = Number(String(formData.nominal).replace(/\D/g, ''));
+    if (!cleanNominal || cleanNominal <= 0) {
       Swal.fire('Perhatian', 'Nominal kasbon harus lebih besar dari 0.', 'warning');
       return;
     }
@@ -154,9 +180,9 @@ export default function KasbonMobile({ onBack }) {
       if (editingId) {
         await api.updateKasbon(editingId, {
           namaPetugas: formData.namaPetugas.trim(),
-          kategoriPetugas: formData.kategoriPetugas,
+          kategoriPetugas: 'Penjahit',
           tglKasbon: formData.tglKasbon,
-          nominal: nom,
+          nominal: cleanNominal,
           keperluan: formData.keperluan.trim(),
         });
         Swal.fire({
@@ -169,15 +195,15 @@ export default function KasbonMobile({ onBack }) {
       } else {
         await api.createKasbon({
           namaPetugas: formData.namaPetugas.trim(),
-          kategoriPetugas: formData.kategoriPetugas,
+          kategoriPetugas: 'Penjahit',
           tglKasbon: formData.tglKasbon,
-          nominal: nom,
+          nominal: cleanNominal,
           keperluan: formData.keperluan.trim(),
         });
         Swal.fire({
           icon: 'success',
           title: 'Kasbon Dicatat',
-          text: `Kasbon untuk ${formData.namaPetugas} berhasil ditambahkan!`,
+          text: `Kasbon sebesar Rp ${cleanNominal.toLocaleString('id-ID')} untuk ${formData.namaPetugas} berhasil dicatat!`,
           timer: 1500,
           showConfirmButton: false,
         });
@@ -567,21 +593,65 @@ export default function KasbonMobile({ onBack }) {
                 />
               </div>
 
-              {/* Nominal Kasbon */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Nominal Pinjaman (Rp) <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1000"
-                  step="1000"
-                  placeholder="Misal: 100000"
-                  value={formData.nominal}
-                  onChange={(e) => setFormData({ ...formData, nominal: e.target.value })}
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-black text-amber-800 text-sm focus:bg-white focus:border-amber-500 focus:outline-none"
-                />
+              {/* Nominal Kasbon Format Rupiah */}
+              <div className="bg-amber-50/80 p-3 rounded-2xl border border-amber-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-extrabold text-amber-950 uppercase tracking-wider block">
+                    Nominal Kasbon (Rp) <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[9.5px] font-bold text-amber-800 bg-amber-200/60 px-1.5 py-0.2 rounded">
+                    Rupiah
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-bold text-sm text-amber-700">
+                    Rp
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    placeholder="0"
+                    value={formatRupiahDisplay(formData.nominal)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '');
+                      setFormData({ ...formData, nominal: raw ? Number(raw) : '' });
+                    }}
+                    className="w-full h-11 pl-10 pr-3 bg-white border border-amber-300 rounded-xl font-mono font-black text-slate-900 text-base text-right focus:border-amber-600 focus:outline-none"
+                  />
+                </div>
+
+                {/* Terbilang */}
+                {Number(formData.nominal) > 0 && (
+                  <div className="text-[10px] text-amber-900 italic">
+                    "{getTerbilang(formData.nominal)}"
+                  </div>
+                )}
+
+                {/* Quick Chips */}
+                <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                  {[50000, 100000, 200000, 500000].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        const current = Number(formData.nominal) || 0;
+                        setFormData({ ...formData, nominal: current + val });
+                      }}
+                      className="px-2 py-0.5 bg-white border border-amber-300 rounded text-[10px] font-mono font-bold text-amber-900 active:scale-95"
+                    >
+                      +{(val / 1000)}Rb
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, nominal: '' })}
+                    className="px-2 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600 ml-auto"
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
 
               {/* Keperluan / Catatan */}

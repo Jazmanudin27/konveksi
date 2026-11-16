@@ -112,6 +112,32 @@ export default function Kasbon() {
     });
   }, [kasbonList, activeTab, filterKategori, searchQuery]);
 
+  // Helper Format Rupiah Input
+  const formatRupiahDisplay = (val) => {
+    if (!val && val !== 0) return '';
+    const clean = String(val).replace(/\D/g, '');
+    return clean ? Number(clean).toLocaleString('id-ID') : '';
+  };
+
+  // Helper Terbilang Ringkas
+  const getTerbilang = (number) => {
+    const nom = Number(String(number).replace(/\D/g, ''));
+    if (!nom || nom <= 0) return '';
+    const satuan = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'];
+    const toWords = (n) => {
+      if (n < 12) return satuan[n];
+      if (n < 20) return toWords(n - 10) + ' Belas';
+      if (n < 100) return toWords(Math.floor(n / 10)) + ' Puluh ' + toWords(n % 10);
+      if (n < 200) return 'Seratus ' + toWords(n - 100);
+      if (n < 1000) return toWords(Math.floor(n / 100)) + ' Ratus ' + toWords(n % 100);
+      if (n < 2000) return 'Seribu ' + toWords(n - 1000);
+      if (n < 1000000) return toWords(Math.floor(n / 1000)) + ' Ribu ' + toWords(n % 1000);
+      if (n < 1000000000) return toWords(Math.floor(n / 1000000)) + ' Juta ' + toWords(n % 1000000);
+      return '';
+    };
+    return toWords(nom).trim().replace(/\s+/g, ' ') + ' Rupiah';
+  };
+
   // Open Create Modal
   const handleOpenCreate = () => {
     setFormData({
@@ -149,14 +175,20 @@ export default function Kasbon() {
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.namaPetugas.trim() || !formData.nominal || Number(formData.nominal) <= 0) {
-      Swal.fire('Error', 'Nama petugas dan nominal kasbon wajib diisi valid.', 'error');
+    const cleanNominal = Number(String(formData.nominal).replace(/\D/g, ''));
+    if (!formData.namaPetugas.trim() || !cleanNominal || cleanNominal <= 0) {
+      Swal.fire('Perhatian', 'Pilih nama penjahit dan isi nominal kasbon yang valid.', 'warning');
       return;
     }
 
+    const payload = {
+      ...formData,
+      nominal: cleanNominal,
+    };
+
     try {
       if (editingId) {
-        await api.updateKasbon(editingId, formData);
+        await api.updateKasbon(editingId, payload);
         Swal.fire({
           icon: 'success',
           title: 'Berhasil Diperbarui',
@@ -165,11 +197,11 @@ export default function Kasbon() {
           showConfirmButton: false,
         });
       } else {
-        await api.createKasbon(formData);
+        await api.createKasbon(payload);
         Swal.fire({
           icon: 'success',
           title: 'Kasbon Dicatat',
-          text: `Kasbon sebesar Rp ${Number(formData.nominal).toLocaleString('id-ID')} atas nama ${formData.namaPetugas} berhasil dicatat. Akan otomatis dipotong saat pembayaran upah.`,
+          text: `Kasbon sebesar Rp ${cleanNominal.toLocaleString('id-ID')} atas nama ${formData.namaPetugas} berhasil dicatat. Akan otomatis dipotong saat pembayaran upah.`,
           timer: 2000,
           showConfirmButton: false,
         });
@@ -498,48 +530,55 @@ export default function Kasbon() {
         </div>
       </div>
 
-      {/* MODAL 1: CATAT / EDIT KASBON */}
+      {/* MODAL 1: CATAT / EDIT KASBON (FORMAT RUPIAH & UI PREMIUM) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn text-xs">
-          <div className="w-full max-w-md bg-white rounded-2xl p-5 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                  <Wallet className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn text-xs">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden space-y-0">
+            {/* Header Modal Bar */}
+            <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-orange-600 text-white p-4 sm:p-5 flex items-center justify-between shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/20 border border-white/25 flex items-center justify-center text-white shadow-inner">
+                  <Wallet className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 leading-tight">
-                    {editingId ? 'Edit Catatan Kasbon' : 'Catat Kasbon Baru'}
+                  <h3 className="text-sm sm:text-base font-black text-white leading-tight">
+                    {editingId ? 'Edit Catatan Kasbon' : 'Catat Kasbon Penjahit'}
                   </h3>
-                  <p className="text-[10.5px] text-slate-400">
-                    Otomatis dipotong saat transaksi pembayaran upah
+                  <p className="text-[11px] text-amber-100/90 font-medium mt-0.5">
+                    Otomatis memotong upah kerja saat gajian borongan
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center cursor-pointer transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Form Content */}
+            <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+              {/* 1. Pilih Penjahit via Select Option */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Pilih Penjahit (Penerima Kasbon) <span className="text-rose-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>Pilih Penjahit (Penerima Kasbon) <span className="text-rose-500">*</span></span>
+                  <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    Master Penjahit
+                  </span>
                 </label>
                 <select
                   required
                   value={formData.namaPetugas}
                   onChange={(e) => setFormData({ ...formData, namaPetugas: e.target.value })}
-                  className="w-full px-2.5 py-2 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-amber-600 bg-white text-slate-800 cursor-pointer"
+                  className="w-full h-11 px-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-500/15 cursor-pointer transition-all"
                 >
-                  <option value="">-- Pilih Nama Penjahit --</option>
+                  <option value="">-- Klik untuk Pilih Nama Penjahit --</option>
                   {penjahitList.length > 0 ? (
                     penjahitList.map((p) => (
                       <option key={p.id || p.nama} value={p.nama}>
-                        🧵 {p.nama} {p.tarifPerPcs ? `(Tarif: Rp ${Number(p.tarifPerPcs).toLocaleString('id-ID')})` : ''}
+                        🧵 {p.nama} {p.tarifPerPcs ? `• (Tarif Jahit: Rp ${Number(p.tarifPerPcs).toLocaleString('id-ID')} / Pcs)` : ''}
                       </option>
                     ))
                   ) : (
@@ -550,25 +589,28 @@ export default function Kasbon() {
                     ))
                   )}
                 </select>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  * Nama otomatis diambil dari Master Data Penjahit.
-                </p>
+
+                {/* Card Info Penjahit Terpilih */}
+                {formData.namaPetugas && (
+                  <div className="mt-2 p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-[10px]">
+                        🧵
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-amber-950 block">{formData.namaPetugas}</span>
+                        <span className="text-[10.5px] text-amber-800">Bagian: Tim Penjahit Borongan</span>
+                      </div>
+                    </div>
+                    <span className="font-mono text-[11px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                      Aktif
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Divisi / Bagian
-                  </label>
-                  <select
-                    value={formData.kategoriPetugas}
-                    onChange={(e) => setFormData({ ...formData, kategoriPetugas: e.target.value })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-amber-600 bg-slate-50 text-slate-700"
-                  >
-                    <option value="Penjahit">🧵 Penjahit</option>
-                  </select>
-                </div>
-
+              {/* 2. Tanggal Kasbon & Divisi */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Tanggal Kasbon
@@ -578,64 +620,131 @@ export default function Kasbon() {
                     required
                     value={formData.tglKasbon}
                     onChange={(e) => setFormData({ ...formData, tglKasbon: e.target.value })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold focus:outline-none focus:border-amber-600"
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 text-xs focus:bg-white focus:border-amber-600 focus:outline-none"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Divisi / Bagian
+                  </label>
+                  <div className="w-full h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-600 flex items-center text-xs">
+                    🧵 Penjahit Konveksi
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Nominal Kasbon (Rp) <span className="text-rose-500">*</span>
-                </label>
+              {/* 3. INPUT NOMINAL KASBON DENGAN FORMAT RUPIAH INTERAKTIF */}
+              <div className="bg-gradient-to-br from-amber-50/90 to-orange-50/80 p-4 rounded-2xl border-2 border-amber-300/80 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-extrabold text-amber-950 uppercase tracking-wider block">
+                    Nominal Pinjaman / Kasbon <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded">
+                    Format Rupiah Otomatis
+                  </span>
+                </div>
+
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono font-black text-base text-amber-700 select-none">
+                    Rp
+                  </span>
                   <input
-                    type="number"
-                    min="1000"
-                    step="1000"
+                    type="text"
+                    inputMode="numeric"
                     required
                     placeholder="0"
-                    value={formData.nominal}
-                    onChange={(e) => setFormData({ ...formData, nominal: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 font-mono font-black text-sm text-right focus:outline-none focus:border-amber-600"
+                    value={formatRupiahDisplay(formData.nominal)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '');
+                      setFormData({ ...formData, nominal: raw ? Number(raw) : '' });
+                    }}
+                    className="w-full h-12 pl-12 pr-4 bg-white border-2 border-amber-400 rounded-xl font-mono font-black text-xl text-slate-900 text-right focus:outline-none focus:border-amber-600 focus:ring-4 focus:ring-amber-500/20 shadow-inner tracking-tight"
                   />
+                </div>
+
+                {/* Terbilang Rupiah */}
+                {Number(formData.nominal) > 0 && (
+                  <div className="p-2 bg-white/80 rounded-lg border border-amber-200/80 text-[11px] text-amber-950 font-medium italic flex items-center gap-1.5 animate-in fade-in">
+                    <span className="font-bold text-amber-700 not-italic shrink-0">Terbilang:</span>
+                    <span className="line-clamp-2">"{getTerbilang(formData.nominal)}"</span>
+                  </div>
+                )}
+
+                {/* Quick Add Chips Nominal */}
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 block mb-1">
+                    Pilihan Cepat Tambah Nominal:
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[50000, 100000, 200000, 500000, 1000000].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => {
+                          const current = Number(formData.nominal) || 0;
+                          setFormData({ ...formData, nominal: current + val });
+                        }}
+                        className="px-2.5 py-1 bg-white hover:bg-amber-100/80 active:scale-95 border border-amber-300 rounded-lg text-[10.5px] font-mono font-bold text-amber-900 shadow-2xs transition-all cursor-pointer"
+                      >
+                        + Rp {(val / 1000).toLocaleString('id-ID')} Rb
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, nominal: '' })}
+                      className="px-2 py-1 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg text-[10.5px] font-bold text-slate-600 transition-all cursor-pointer ml-auto"
+                      title="Reset Nominal ke 0"
+                    >
+                      Reset
+                    </button>
+                  </div>
                 </div>
               </div>
 
+              {/* 4. Keperluan / Alasan Pinjam */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Keperluan / Alasan Pinjam (Opsional)
                 </label>
                 <textarea
                   rows="2"
-                  placeholder="Misal: Biaya berobat, keperluan mendesak keluarga..."
+                  placeholder="Misal: Biaya berobat, keperluan mendesak keluarga, bensin..."
                   value={formData.keperluan}
                   onChange={(e) => setFormData({ ...formData, keperluan: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:border-amber-600 text-xs"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-amber-600 focus:outline-none text-xs text-slate-800"
                 />
               </div>
 
-              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[10.5px] text-amber-900 leading-snug">
-                💡 <strong>Informasi Otomatisasi:</strong> Saat admin memproses pembayaran upah untuk petugas ini, nominal kasbon akan langsung muncul sebagai opsi pemotongan gaji bersih.
+              {/* Info Otomatisasi */}
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-2xl text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
+                <span className="text-base leading-none">💡</span>
+                <div>
+                  <strong>Otomatis Potong Upah:</strong> Saat admin membuka menu <i>Pembayaran Upah</i> untuk penjahit ini, sistem otomatis mendeteksi sisa kasbon dan memotong gaji bersihnya.
+                </div>
               </div>
 
-              <div className="pt-2 flex gap-2">
+              {/* Tombol Aksi */}
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2 rounded-lg border border-slate-300 font-bold text-slate-600 hover:bg-slate-50"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-bold shadow-md"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-amber-700 to-orange-600 hover:from-amber-700 hover:to-orange-700 active:scale-95 text-white font-black text-xs shadow-lg shadow-amber-600/30 transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  Simpan Kasbon
+                  <Wallet className="w-4 h-4" />
+                  <span>{editingId ? 'Simpan Perubahan' : 'Simpan Kasbon'}</span>
                 </button>
               </div>
             </form>
           </div>
+        </div>
+      )}
         </div>
       )}
 

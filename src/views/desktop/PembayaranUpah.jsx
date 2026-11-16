@@ -203,11 +203,14 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
     }
   };
 
-  // Filtered List
+  // Filtered List hanya untuk tagihan yang BELUM LUNAS (Input Pembayaran)
   const filteredList = useMemo(() => {
     return dataList.filter((item) => {
+      // Yang sudah lunas jangan ditampilkan lagi di Input Pembayaran!
+      const isLunas = item.statusBayar === 'Lunas' || item.status_bayar === 'Lunas';
+      if (isLunas) return false;
+
       if (activeTahapTab !== 'Semua' && item.tahapan !== activeTahapTab) return false;
-      if (filterStatus !== 'Semua' && item.statusBayar !== filterStatus) return false;
       if (
         filterPetugas &&
         !item.namaPetugas?.toLowerCase().includes(filterPetugas.toLowerCase())
@@ -216,7 +219,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
       }
 
       // Filter Tanggal Periode
-      const itemDate = item.tglBayar || (item.createdAt ? String(item.createdAt).slice(0, 10) : '');
+      const itemDate = item.createdAt ? String(item.createdAt).slice(0, 10) : '';
       if (startDate && itemDate && itemDate < startDate) return false;
       if (endDate && itemDate && itemDate > endDate) return false;
 
@@ -232,7 +235,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
       }
       return true;
     });
-  }, [dataList, activeTahapTab, filterStatus, filterPetugas, searchQuery, startDate, endDate]);
+  }, [dataList, activeTahapTab, filterPetugas, searchQuery, startDate, endDate]);
 
   // Rekap Payroll Per Karyawan / Tim
   const rekapKaryawanList = useMemo(() => {
@@ -331,10 +334,19 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
         const teamMap = new Map();
 
         itemsInTahap.forEach((item) => {
-          const teamName = (item.namaPetugas || 'Tanpa Nama Tim').trim();
+          const rawName = (item.namaPetugas || 'Tanpa Nama').trim();
+          // Bersihkan nama tim dari embel-embel seperti (QC), (Cutting), dll
+          let teamName = rawName.replace(/\s*\([^)]*\)/g, '').trim();
+          if (cat.key === 'Jahit') {
+            // Untuk penjahit jangan ada kata "Tim", cukup nama penjahitnya
+            teamName = teamName.replace(/^tim\s+/i, '').trim();
+          }
+          if (!teamName) teamName = rawName;
+
           if (!teamMap.has(teamName)) {
             const employeeKasbons = kasbonAll.filter(
-              (k) => (k.namaPetugas || '').trim().toLowerCase() === teamName.toLowerCase()
+              (k) => (k.namaPetugas || '').trim().toLowerCase() === rawName.toLowerCase() ||
+                     (k.namaPetugas || '').trim().toLowerCase() === teamName.toLowerCase()
             );
             const sisaPinjamanAktif = employeeKasbons.reduce(
               (acc, k) => acc + Number(k.sisa || 0),
@@ -343,6 +355,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
             teamMap.set(teamName, {
               namaPetugas: teamName,
+              rawNamaPetugas: rawName,
               tahapan: cat.key,
               items: [],
               totalQty: 0,
@@ -845,69 +858,67 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
             </div>
           </div>
 
-          {/* MAIN SPREADSHEET CARD (MIRIP GOOGLE SHEET SLIP GAJI EMRA) */}
-          <div className="bg-[#cbd5e1]/40 border-2 border-slate-300 rounded-2xl p-3 sm:p-5 shadow-sm">
-            {/* PAPER CANVAS */}
-            <div className="bg-white border-2 border-slate-300 rounded-xl max-w-4xl mx-auto shadow-md p-4 sm:p-6 space-y-4">
-              {/* TOP HEADER SPREADSHEET: KOP & FILTER PERIODE TANGGAL */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pb-4 border-b-2 border-slate-300">
-                {/* KIRI: SLIP GAJI INFO & SELECT NAMA TIM */}
-                <div className="md:col-span-7 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-700 text-white flex flex-col items-center justify-center font-serif font-black shadow-xs shrink-0">
-                      <span className="text-xl leading-none">EM</span>
-                      <span className="text-[7.5px] tracking-widest uppercase font-sans">PROD</span>
-                    </div>
-                    <div>
-                      <h2 className="text-base sm:text-lg font-black tracking-wider text-slate-900 uppercase">
-                        SLIP GAJI EMRA PRODUCTION
-                      </h2>
-                      <p className="text-[11px] text-slate-500 font-medium">
-                        Divisi: <strong className="text-emerald-800 uppercase">{sheetTahap === 'Jahit' ? 'Penjahit (Sewing)' : sheetTahap === 'Cutting' ? 'Pemotong (Cutting)' : sheetTahap === 'QC' ? 'Quality Control (QC)' : 'Finishing & Packing'}</strong>
-                      </p>
-                    </div>
+          {/* MAIN SPREADSHEET CARD (FULL SCREEN WIDTH 100%) */}
+          <div className="w-full bg-white border border-slate-200 rounded-2xl shadow-xs p-4 sm:p-6 space-y-4">
+            {/* TOP HEADER SPREADSHEET: KOP & FILTER PERIODE TANGGAL */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pb-4 border-b-2 border-slate-200">
+              {/* KIRI: SLIP GAJI INFO & SELECT NAMA TIM */}
+              <div className="md:col-span-8 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-700 text-white flex flex-col items-center justify-center font-serif font-black shadow-xs shrink-0">
+                    <span className="text-xl leading-none">EM</span>
+                    <span className="text-[7.5px] tracking-widest uppercase font-sans">PROD</span>
                   </div>
-
-                  {/* FORM PILIH TIM / KARYAWAN */}
-                  <div className="pt-2 space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="w-28 text-slate-500 font-bold">
-                        {sheetTahap === 'Jahit' ? 'Nama Penjahit' : 'Nama Tim'}
-                      </span>
-                      <span className="text-slate-400 font-bold">:</span>
-                      <div className="flex-1">
-                        <select
-                          value={sheetTeam}
-                          onChange={(e) => setSheetTeam(e.target.value)}
-                          className="w-full h-8 px-2.5 bg-amber-50/80 border-2 border-amber-300 rounded-lg text-xs font-black text-amber-950 focus:outline-none focus:border-amber-500 cursor-pointer"
-                        >
-                          {sheetTeamsList.length === 0 ? (
-                            <option value="">
-                              {sheetTahap === 'Jahit' ? '(Tidak ada penjahit pada periode ini)' : '(Tidak ada tim pada periode ini)'}
-                            </option>
-                          ) : (
-                            sheetTeamsList.map((t) => (
-                              <option key={t.namaPetugas} value={t.namaPetugas}>
-                                {t.namaPetugas}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="w-28 text-slate-500 font-bold">Tanggal Periode</span>
-                      <span className="text-slate-400 font-bold">:</span>
-                      <span className="font-mono font-black text-slate-800 text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                        {startDate || 'Awal'} s.d {endDate || 'Sekarang'}
-                      </span>
-                    </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black tracking-wider text-slate-900 uppercase">
+                      SLIP GAJI EMRA PRODUCTION
+                    </h2>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Divisi: <strong className="text-emerald-800 uppercase">{sheetTahap === 'Jahit' ? 'Penjahit (Sewing)' : sheetTahap === 'Cutting' ? 'Pemotong (Cutting)' : sheetTahap === 'QC' ? 'Quality Control (QC)' : 'Finishing & Packing'}</strong>
+                    </p>
                   </div>
                 </div>
 
-                {/* KANAN: KOTAK FILTER TANGGAL MIRIP GOOGLE SHEET (Filter Tanggal vvv) */}
-                <div className="md:col-span-5 flex flex-col justify-between bg-amber-50/60 border-2 border-amber-200 rounded-xl p-3">
+                {/* FORM PILIH TIM / KARYAWAN */}
+                <div className="pt-2 space-y-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-28 text-slate-500 font-bold">
+                      {sheetTahap === 'Jahit' ? 'Nama Penjahit' : 'Nama Tim'}
+                    </span>
+                    <span className="text-slate-400 font-bold">:</span>
+                    <div className="flex-1">
+                      <select
+                        value={sheetTeam}
+                        onChange={(e) => setSheetTeam(e.target.value)}
+                        className="w-full h-8 px-2.5 bg-amber-50/80 border-2 border-amber-300 rounded-lg text-xs font-black text-amber-950 focus:outline-none focus:border-amber-500 cursor-pointer"
+                      >
+                        {sheetTeamsList.length === 0 ? (
+                          <option value="">
+                            {sheetTahap === 'Jahit' ? '(Tidak ada penjahit yang belum dibayar)' : '(Tidak ada tim yang belum dibayar)'}
+                          </option>
+                        ) : (
+                          sheetTeamsList.map((t) => (
+                            <option key={t.namaPetugas} value={t.namaPetugas}>
+                              {t.namaPetugas}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="w-28 text-slate-500 font-bold">Tanggal Periode</span>
+                    <span className="text-slate-400 font-bold">:</span>
+                    <span className="font-mono font-black text-slate-800 text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      {startDate || 'Awal'} s.d {endDate || 'Sekarang'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* KANAN: KOTAK FILTER TANGGAL MIRIP GOOGLE SHEET (Filter Tanggal vvv) */}
+              <div className="md:col-span-4 flex flex-col justify-between bg-amber-50/60 border-2 border-amber-200 rounded-xl p-3">
                   <div>
                     <div className="bg-amber-600 text-white text-center py-1 rounded-lg text-xs font-black uppercase tracking-wider shadow-2xs">
                       Filter Tanggal vvv
@@ -964,13 +975,13 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
               {!activeSheetTeamData ? (
                 /* EMPTY STATE JIKA TIDAK ADA DATA TIM */
-                <div className="py-12 text-center text-slate-400 space-y-2">
-                  <Receipt className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
-                  <p className="text-sm font-bold text-slate-600">
-                    Tidak ada transaksi upah untuk tahap {sheetTahap} pada periode {startDate || '-'} s.d {endDate || '-'}
+                <div className="py-16 text-center text-slate-400 space-y-2 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                  <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-500 stroke-[1.5]" />
+                  <p className="text-sm font-bold text-slate-700">
+                    Tidak ada tagihan upah belum dibayar untuk divisi {sheetTahap === 'Jahit' ? 'Penjahit (Sewing)' : sheetTahap === 'Cutting' ? 'Pemotong (Cutting)' : sheetTahap === 'QC' ? 'Quality Control (QC)' : 'Finishing & Packing'}
                   </p>
-                  <p className="text-xs text-slate-400">
-                    Pilih periode tanggal lain atau klik "Sync dari Antrean" di pojok kanan atas.
+                  <p className="text-xs text-slate-500">
+                    Semua upah divisi ini sudah lunas. Silakan cek tab <strong className="text-emerald-700 font-bold">Histori Pembayaran</strong> untuk melihat transaksi yang telah selesai.
                   </p>
                 </div>
               ) : (
@@ -1003,15 +1014,9 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                         <span className="font-black text-slate-900 uppercase text-xs">
                           * Total GAJI (Bersih)
                         </span>
-                        {activeSheetTeamData.pendingCount === 0 ? (
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-full border border-emerald-300">
-                            Lunas
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-black rounded-full border border-rose-300">
-                            {activeSheetTeamData.pendingCount} Belum Bayar
-                          </span>
-                        )}
+                        <span className="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-black rounded-full border border-rose-300">
+                          {activeSheetTeamData.items.length} Order Belum Dibayar
+                        </span>
                       </div>
                       <span className="font-mono font-black text-lg text-emerald-800 bg-emerald-50 px-3 py-0.5 rounded border border-emerald-300 shadow-2xs">
                         Rp {activeSheetTeamData.totalBersih.toLocaleString('id-ID')}
@@ -1167,8 +1172,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
       {/* 4. KONTEN TAB: HISTORI PEMBAYARAN */}
       {activeMainTab === 'histori' && (
         <div className="space-y-3">

@@ -501,7 +501,7 @@ export default function ModalShowAntrean({
                   </div>
 
                   {antrean.tglSerahQc ? (
-                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-[#f8fafc] p-2 rounded-lg border border-slate-200">
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs bg-[#f8fafc] p-2 rounded-lg border border-slate-200">
                       <div>
                         <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Tgl Masuk QC</span>
                         <span className="font-mono font-bold text-slate-800 block text-[11px] mt-0.5">{antrean.tglSerahQc}</span>
@@ -522,8 +522,20 @@ export default function ModalShowAntrean({
                           {Number(antrean.qty).toLocaleString('id-ID')} Pcs
                         </span>
                       </div>
+                      <div>
+                        <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Tarif QC</span>
+                        <span className="font-mono font-bold text-slate-800 block text-[11px] mt-0.5">
+                          Rp {(Number(antrean.tarifQc) || 500).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Total Upah QC</span>
+                        <span className="font-mono font-extrabold text-[#0f766e] text-xs block mt-0.5">
+                          Rp {(Number(antrean.totalBiayaQc) || ((antrean.qty || 0) * (antrean.tarifQc || 500))).toLocaleString('id-ID')}
+                        </span>
+                      </div>
                       {antrean.catatanQc && (
-                        <div className="col-span-2 sm:col-span-4 pt-1 border-t border-slate-200 text-slate-600 text-[10.5px]">
+                        <div className="col-span-2 sm:col-span-6 pt-1 border-t border-slate-200 text-slate-600 text-[10.5px]">
                           <strong>Catatan:</strong> {antrean.catatanQc}
                         </div>
                       )}
@@ -570,7 +582,7 @@ export default function ModalShowAntrean({
                   </div>
 
                   {antrean.tglSerahFinishing ? (
-                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-[#f8fafc] p-2 rounded-lg border border-slate-200">
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs bg-[#f8fafc] p-2 rounded-lg border border-slate-200">
                       <div>
                         <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Tgl Masuk</span>
                         <span className="font-mono font-bold text-slate-800 block text-[11px] mt-0.5">{antrean.tglSerahFinishing}</span>
@@ -591,13 +603,25 @@ export default function ModalShowAntrean({
                           {Number(antrean.qtyRejectQc) > 0 ? `❌ ${Number(antrean.qtyRejectQc).toLocaleString('id-ID')} Pcs` : '0 Pcs'}
                         </span>
                       </div>
+                      <div>
+                        <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Tarif Finishing</span>
+                        <span className="font-mono font-bold text-slate-800 block text-[11px] mt-0.5">
+                          Rp {(Number(antrean.tarifFinishing) || 1000).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Total Upah</span>
+                        <span className="font-mono font-extrabold text-[#047857] text-xs block mt-0.5">
+                          Rp {(Number(antrean.totalBiayaFinishing) || ((Number(antrean.qtyPassQc) || antrean.qty || 0) * (antrean.tarifFinishing || 1000))).toLocaleString('id-ID')}
+                        </span>
+                      </div>
                       {antrean.catatanRejectQc && (
-                        <div className="col-span-2 sm:col-span-4 pt-1 border-t border-slate-200 text-rose-700 text-[10.5px]">
+                        <div className="col-span-2 sm:col-span-6 pt-1 border-t border-slate-200 text-rose-700 text-[10.5px]">
                           <strong>Reject:</strong> {antrean.catatanRejectQc}
                         </div>
                       )}
                       {antrean.catatanFinishing && (
-                        <div className="col-span-2 sm:col-span-4 pt-1 border-t border-slate-200 text-slate-600 text-[10.5px]">
+                        <div className="col-span-2 sm:col-span-6 pt-1 border-t border-slate-200 text-slate-600 text-[10.5px]">
                           <strong>Catatan:</strong> {antrean.catatanFinishing}
                         </div>
                       )}

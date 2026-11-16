@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   X,
   Scissors,
@@ -12,15 +12,21 @@ import {
   Plus,
   User,
   AlertCircle,
-} from 'lucide-react';
-import { api } from '../../services/api';
+} from "lucide-react";
+import { api } from "../../services/api";
 
 // Sub-komponen Input Format Rupiah Rata Kanan
-function RupiahInput({ label, value, onChange, placeholder = "0", required = false }) {
-  const displayValue = Number(value || 0).toLocaleString('id-ID');
+function RupiahInput({
+  label,
+  value,
+  onChange,
+  placeholder = "0",
+  required = false,
+}) {
+  const displayValue = Number(value || 0).toLocaleString("id-ID");
 
   const handleChange = (e) => {
-    const rawVal = e.target.value.replace(/\D/g, '');
+    const rawVal = e.target.value.replace(/\D/g, "");
     const num = rawVal ? parseInt(rawVal, 10) : 0;
     onChange(num);
   };
@@ -66,7 +72,7 @@ function SearchableSelectMobile({
       (opt) =>
         (opt.nama || opt.label || "").toLowerCase().includes(q) ||
         (opt.bagian || "").toLowerCase().includes(q) ||
-        (opt.kategori || "").toLowerCase().includes(q)
+        (opt.kategori || "").toLowerCase().includes(q),
     );
   }, [options, search]);
 
@@ -89,16 +95,16 @@ function SearchableSelectMobile({
       >
         <div className="flex items-center gap-2 truncate">
           <User className="w-4 h-4 text-emerald-700 shrink-0" />
-          <span className="truncate">
-            {value || placeholder}
-          </span>
+          <span className="truncate">{value || placeholder}</span>
           {selectedItem?.bagian && (
             <span className="text-[9.5px] font-semibold text-slate-500 bg-slate-200/80 px-1.5 py-0.2 rounded shrink-0">
               {selectedItem.bagian}
             </span>
           )}
         </div>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
       </button>
 
       {/* Dropdown Menu Pencarian */}
@@ -145,36 +151,46 @@ function SearchableSelectMobile({
                       setIsOpen(false);
                     }}
                     className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-emerald-50/80 transition-colors cursor-pointer ${
-                      isSelected ? "bg-emerald-50 text-emerald-900 font-bold" : "text-slate-700"
+                      isSelected
+                        ? "bg-emerald-50 text-emerald-900 font-bold"
+                        : "text-slate-700"
                     }`}
                   >
                     <div className="flex flex-col">
                       <span className="font-bold">{optVal}</span>
                       {(opt.bagian || opt.kategori) && (
                         <span className="text-[10px] text-slate-400">
-                          {opt.kategori ? `${opt.kategori} • ` : ""}{opt.bagian || ""}
+                          {opt.kategori ? `${opt.kategori} • ` : ""}
+                          {opt.bagian || ""}
                         </span>
                       )}
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
+                    {isSelected && (
+                      <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                    )}
                   </button>
                 );
               })}
 
               {/* Opsi Gunakan Nama Custom jika tidak ada di list */}
-              {search.trim() && !filteredOptions.some(o => (o.nama || o.value || '').toLowerCase() === search.toLowerCase()) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange(search.trim());
-                    setIsOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold flex items-center gap-1.5 transition-colors cursor-pointer border-t border-amber-200"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Gunakan nama: "{search.trim()}"</span>
-                </button>
-              )}
+              {search.trim() &&
+                !filteredOptions.some(
+                  (o) =>
+                    (o.nama || o.value || "").toLowerCase() ===
+                    search.toLowerCase(),
+                ) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(search.trim());
+                      setIsOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold flex items-center gap-1.5 transition-colors cursor-pointer border-t border-amber-200"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Gunakan nama: "{search.trim()}"</span>
+                  </button>
+                )}
 
               {filteredOptions.length === 0 && !search.trim() && (
                 <div className="p-4 text-center text-slate-400 text-xs">
@@ -199,7 +215,7 @@ export default function LanjutTahapModalMobile({
 }) {
   if (!isOpen || !item) return null;
 
-  const currentStatus = item.status || item.statusTahapan || 'Menunggu Cutting';
+  const currentStatus = item.status || item.statusTahapan || "Menunggu Cutting";
   const qty = Number(item.qty ?? item.targetQty ?? 0);
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -211,87 +227,106 @@ export default function LanjutTahapModalMobile({
   // Karyawan per bagian (fallback ke semua karyawan jika filter kosong)
   const cuttingEmployees = useMemo(() => {
     const list = employees.filter((e) => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('cut') || b.includes('pola');
+      const b = (e.bagian || "").toLowerCase();
+      return b.includes("cut") || b.includes("pola");
     });
     return list.length > 0 ? list : employees;
   }, [employees]);
 
   const jahitEmployees = useMemo(() => {
     const list = employees.filter((e) => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('jahit') || b.includes('sew') || (e.kategori || '').toLowerCase() === 'makloon';
+      const b = (e.bagian || "").toLowerCase();
+      return (
+        b.includes("jahit") ||
+        b.includes("sew") ||
+        (e.kategori || "").toLowerCase() === "makloon"
+      );
     });
     return list.length > 0 ? list : employees;
   }, [employees]);
 
   const qcEmployees = useMemo(() => {
     const list = employees.filter((e) => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('qc') || b.includes('quality') || b.includes('control') || b.includes('periksa');
+      const b = (e.bagian || "").toLowerCase();
+      return (
+        b.includes("qc") ||
+        b.includes("quality") ||
+        b.includes("control") ||
+        b.includes("periksa")
+      );
     });
     return list.length > 0 ? list : employees;
   }, [employees]);
 
   const finishingEmployees = useMemo(() => {
     const list = employees.filter((e) => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('finish') || b.includes('pack') || b.includes('lipat');
+      const b = (e.bagian || "").toLowerCase();
+      return b.includes("finish") || b.includes("pack") || b.includes("lipat");
     });
     return list.length > 0 ? list : employees;
   }, [employees]);
 
   // State Form
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
   // 1. Data Cutting
-  const defaultTarifPotong = matchedProduct?.hargaPotong || matchedProduct?.harga_potong || item.tarifCutting || 1800;
+  const defaultTarifPotong =
+    matchedProduct?.hargaPotong ||
+    matchedProduct?.harga_potong ||
+    item.tarifCutting ||
+    1800;
   const [tglSerahCutting, setTglSerahCutting] = useState(todayStr);
   const [timCutting, setTimCutting] = useState(
-    cuttingEmployees[0]?.nama || item.timCutting || 'Tim Cutting 1'
+    cuttingEmployees[0]?.nama || item.timCutting || "Tim Cutting 1",
   );
   const [tarifCutting, setTarifCutting] = useState(defaultTarifPotong);
-  const [catatanCutting, setCatatanCutting] = useState(item.catatanCutting || '');
+  const [catatanCutting, setCatatanCutting] = useState(
+    item.catatanCutting || "",
+  );
 
   // 2. Data Jahit
   const [tglSerahJahit, setTglSerahJahit] = useState(todayStr);
   const [timJahit, setTimJahit] = useState(
-    jahitEmployees[0]?.nama || item.timJahit || 'Tim Jahit 1'
+    jahitEmployees[0]?.nama || item.timJahit || "Tim Jahit 1",
   );
   const [tarifJahit, setTarifJahit] = useState(item.tarifJahit || 3500);
-  const [catatanJahit, setCatatanJahit] = useState(item.catatanJahit || '');
+  const [catatanJahit, setCatatanJahit] = useState(item.catatanJahit || "");
 
   // 3. Data QC
   const [tglSerahQc, setTglSerahQc] = useState(todayStr);
   const [timQc, setTimQc] = useState(
-    qcEmployees[0]?.nama || item.timQc || 'Tim QC 1'
+    qcEmployees[0]?.nama || item.timQc || "Tim QC 1",
   );
-  const [catatanQc, setCatatanQc] = useState(item.catatanQc || '');
+  const [tarifQc, setTarifQc] = useState(item.tarifQc || 500);
+  const [catatanQc, setCatatanQc] = useState(item.catatanQc || "");
 
   // 4. Data Finishing
   const [qtyPassQc, setQtyPassQc] = useState(qty);
   const [qtyRejectQc, setQtyRejectQc] = useState(0);
-  const [catatanRejectQc, setCatatanRejectQc] = useState('');
+  const [catatanRejectQc, setCatatanRejectQc] = useState("");
   const [tglSerahFinishing, setTglSerahFinishing] = useState(todayStr);
   const [timFinishing, setTimFinishing] = useState(
-    finishingEmployees[0]?.nama || item.timFinishing || 'Tim Finishing 1'
+    finishingEmployees[0]?.nama || item.timFinishing || "Tim Finishing 1",
   );
-  const [catatanFinishing, setCatatanFinishing] = useState(item.catatanFinishing || '');
+  const [tarifFinishing, setTarifFinishing] = useState(item.tarifFinishing || 1000);
+  const [catatanFinishing, setCatatanFinishing] = useState(
+    item.catatanFinishing || "",
+  );
 
   // 5. Data Gudang Jadi
-  const [lokasiRak, setLokasiRak] = useState('RAK-GUDANG-A1');
-  const [petugasGudang, setPetugasGudang] = useState('Admin Gudang Jadi');
-  const [catatanGudang, setCatatanGudang] = useState('');
+  const [lokasiRak, setLokasiRak] = useState("RAK-GUDANG-A1");
+  const [petugasGudang, setPetugasGudang] = useState("Admin Gudang Jadi");
+  const [catatanGudang, setCatatanGudang] = useState("");
 
   // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg('');
+    setErrorMsg("");
 
     try {
-      if (currentStatus === 'Menunggu Cutting' || currentStatus === 'Draft') {
+      if (currentStatus === "Menunggu Cutting" || currentStatus === "Draft") {
         await api.serahCutting({
           ids: [item.id],
           tglSerahCutting,
@@ -299,7 +334,7 @@ export default function LanjutTahapModalMobile({
           tarifCutting: Number(tarifCutting),
           catatanCutting,
         });
-      } else if (currentStatus === 'Proses Cutting') {
+      } else if (currentStatus === "Proses Cutting") {
         await api.serahJahit({
           ids: [item.id],
           tglSerahJahit,
@@ -307,14 +342,15 @@ export default function LanjutTahapModalMobile({
           tarifJahit: Number(tarifJahit),
           catatanJahit,
         });
-      } else if (currentStatus === 'Proses Jahit') {
+      } else if (currentStatus === "Proses Jahit") {
         await api.serahQc({
           ids: [item.id],
           tglSerahQc,
           timQc,
+          tarifQc: Number(tarifQc),
           catatanQc,
         });
-      } else if (currentStatus === 'Proses QC') {
+      } else if (currentStatus === "Proses QC") {
         await api.serahFinishing({
           ids: [item.id],
           qtyPassQc: Number(qtyPassQc),
@@ -322,9 +358,10 @@ export default function LanjutTahapModalMobile({
           catatanRejectQc,
           tglSerahFinishing,
           timFinishing,
+          tarifFinishing: Number(tarifFinishing),
           catatanFinishing,
         });
-      } else if (currentStatus === 'Proses Finishing') {
+      } else if (currentStatus === "Proses Finishing") {
         await api.selesaiFinishing({
           id: item.id,
           noAntrian: item.noAntrian || `ANT-${item.id}`,
@@ -339,7 +376,7 @@ export default function LanjutTahapModalMobile({
       onSuccess();
       onClose();
     } catch (err) {
-      setErrorMsg(err.message || 'Gagal memproses tahapan produksi');
+      setErrorMsg(err.message || "Gagal memproses tahapan produksi");
     } finally {
       setLoading(false);
     }
@@ -352,22 +389,38 @@ export default function LanjutTahapModalMobile({
         <div className="px-5 py-4 bg-gradient-to-r from-[#064e3b] via-[#046a52] to-[#0f766e] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-emerald-200 shadow-xs">
-              {currentStatus === 'Menunggu Cutting' && <Scissors className="w-5 h-5" />}
-              {currentStatus === 'Proses Cutting' && <Shirt className="w-5 h-5" />}
-              {currentStatus === 'Proses Jahit' && <CheckCircle2 className="w-5 h-5" />}
-              {currentStatus === 'Proses QC' && <Sparkles className="w-5 h-5" />}
-              {currentStatus === 'Proses Finishing' && <Warehouse className="w-5 h-5" />}
+              {currentStatus === "Menunggu Cutting" && (
+                <Scissors className="w-5 h-5" />
+              )}
+              {currentStatus === "Proses Cutting" && (
+                <Shirt className="w-5 h-5" />
+              )}
+              {currentStatus === "Proses Jahit" && (
+                <CheckCircle2 className="w-5 h-5" />
+              )}
+              {currentStatus === "Proses QC" && (
+                <Sparkles className="w-5 h-5" />
+              )}
+              {currentStatus === "Proses Finishing" && (
+                <Warehouse className="w-5 h-5" />
+              )}
             </div>
             <div>
               <h3 className="text-sm font-extrabold tracking-wide">
-                {currentStatus === 'Menunggu Cutting' && 'Serah ke Tim Cutting (Tahap 2)'}
-                {currentStatus === 'Proses Cutting' && 'Serah ke Tim Penjahit (Tahap 3)'}
-                {currentStatus === 'Proses Jahit' && 'Serah ke Pemeriksaan QC (Tahap 4)'}
-                {currentStatus === 'Proses QC' && 'Hasil QC & Serah Finishing (Tahap 5)'}
-                {currentStatus === 'Proses Finishing' && 'Selesai & Masuk Gudang Jadi (Tahap 6)'}
+                {currentStatus === "Menunggu Cutting" &&
+                  "Serah ke Tim Cutting (Tahap 2)"}
+                {currentStatus === "Proses Cutting" &&
+                  "Serah ke Tim Penjahit (Tahap 3)"}
+                {currentStatus === "Proses Jahit" &&
+                  "Serah ke Pemeriksaan QC (Tahap 4)"}
+                {currentStatus === "Proses QC" &&
+                  "Hasil QC & Serah Finishing (Tahap 5)"}
+                {currentStatus === "Proses Finishing" &&
+                  "Selesai & Masuk Gudang Jadi (Tahap 6)"}
               </h3>
               <p className="text-[10px] text-emerald-100/90 font-medium">
-                No: {item.noAntrian || `ANT-${item.id}`} • {item.namaProduk} ({qty} Pcs)
+                No: {item.noAntrian || `ANT-${item.id}`} • {item.namaProduk} (
+                {qty} Pcs)
               </p>
             </div>
           </div>
@@ -392,7 +445,10 @@ export default function LanjutTahapModalMobile({
         </div>
 
         {/* Body Form Bertahap */}
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-3.5 flex-1">
+        <form
+          onSubmit={handleSubmit}
+          className="p-5 overflow-y-auto space-y-3.5 flex-1"
+        >
           {errorMsg && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2 text-rose-700 font-bold text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -401,7 +457,8 @@ export default function LanjutTahapModalMobile({
           )}
 
           {/* 1. TAHAP CUTTING */}
-          {(currentStatus === 'Menunggu Cutting' || currentStatus === 'Draft') && (
+          {(currentStatus === "Menunggu Cutting" ||
+            currentStatus === "Draft") && (
             <>
               {/* Searchable Select Petugas Cutting */}
               <SearchableSelectMobile
@@ -437,9 +494,11 @@ export default function LanjutTahapModalMobile({
 
               {/* Box Total Estimasi Biaya */}
               <div className="p-3 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-between text-xs">
-                <span className="font-bold text-sky-800">Total Biaya Cutting:</span>
+                <span className="font-bold text-sky-800">
+                  Total Biaya Cutting:
+                </span>
                 <span className="font-mono font-black text-sm text-sky-950">
-                  Rp {(qty * Number(tarifCutting)).toLocaleString('id-ID')}
+                  Rp {(qty * Number(tarifCutting)).toLocaleString("id-ID")}
                 </span>
               </div>
 
@@ -459,7 +518,7 @@ export default function LanjutTahapModalMobile({
           )}
 
           {/* 2. TAHAP JAHIT */}
-          {currentStatus === 'Proses Cutting' && (
+          {currentStatus === "Proses Cutting" && (
             <>
               {/* Searchable Select Penjahit */}
               <SearchableSelectMobile
@@ -495,9 +554,11 @@ export default function LanjutTahapModalMobile({
 
               {/* Box Total Estimasi Biaya Jahit */}
               <div className="p-3 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-between text-xs">
-                <span className="font-bold text-purple-800">Total Biaya Jahit:</span>
+                <span className="font-bold text-purple-800">
+                  Total Biaya Jahit:
+                </span>
                 <span className="font-mono font-black text-sm text-purple-950">
-                  Rp {(qty * Number(tarifJahit)).toLocaleString('id-ID')}
+                  Rp {(qty * Number(tarifJahit)).toLocaleString("id-ID")}
                 </span>
               </div>
 
@@ -517,7 +578,7 @@ export default function LanjutTahapModalMobile({
           )}
 
           {/* 3. TAHAP QC */}
-          {currentStatus === 'Proses Jahit' && (
+          {currentStatus === "Proses Jahit" && (
             <>
               {/* Searchable Select Petugas QC */}
               <SearchableSelectMobile
@@ -527,6 +588,23 @@ export default function LanjutTahapModalMobile({
                 options={qcEmployees}
                 placeholder="Pilih atau cari petugas QC..."
               />
+
+              {/* Input Tarif Borongan QC */}
+              <RupiahInput
+                label="Tarif Upah QC (per Pcs):"
+                value={tarifQc}
+                onChange={setTarifQc}
+                placeholder="500"
+              />
+
+              <div className="p-2.5 bg-indigo-50/70 rounded-xl border border-indigo-100 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-indigo-900">
+                  Total Estimasi Upah QC ({qty} Pcs):
+                </span>
+                <span className="text-xs font-black font-mono text-indigo-700">
+                  Rp {(qty * Number(tarifQc || 0)).toLocaleString("id-ID")}
+                </span>
+              </div>
 
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
@@ -557,7 +635,7 @@ export default function LanjutTahapModalMobile({
           )}
 
           {/* 4. TAHAP FINISHING (PASCA QC) */}
-          {currentStatus === 'Proses QC' && (
+          {currentStatus === "Proses QC" && (
             <>
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -617,6 +695,23 @@ export default function LanjutTahapModalMobile({
                 placeholder="Pilih atau cari tim finishing..."
               />
 
+              {/* Input Tarif Borongan Finishing */}
+              <RupiahInput
+                label="Tarif Upah Finishing (per Pcs):"
+                value={tarifFinishing}
+                onChange={setTarifFinishing}
+                placeholder="1.000"
+              />
+
+              <div className="p-2.5 bg-teal-50/70 rounded-xl border border-teal-100 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-teal-900">
+                  Total Estimasi Upah Finishing ({qtyPassQc || qty} Pcs):
+                </span>
+                <span className="text-xs font-black font-mono text-teal-700">
+                  Rp {((qtyPassQc || qty) * Number(tarifFinishing || 0)).toLocaleString("id-ID")}
+                </span>
+              </div>
+
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                   Tgl Serah Finishing:
@@ -633,7 +728,7 @@ export default function LanjutTahapModalMobile({
           )}
 
           {/* 5. TAHAP GUDANG JADI */}
-          {currentStatus === 'Proses Finishing' && (
+          {currentStatus === "Proses Finishing" && (
             <>
               <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between">
                 <span className="text-[10.5px] font-bold text-emerald-800">
@@ -708,11 +803,13 @@ export default function LanjutTahapModalMobile({
               ) : (
                 <>
                   <span>
-                    {currentStatus === 'Menunggu Cutting' && 'Serahkan ke Cutting'}
-                    {currentStatus === 'Proses Cutting' && 'Serahkan ke Penjahit'}
-                    {currentStatus === 'Proses Jahit' && 'Mulai QC'}
-                    {currentStatus === 'Proses QC' && 'Serah Finishing'}
-                    {currentStatus === 'Proses Finishing' && 'Simpan ke Gudang'}
+                    {currentStatus === "Menunggu Cutting" &&
+                      "Serahkan ke Cutting"}
+                    {currentStatus === "Proses Cutting" &&
+                      "Serahkan ke Penjahit"}
+                    {currentStatus === "Proses Jahit" && "Mulai QC"}
+                    {currentStatus === "Proses QC" && "Serah Finishing"}
+                    {currentStatus === "Proses Finishing" && "Simpan ke Gudang"}
                   </span>
                   <span>→</span>
                 </>

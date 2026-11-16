@@ -644,6 +644,7 @@ export default function Antrean({
     const finalTim = qcForm.timQc || 'Tim QC';
     const targetIds = qcTargetItems.map(item => item.id);
     const totalQty = qcTargetItems.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+    const tarif = Number(qcForm.tarifQc ?? 500);
 
     try {
       try {
@@ -651,6 +652,7 @@ export default function Antrean({
           ids: targetIds,
           tglSerahQc: qcForm.tglSerahQc,
           timQc: finalTim,
+          tarifQc: tarif,
           catatanQc: qcForm.catatanQc,
           statusQc: qcForm.statusQc || 'Pemeriksaan'
         });
@@ -661,11 +663,14 @@ export default function Antrean({
       setAntreanList(prev => {
         const next = prev.map(item => {
           if (targetIds.includes(item.id)) {
+            const itemQty = Number(item.qty) || 0;
             return {
               ...item,
               status: 'Proses QC',
               tglSerahQc: qcForm.tglSerahQc,
               timQc: finalTim,
+              tarifQc: tarif,
+              totalBiayaQc: itemQty * tarif,
               catatanQc: qcForm.catatanQc,
               statusQc: qcForm.statusQc || 'Pemeriksaan'
             };
@@ -743,6 +748,7 @@ export default function Antrean({
     const totalQty = finishingTargetItems.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
     const passQty = Number(finishingForm.qtyPassQc) || 0;
     const rejectQty = Number(finishingForm.qtyRejectQc) || 0;
+    const tarif = Number(finishingForm.tarifFinishing ?? 1000);
 
     try {
       let apiResult = null;
@@ -754,6 +760,7 @@ export default function Antrean({
           catatanRejectQc: finishingForm.catatanRejectQc,
           tglSerahFinishing: finishingForm.tglSerahFinishing,
           timFinishing: finalTim,
+          tarifFinishing: tarif,
           catatanFinishing: finishingForm.catatanFinishing
         });
 

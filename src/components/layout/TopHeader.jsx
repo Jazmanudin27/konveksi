@@ -105,12 +105,6 @@ export default function TopHeader({ onToggleSidebar, dbConnected, onSwitchToMobi
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span>{timeStr}</span>
         </div>
-
-        {/* Tombol Pasang / Install Aplikasi */}
-        <button className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold shadow-xs transition-all cursor-pointer border border-emerald-500/40">
-          <Download className="w-3.5 h-3.5" />
-          <span>Install Aplikasi</span>
-        </button>
       </div>
     </header>
   );

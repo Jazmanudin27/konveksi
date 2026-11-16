@@ -603,6 +603,33 @@ export default function ModalSerahFinishing({
                   </div>
                 </div>
 
+                {/* TARIF UPAH FINISHING */}
+                <div className="grid grid-cols-2 gap-3 p-2 bg-teal-50/60 rounded-xl border border-teal-100">
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-teal-900 mb-0.5">
+                      Tarif Upah Finishing (per Pcs)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1 text-xs font-bold text-teal-500">Rp</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={form.tarifFinishing ?? 1000}
+                        onChange={e => setForm(prev => ({ ...prev, tarifFinishing: Number(e.target.value) }))}
+                        className="w-full h-7 pl-8 pr-2 rounded-lg border border-teal-200 text-xs font-mono font-bold text-slate-800 bg-white focus:outline-none focus:border-teal-600"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-teal-900 mb-0.5">
+                      Total Estimasi Upah Finishing ({qtyPass} Pcs)
+                    </label>
+                    <div className="h-7 flex items-center px-2.5 rounded-lg bg-white border border-teal-200 font-mono font-black text-xs text-teal-800">
+                      Rp {(qtyPass * (Number(form.tarifFinishing ?? 1000) || 0)).toLocaleString('id-ID')}
+                    </div>
+                  </div>
+                </div>
+
                 {/* CATATAN FINISHING */}
                 <div className="pt-1.5 border-t border-slate-200">
                   <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">

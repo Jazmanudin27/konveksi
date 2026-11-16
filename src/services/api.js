@@ -96,6 +96,16 @@ export const api = {
   createSize: (data) => request('/sizes', { method: 'POST', body: JSON.stringify(data) }),
   updateSize: (id, data) => request(`/sizes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSize: (id) => request(`/sizes/${id}`, { method: 'DELETE' }),
+
+  // Pembayaran Upah Pemotong, Penjahit, QC & Finishing
+  getPembayaranUpah: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/pembayaran-upah${q ? `?${q}` : ''}`);
+  },
+  getPembayaranUpahRekap: () => request('/pembayaran-upah/rekap'),
+  bayarUpah: (data) => request('/pembayaran-upah/bayar', { method: 'POST', body: JSON.stringify(data) }),
+  batalBayarUpah: (id) => request('/pembayaran-upah/batal-bayar', { method: 'POST', body: JSON.stringify({ id }) }),
+  syncUpahFromAntrean: () => request('/pembayaran-upah/sync-from-antrean', { method: 'POST' }),
 };
 
 

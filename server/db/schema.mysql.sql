@@ -165,3 +165,28 @@ CREATE TABLE IF NOT EXISTS sizes (
   urutan INT DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pembayaran_upah (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  no_pembayaran VARCHAR(60) NOT NULL UNIQUE,
+  antrean_id INT NOT NULL,
+  no_antrian VARCHAR(60) NOT NULL,
+  sku VARCHAR(60) NOT NULL,
+  nama_produk VARCHAR(150) NOT NULL,
+  tahapan VARCHAR(50) NOT NULL,
+  nama_petugas VARCHAR(150) NOT NULL,
+  qty INT NOT NULL DEFAULT 0,
+  tarif_per_pcs DECIMAL(12,2) NOT NULL DEFAULT 0,
+  total_upah DECIMAL(14,2) NOT NULL DEFAULT 0,
+  status_bayar VARCHAR(30) NOT NULL DEFAULT 'Belum Lunas',
+  tgl_bayar VARCHAR(30),
+  metode_bayar VARCHAR(50),
+  catatan TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_upah_antrean (antrean_id),
+  INDEX idx_upah_noantrian (no_antrian),
+  INDEX idx_upah_tahapan (tahapan),
+  INDEX idx_upah_petugas (nama_petugas),
+  INDEX idx_upah_status (status_bayar)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

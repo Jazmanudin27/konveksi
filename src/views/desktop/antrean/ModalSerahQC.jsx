@@ -431,6 +431,33 @@ export default function ModalSerahQC({
               </div>
             </div>
 
+            {/* TARIF UPAH QC */}
+            <div className="grid grid-cols-2 gap-3 p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-100">
+              <div>
+                <label className="block text-[11px] font-bold text-indigo-900 mb-1">
+                  Tarif Upah QC (per Pcs)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1.5 text-xs font-bold text-indigo-400">Rp</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.tarifQc ?? 500}
+                    onChange={e => setForm(prev => ({ ...prev, tarifQc: Number(e.target.value) }))}
+                    className="w-full h-8 pl-8 pr-2.5 rounded-lg border border-indigo-200 text-xs font-mono font-bold text-slate-800 bg-white focus:outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-indigo-900 mb-1">
+                  Total Estimasi Upah QC ({totalVolume} Pcs)
+                </label>
+                <div className="h-8 flex items-center px-3 rounded-lg bg-white border border-indigo-200 font-mono font-black text-sm text-indigo-800">
+                  Rp {(totalVolume * (Number(form.tarifQc ?? 500) || 0)).toLocaleString('id-ID')}
+                </div>
+              </div>
+            </div>
+
             {/* CATATAN / INSTRUKSI INSPEKSI */}
             <div className="pt-2 border-t border-slate-200">
               <label className="block text-[11px] font-bold text-slate-700 mb-1">

@@ -100,6 +100,30 @@ async function initMysql() {
       );
     }
 
+    // Pastikan kolom tarif & status bayar QC / Finishing tersedia di antrean
+    const extraCols = [
+      { name: 'tarif_qc', def: 'DECIMAL(12,2) DEFAULT 0' },
+      { name: 'total_biaya_qc', def: 'DECIMAL(14,2) DEFAULT 0' },
+      { name: 'tarif_finishing', def: 'DECIMAL(12,2) DEFAULT 0' },
+      { name: 'total_biaya_finishing', def: 'DECIMAL(14,2) DEFAULT 0' },
+      { name: 'status_bayar_cutting', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
+      { name: 'status_bayar_jahit', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
+      { name: 'status_bayar_qc', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
+      { name: 'status_bayar_finishing', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
+    ];
+
+    for (const col of extraCols) {
+      try {
+        const [colCheck] = await connection.query(
+          "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'antrean' AND COLUMN_NAME = ? AND TABLE_SCHEMA = DATABASE()",
+          [col.name]
+        );
+        if (!colCheck || colCheck.length === 0) {
+          await connection.query(`ALTER TABLE antrean ADD COLUMN ${col.name} ${col.def}`);
+        }
+      } catch (_) {}
+    }
+
     connection.release();
   } catch (err) {
     console.error("❌ Gagal inisialisasi MySQL Database:", err.message);

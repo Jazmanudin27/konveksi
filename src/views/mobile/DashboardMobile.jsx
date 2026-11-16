@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Layers,
   Sparkles,
+  Coins,
 } from 'lucide-react';
 
 export default function DashboardMobile({
@@ -282,7 +283,20 @@ export default function DashboardMobile({
               </span>
             </button>
 
-            {/* 8. Mode PC Desktop (Dark Slate) */}
+            {/* 8. Pembayaran Upah (Emas / Kuning) */}
+            <button
+              onClick={() => onNavigate('pembayaran-upah')}
+              className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
+            >
+              <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#d97706] to-[#f59e0b] text-white flex items-center justify-center shadow-md shadow-amber-500/25">
+                <Coins className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-700 tracking-tight leading-tight">
+                Bayar Upah
+              </span>
+            </button>
+
+            {/* 9. Mode PC Desktop (Dark Slate) */}
             <button
               onClick={onSwitchToDesktop}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"

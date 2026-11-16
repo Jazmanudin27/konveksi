@@ -39,6 +39,14 @@ async function getAntreanSelect(whereClause = '', params = []) {
       a.tim_finishing as timFinishing,
       a.catatan_finishing as catatanFinishing,
       a.tgl_serah_gudang as tglSerahGudang,
+      a.tarif_qc as tarifQc,
+      a.total_biaya_qc as totalBiayaQc,
+      a.tarif_finishing as tarifFinishing,
+      a.total_biaya_finishing as totalBiayaFinishing,
+      a.status_bayar_cutting as statusBayarCutting,
+      a.status_bayar_jahit as statusBayarJahit,
+      a.status_bayar_qc as statusBayarQc,
+      a.status_bayar_finishing as statusBayarFinishing,
       a.created_at as createdAt,
       p.nama_produk as namaProduk,
       p.kategori,
@@ -50,6 +58,57 @@ async function getAntreanSelect(whereClause = '', params = []) {
     ${whereClause}
   `;
   return await db.all(sql, params);
+}
+
+// Helper auto No Pembayaran
+function generateNoPembayaran() {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const rand = Math.floor(100 + Math.random() * 900);
+  return `PAY-${dateStr}-${rand}`;
+}
+
+// Helper sinkronisasi data upah otomatis ke tabel pembayaran_upah
+async function upsertPembayaranUpah(connection, antreanId, tahapan, namaPetugas, qty, tarifPerPcs, totalUpah) {
+  try {
+    const [antreanRows] = await connection.query(
+      "SELECT a.no_antrian, a.sku, p.nama_produk FROM antrean a LEFT JOIN products p ON a.sku = p.sku WHERE a.id = ?",
+      [antreanId]
+    );
+    const ant = antreanRows[0];
+    if (!ant) return;
+
+    const [existRows] = await connection.query(
+      "SELECT id, status_bayar FROM pembayaran_upah WHERE antrean_id = ? AND tahapan = ?",
+      [antreanId, tahapan]
+    );
+
+    const safeQty = Number(qty) || 0;
+    const safeTarif = Number(tarifPerPcs) || 0;
+    const safeTotal = Number(totalUpah) || (safeQty * safeTarif);
+
+    if (existRows && existRows.length > 0) {
+      const existing = existRows[0];
+      await connection.query(
+        `UPDATE pembayaran_upah 
+         SET nama_petugas = ?, qty = ?, tarif_per_pcs = ?, total_upah = ? 
+         WHERE id = ?`,
+        [namaPetugas, safeQty, safeTarif, safeTotal, existing.id]
+      );
+    } else {
+      await connection.query(
+        `INSERT INTO pembayaran_upah (
+          no_pembayaran, antrean_id, no_antrian, sku, nama_produk,
+          tahapan, nama_petugas, qty, tarif_per_pcs, total_upah, status_bayar
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Lunas')`,
+        [
+          generateNoPembayaran(), antreanId, ant.no_antrian, ant.sku, ant.nama_produk || ant.sku,
+          tahapan, namaPetugas, safeQty, safeTarif, safeTotal
+        ]
+      );
+    }
+  } catch (err) {
+    console.warn('Gagal upsert pembayaran_upah:', err.message);
+  }
 }
 
 // 1. GET all antrean
@@ -356,6 +415,11 @@ router.post('/serah-cutting', async (req, res) => {
         catatanCutting || null,
         id
       ]);
+
+      const [antRow] = await connection.query('SELECT qty FROM antrean WHERE id = ?', [id]);
+      const cutQty = antRow[0]?.qty || 1;
+      const cutTarif = Number(tarifCutting) || 0;
+      await upsertPembayaranUpah(connection, id, 'Cutting', timCutting || 'Tim Cutting', cutQty, cutTarif, cutQty * cutTarif);
     }
 
     await connection.commit();
@@ -402,6 +466,11 @@ router.post('/serah-jahit', async (req, res) => {
         catatanJahit || null,
         id
       ]);
+
+      const [antRow] = await connection.query('SELECT qty FROM antrean WHERE id = ?', [id]);
+      const jahitQty = antRow[0]?.qty || 1;
+      const jahitTarif = Number(tarifJahit) || 0;
+      await upsertPembayaranUpah(connection, id, 'Jahit', timJahit || 'Tim Jahit', jahitQty, jahitTarif, jahitQty * jahitTarif);
     }
 
     await connection.commit();
@@ -420,11 +489,12 @@ router.post('/serah-jahit', async (req, res) => {
 
 // 6. POST serah-qc
 router.post('/serah-qc', async (req, res) => {
-  const { ids, tglSerahQc, timQc, catatanQc, statusQc } = req.body;
+  const { ids, tglSerahQc, timQc, catatanQc, statusQc, tarifQc } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Daftar antrean wajib dipilih.' });
   }
 
+  const safeTarifQc = Number(tarifQc) || 500;
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -437,15 +507,23 @@ router.post('/serah-qc', async (req, res) => {
           tgl_serah_qc = ?,
           tim_qc = ?,
           catatan_qc = ?,
-          status_qc = ?
+          status_qc = ?,
+          tarif_qc = ?,
+          total_biaya_qc = (qty * ?)
         WHERE id = ?
       `, [
         tglSerahQc || new Date().toISOString().slice(0, 10),
         timQc || 'Tim QC (Pemeriksaan)',
         catatanQc || null,
         statusQc || 'Pemeriksaan',
+        safeTarifQc,
+        safeTarifQc,
         id
       ]);
+
+      const [antRow] = await connection.query('SELECT qty FROM antrean WHERE id = ?', [id]);
+      const qcQty = antRow[0]?.qty || 1;
+      await upsertPembayaranUpah(connection, id, 'QC', timQc || 'Tim QC', qcQty, safeTarifQc, qcQty * safeTarifQc);
     }
 
     await connection.commit();
@@ -471,13 +549,15 @@ router.post('/serah-finishing', async (req, res) => {
     catatanRejectQc,
     tglSerahFinishing,
     timFinishing,
-    catatanFinishing
+    catatanFinishing,
+    tarifFinishing
   } = req.body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Daftar antrean wajib dipilih.' });
   }
 
+  const safeTarifFin = Number(tarifFinishing) || 1000;
   const connection = await pool.getConnection();
   try {
     const pass = Math.max(0, Number(qtyPassQc) || 0);
@@ -539,6 +619,8 @@ router.post('/serah-finishing', async (req, res) => {
             tgl_serah_finishing = ?,
             tim_finishing = ?,
             catatan_finishing = ?,
+            tarif_finishing = ?,
+            total_biaya_finishing = (? * ?),
             total_biaya_cutting = (? * COALESCE(tarif_cutting, 0)),
             total_biaya_jahit = (? * COALESCE(tarif_jahit, 0))
           WHERE id = ?
@@ -550,10 +632,14 @@ router.post('/serah-finishing', async (req, res) => {
           tglSerahFinishing || new Date().toISOString().slice(0, 10),
           timFinishing || 'Tim Finishing & Packing',
           catatanFinishing || null,
+          safeTarifFin,
+          itemPass,
+          safeTarifFin,
           itemPass,
           itemPass,
           id
         ]);
+        await upsertPembayaranUpah(connection, id, 'Finishing', timFinishing || 'Tim Finishing & Packing', itemPass, safeTarifFin, itemPass * safeTarifFin);
         affectedIds.push(id);
 
         // Pecahan antrean retur
@@ -623,15 +709,21 @@ router.post('/serah-finishing', async (req, res) => {
             catatan_reject_qc = NULL,
             tgl_serah_finishing = ?,
             tim_finishing = ?,
-            catatan_finishing = ?
+            catatan_finishing = ?,
+            tarif_finishing = ?,
+            total_biaya_finishing = (? * ?)
           WHERE id = ?
         `, [
           origQty,
           tglSerahFinishing || new Date().toISOString().slice(0, 10),
           timFinishing || 'Tim Finishing & Packing',
           catatanFinishing || null,
+          safeTarifFin,
+          origQty,
+          safeTarifFin,
           id
         ]);
+        await upsertPembayaranUpah(connection, id, 'Finishing', timFinishing || 'Tim Finishing & Packing', origQty, safeTarifFin, origQty * safeTarifFin);
         affectedIds.push(id);
       }
     }

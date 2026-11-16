@@ -19,6 +19,7 @@ import {
   ListOrdered,
   Warehouse,
   FileSpreadsheet,
+  Coins,
   X
 } from 'lucide-react';
 
@@ -231,6 +232,18 @@ export default function Sidebar({ isOpen, onClose, activeMenu, onSelectMenu }) {
               >
                 <Warehouse className="w-4 h-4 shrink-0" />
                 <span>Mutasi Gudang Jadi</span>
+              </button>
+
+              <button
+                onClick={() => handleMenuClick('pembayaran-upah')}
+                className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                  activeMenu === 'pembayaran-upah'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm shadow-emerald-950'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                <Coins className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>Pembayaran Upah</span>
               </button>
             </div>
           </div>

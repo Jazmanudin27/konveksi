@@ -745,8 +745,6 @@ export default function Kasbon() {
           </div>
         </div>
       )}
-        </div>
-      )}
 
       {/* MODAL 2: RIWAYAT POTONGAN UPAH */}
       {isHistoryModalOpen && selectedKasbon && (

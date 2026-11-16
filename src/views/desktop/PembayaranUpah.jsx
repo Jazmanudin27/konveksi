@@ -968,7 +968,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                         SLIP GAJI EMRA PRODUCTION
                       </h2>
                       <p className="text-[11px] text-slate-500 font-medium">
-                        Divisi: <strong className="text-emerald-800 uppercase">{sheetTahap === 'Jahit' ? 'Penjahit (Sewing)' : `Tim ${sheetTahap}`}</strong>
+                        Divisi: <strong className="text-emerald-800 uppercase">{sheetTahap === 'Jahit' ? 'Penjahit (Sewing)' : sheetTahap === 'Cutting' ? 'Pemotong (Cutting)' : sheetTahap === 'QC' ? 'Quality Control (QC)' : 'Finishing & Packing'}</strong>
                       </p>
                     </div>
                   </div>
@@ -987,11 +987,13 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                           className="w-full h-8 px-2.5 bg-amber-50/80 border-2 border-amber-300 rounded-lg text-xs font-black text-amber-950 focus:outline-none focus:border-amber-500 cursor-pointer"
                         >
                           {sheetTeamsList.length === 0 ? (
-                            <option value="">(Tidak ada tim pada periode ini)</option>
+                            <option value="">
+                              {sheetTahap === 'Jahit' ? '(Tidak ada penjahit pada periode ini)' : '(Tidak ada tim pada periode ini)'}
+                            </option>
                           ) : (
                             sheetTeamsList.map((t) => (
                               <option key={t.namaPetugas} value={t.namaPetugas}>
-                                {t.namaPetugas} — {t.totalQty} Pcs (Rp {t.totalBersih.toLocaleString('id-ID')}) {t.pendingCount > 0 ? `[${t.pendingCount} Belum Bayar]` : '[Lunas]'}
+                                {t.namaPetugas}
                               </option>
                             ))
                           )}
@@ -2149,7 +2151,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                           >
                             {rekapKaryawanList.map((k) => (
                               <option key={k.namaPetugas} value={k.namaPetugas}>
-                                {k.namaPetugas} ({k.tahapan})
+                                {k.namaPetugas}
                               </option>
                             ))}
                           </select>

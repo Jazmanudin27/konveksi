@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { api } from '../../services/api';
 import {
   Scissors,
@@ -28,6 +28,34 @@ import AddAntreanModalMobile from './AddAntreanModalMobile';
 import LanjutTahapModalMobile from './LanjutTahapModalMobile';
 import MobileNotificationModal from './MobileNotificationModal';
 
+// Helper deteksi dan resolusi route aktif dari hash URL browser
+function resolveMobileRouteFromHash() {
+  try {
+    const hash = (typeof window !== 'undefined' ? window.location.hash : '')
+      .replace('#', '')
+      .trim();
+
+    if (hash === 'antrean') return { tab: 'antrean', sub: null };
+    if (hash === 'mutasi' || hash === 'mutasi-bahan' || hash === 'mutasi-gudang-jadi')
+      return { tab: 'mutasi', sub: null };
+    if (hash === 'products' || hash === 'produk') return { tab: 'produk', sub: null };
+    if (hash === 'employees' || hash === 'karyawan') return { tab: 'menu', sub: 'karyawan' };
+    if (hash === 'bahan') return { tab: 'menu', sub: 'bahan' };
+    if (hash === 'categories' || hash === 'kategori') return { tab: 'menu', sub: 'kategori' };
+    if (hash === 'laporan' || hash === 'laporan-stok-gudang')
+      return { tab: 'menu', sub: 'laporan' };
+    if (hash === 'dashboard' || hash === 'home') return { tab: 'home', sub: null };
+
+    // Cek localStorage jika hash kosong
+    const saved = localStorage.getItem('konveksi_mobile_tab');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed?.tab) return parsed;
+    }
+  } catch (_) {}
+  return { tab: 'home', sub: null };
+}
+
 export default function MobileApp({
   products,
   setProducts,
@@ -47,10 +75,66 @@ export default function MobileApp({
   onSwitchToDesktop,
 }) {
   // Tab Navigasi Aktif Mobile: 'home' | 'antrean' | 'mutasi' | 'produk' | 'menu'
-  const [mobileTab, setMobileTab] = useState('home');
+  // Diinisialisasi langsung dari URL hash agar saat di-reload tetap di menu tersebut!
+  const [mobileRoute, setMobileRoute] = useState(resolveMobileRouteFromHash);
+  const mobileTab = mobileRoute.tab;
+  const activeSubView = mobileRoute.sub;
 
-  // Sub-view untuk Menu Tambahan (misal: 'karyawan', 'bahan', 'kategori', 'laporan')
-  const [activeSubView, setActiveSubView] = useState(null);
+  // Fungsi navigasi mobile yang memperbarui URL hash & localStorage
+  const navigateMobile = (tab, sub = null) => {
+    setMobileRoute({ tab, sub });
+
+    // Petakan ke hash URL browser agar saat reload tetap berada di menu ini
+    let targetHash = 'dashboard';
+    if (sub) {
+      if (sub === 'karyawan') targetHash = 'employees';
+      else if (sub === 'bahan') targetHash = 'bahan';
+      else if (sub === 'kategori') targetHash = 'categories';
+      else if (sub === 'laporan') targetHash = 'laporan-stok-gudang';
+    } else {
+      if (tab === 'antrean') targetHash = 'antrean';
+      else if (tab === 'mutasi') targetHash = 'mutasi';
+      else if (tab === 'produk') targetHash = 'products';
+      else if (tab === 'home') targetHash = 'dashboard';
+    }
+
+    try {
+      localStorage.setItem('konveksi_mobile_tab', JSON.stringify({ tab, sub }));
+      localStorage.setItem('konveksi_active_menu', targetHash);
+      if (window.location.hash !== `#${targetHash}`) {
+        window.history.replaceState(null, '', `#${targetHash}`);
+      }
+    } catch (_) {}
+  };
+
+  // Sinkronisasi event URL Hash (tombol browser Back / Forward / Reload)
+  useEffect(() => {
+    const handleHash = () => {
+      const route = resolveMobileRouteFromHash();
+      setMobileRoute(route);
+    };
+
+    window.addEventListener('hashchange', handleHash);
+
+    // Pastikan hash URL browser tersinkronisasi saat pertama kali dimuat
+    try {
+      let targetHash = 'dashboard';
+      if (activeSubView) {
+        if (activeSubView === 'karyawan') targetHash = 'employees';
+        else if (activeSubView === 'bahan') targetHash = 'bahan';
+        else if (activeSubView === 'kategori') targetHash = 'categories';
+        else if (activeSubView === 'laporan') targetHash = 'laporan-stok-gudang';
+      } else if (mobileTab === 'antrean') targetHash = 'antrean';
+      else if (mobileTab === 'mutasi') targetHash = 'mutasi';
+      else if (mobileTab === 'produk') targetHash = 'products';
+
+      if (!window.location.hash) {
+        window.history.replaceState(null, '', `#${targetHash}`);
+      }
+    } catch (_) {}
+
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   // State Modal Drawer, Tambah Antrean & Pusat Notifikasi
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -124,13 +208,12 @@ export default function MobileApp({
   // Handler setelah Antrean baru dibuat
   const handleAntreanCreated = (newItem) => {
     setAntreanList((prev) => [newItem, ...prev]);
-    setMobileTab('antrean');
-    setActiveSubView(null);
+    navigateMobile('antrean', null);
   };
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#f1f5f9] text-slate-800 overflow-hidden font-sans select-none">
-      {/* 1. STICKY SUB-HEADER UNTUK MENU NON-BERANDA DENGAN NOTIFIKASI BELL */}
+      {/* 1. STICKY SUB-HEADER UNTUK MENU NON-BERANDA */}
       {activeSubView ? (
         <MobileSubHeader
           title={
@@ -151,15 +234,6 @@ export default function MobileApp({
               ? 'Master Kelompok & Ongkos'
               : 'Stok Fisik Siap Jual'
           }
-          icon={
-            activeSubView === 'karyawan'
-              ? Users
-              : activeSubView === 'bahan'
-              ? Boxes
-              : activeSubView === 'kategori'
-              ? Tag
-              : Warehouse
-          }
           badgeText={
             activeSubView === 'karyawan'
               ? `${employees.length} Orang`
@@ -169,10 +243,7 @@ export default function MobileApp({
               ? `${categories.length} Kategori`
               : `${products.length} SKU`
           }
-          onBack={() => setActiveSubView(null)}
-          onSwitchToDesktop={onSwitchToDesktop}
-          onOpenNotifications={() => setIsNotificationOpen(true)}
-          notificationCount={notificationCount}
+          onBack={() => navigateMobile('home', null)}
         />
       ) : (
         mobileTab !== 'home' && (
@@ -181,12 +252,8 @@ export default function MobileApp({
               <MobileSubHeader
                 title="Antrean Produksi"
                 subtitle={`${activeOrderCount} order aktif berjalan`}
-                icon={Scissors}
                 badgeText={`${antreanList.length} Total`}
-                onBack={() => setMobileTab('home')}
-                onSwitchToDesktop={onSwitchToDesktop}
-                onOpenNotifications={() => setIsNotificationOpen(true)}
-                notificationCount={notificationCount}
+                onBack={() => navigateMobile('home', null)}
               />
             )}
 
@@ -194,12 +261,8 @@ export default function MobileApp({
               <MobileSubHeader
                 title="Mutasi Stok"
                 subtitle="Riwayat Keluar & Masuk Fisik"
-                icon={ArrowLeftRight}
                 badgeText={`${mutasiList.length + mutasiGudangJadiList.length} Mutasi`}
-                onBack={() => setMobileTab('home')}
-                onSwitchToDesktop={onSwitchToDesktop}
-                onOpenNotifications={() => setIsNotificationOpen(true)}
-                notificationCount={notificationCount}
+                onBack={() => navigateMobile('home', null)}
               />
             )}
 
@@ -207,12 +270,8 @@ export default function MobileApp({
               <MobileSubHeader
                 title="Katalog Produk"
                 subtitle="Master SKU, Varian & Ukuran"
-                icon={Package}
                 badgeText={`${products.length} SKU`}
-                onBack={() => setMobileTab('home')}
-                onSwitchToDesktop={onSwitchToDesktop}
-                onOpenNotifications={() => setIsNotificationOpen(true)}
-                notificationCount={notificationCount}
+                onBack={() => navigateMobile('home', null)}
               />
             )}
           </>
@@ -250,10 +309,9 @@ export default function MobileApp({
                     categories={categories}
                     onNavigate={(tab) => {
                       if (['karyawan', 'bahan', 'kategori', 'laporan'].includes(tab)) {
-                        setActiveSubView(tab);
+                        navigateMobile('menu', tab);
                       } else {
-                        setActiveSubView(null);
-                        setMobileTab(tab);
+                        navigateMobile(tab, null);
                       }
                     }}
                     onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
@@ -299,8 +357,7 @@ export default function MobileApp({
       <MobileNavigation
         activeTab={activeSubView ? 'menu' : mobileTab}
         onSelectTab={(tab) => {
-          setActiveSubView(null);
-          setMobileTab(tab);
+          navigateMobile(tab, null);
         }}
         onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
         onOpenMenu={() => setIsMenuOpen(true)}
@@ -312,7 +369,7 @@ export default function MobileApp({
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         onSelectSubView={(sub) => {
-          setActiveSubView(sub);
+          navigateMobile('menu', sub);
           setIsMenuOpen(false);
         }}
         onSwitchToDesktop={onSwitchToDesktop}
@@ -349,16 +406,13 @@ export default function MobileApp({
         bahan={bahan}
         products={products}
         onNavigateToAntrean={() => {
-          setActiveSubView(null);
-          setMobileTab('antrean');
+          navigateMobile('antrean', null);
         }}
         onNavigateToBahan={() => {
-          setMobileTab('menu');
-          setActiveSubView('bahan');
+          navigateMobile('menu', 'bahan');
         }}
         onNavigateToProduk={() => {
-          setActiveSubView(null);
-          setMobileTab('produk');
+          navigateMobile('produk', null);
         }}
       />
     </div>

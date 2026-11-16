@@ -29,6 +29,43 @@ export default function AntreanMobile({
     });
   }, [antreanList]);
 
+  // Perhitungan Jumlah Antrean per Tahapan Status untuk Badge Tab
+  const counts = useMemo(() => {
+    const total = normalizedList.length;
+    const aktif = normalizedList.filter(
+      (a) => a.status !== 'Selesai Gudang' && a.status !== 'Selesai'
+    ).length;
+    const tunggu = normalizedList.filter(
+      (a) => a.status === 'Menunggu Cutting' || a.status === 'Draft'
+    ).length;
+    const cutting = normalizedList.filter(
+      (a) => a.status === 'Proses Cutting' || a.status === 'Sedang Diproses'
+    ).length;
+    const jahit = normalizedList.filter(
+      (a) => a.status === 'Proses Jahit'
+    ).length;
+    const qc = normalizedList.filter(
+      (a) => a.status === 'Proses QC'
+    ).length;
+    const finishing = normalizedList.filter(
+      (a) => a.status === 'Proses Finishing'
+    ).length;
+    const selesai = normalizedList.filter(
+      (a) => a.status === 'Selesai Gudang' || a.status === 'Selesai'
+    ).length;
+
+    return {
+      total,
+      aktif,
+      tunggu,
+      cutting,
+      jahit,
+      qc,
+      finishing,
+      selesai,
+    };
+  }, [normalizedList]);
+
   const filteredAntrean = useMemo(() => {
     return normalizedList.filter((item) => {
       const matchSearch =
@@ -40,6 +77,15 @@ export default function AntreanMobile({
       if (antreanFilterStatus === 'SEMUA') return true;
       if (antreanFilterStatus === 'AKTIF') {
         return item.status !== 'Selesai Gudang' && item.status !== 'Selesai';
+      }
+      if (antreanFilterStatus === 'Menunggu Cutting') {
+        return item.status === 'Menunggu Cutting' || item.status === 'Draft';
+      }
+      if (antreanFilterStatus === 'Proses Cutting') {
+        return item.status === 'Proses Cutting' || item.status === 'Sedang Diproses';
+      }
+      if (antreanFilterStatus === 'Selesai Gudang') {
+        return item.status === 'Selesai Gudang' || item.status === 'Selesai';
       }
       return item.status === antreanFilterStatus;
     });
@@ -65,6 +111,17 @@ export default function AntreanMobile({
     }
   };
 
+  const filterTabs = [
+    { key: 'SEMUA', label: 'Semua', count: counts.total },
+    { key: 'AKTIF', label: 'Aktif', count: counts.aktif },
+    { key: 'Menunggu Cutting', label: 'Tunggu', count: counts.tunggu },
+    { key: 'Proses Cutting', label: 'Cutting', count: counts.cutting },
+    { key: 'Proses Jahit', label: 'Jahit', count: counts.jahit },
+    { key: 'Proses QC', label: 'QC', count: counts.qc },
+    { key: 'Proses Finishing', label: 'Finishing', count: counts.finishing },
+    { key: 'Selesai Gudang', label: 'Selesai', count: counts.selesai },
+  ];
+
   return (
     <div className="space-y-3 pb-6">
       {/* Search Bar Full Width */}
@@ -79,29 +136,33 @@ export default function AntreanMobile({
         />
       </div>
 
-      {/* Filter Tabs Horizontal */}
+      {/* Filter Tabs Horizontal dengan Angka Jumlah Transaksi */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
-        {[
-          { key: 'SEMUA', label: 'Semua' },
-          { key: 'AKTIF', label: 'Aktif' },
-          { key: 'Menunggu Cutting', label: 'Tunggu' },
-          { key: 'Proses Cutting', label: 'Cutting' },
-          { key: 'Proses Jahit', label: 'Jahit' },
-          { key: 'Proses QC', label: 'QC' },
-          { key: 'Selesai Gudang', label: 'Selesai' },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setAntreanFilterStatus(tab.key)}
-            className={`px-3 py-1 rounded-full whitespace-nowrap transition-all cursor-pointer ${
-              antreanFilterStatus === tab.key
-                ? 'bg-[#064e3b] text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {filterTabs.map((tab) => {
+          const isSelected = antreanFilterStatus === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setAntreanFilterStatus(tab.key)}
+              className={`px-3 py-1 rounded-full whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs ${
+                isSelected
+                  ? 'bg-[#064e3b] text-white shadow-xs font-extrabold'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 font-bold'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] font-mono font-black px-1.5 py-0.2 rounded-full ${
+                  isSelected
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* List Kartu Antrean */}

@@ -530,39 +530,40 @@ export default function Kasbon() {
         </div>
       </div>
 
-      {/* MODAL 1: CATAT / EDIT KASBON (FORMAT RUPIAH & UI PREMIUM) */}
+      {/* MODAL 1: CATAT / EDIT KASBON (RESPONSIF & TIDAK KETUTUP SCREEN) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn text-xs">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden space-y-0">
-            {/* Header Modal Bar */}
-            <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-orange-600 text-white p-4 sm:p-5 flex items-center justify-between shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white/20 border border-white/25 flex items-center justify-center text-white shadow-inner">
-                  <Wallet className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn text-xs overflow-y-auto">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] my-auto">
+            {/* 1. Header Modal Bar (Fixed di atas) */}
+            <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-orange-600 text-white px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between shadow-md shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-white/20 border border-white/25 flex items-center justify-center text-white shadow-inner shrink-0">
+                  <Wallet className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-black text-white leading-tight">
                     {editingId ? 'Edit Catatan Kasbon' : 'Catat Kasbon Penjahit'}
                   </h3>
-                  <p className="text-[11px] text-amber-100/90 font-medium mt-0.5">
-                    Otomatis memotong upah kerja saat gajian borongan
+                  <p className="text-[10.5px] text-amber-100/90 font-medium">
+                    Otomatis potong saat pembayaran upah borongan
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center cursor-pointer transition-all"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center cursor-pointer transition-all"
+                title="Tutup Modal"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Form Content */}
-            <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+            {/* 2. Form Content (Scrollable jika layar laptop pendek) */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 scrollbar-thin">
               {/* 1. Pilih Penjahit via Select Option */}
               <div>
-                <label className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <label className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
                   <span>Pilih Penjahit (Penerima Kasbon) <span className="text-rose-500">*</span></span>
                   <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                     Master Penjahit
@@ -572,13 +573,13 @@ export default function Kasbon() {
                   required
                   value={formData.namaPetugas}
                   onChange={(e) => setFormData({ ...formData, namaPetugas: e.target.value })}
-                  className="w-full h-11 px-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-500/15 cursor-pointer transition-all"
+                  className="w-full h-10 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 cursor-pointer transition-all"
                 >
-                  <option value="">-- Klik untuk Pilih Nama Penjahit --</option>
+                  <option value="">-- Pilih Nama Penjahit --</option>
                   {penjahitList.length > 0 ? (
                     penjahitList.map((p) => (
                       <option key={p.id || p.nama} value={p.nama}>
-                        🧵 {p.nama} {p.tarifPerPcs ? `• (Tarif Jahit: Rp ${Number(p.tarifPerPcs).toLocaleString('id-ID')} / Pcs)` : ''}
+                        🧵 {p.nama} {p.tarifPerPcs ? `• (Tarif: Rp ${Number(p.tarifPerPcs).toLocaleString('id-ID')})` : ''}
                       </option>
                     ))
                   ) : (
@@ -592,25 +593,22 @@ export default function Kasbon() {
 
                 {/* Card Info Penjahit Terpilih */}
                 {formData.namaPetugas && (
-                  <div className="mt-2 p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs animate-in fade-in">
+                  <div className="mt-1.5 p-2 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between text-xs animate-in fade-in">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-[10px]">
+                      <div className="w-5 h-5 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-[10px]">
                         🧵
                       </div>
-                      <div>
-                        <span className="font-extrabold text-amber-950 block">{formData.namaPetugas}</span>
-                        <span className="text-[10.5px] text-amber-800">Bagian: Tim Penjahit Borongan</span>
-                      </div>
+                      <span className="font-extrabold text-amber-950">{formData.namaPetugas}</span>
                     </div>
-                    <span className="font-mono text-[11px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
-                      Aktif
+                    <span className="font-mono text-[10.5px] font-bold text-emerald-800 bg-white px-2 py-0.2 rounded border border-emerald-200">
+                      Penjahit Aktif
                     </span>
                   </div>
                 )}
               </div>
 
               {/* 2. Tanggal Kasbon & Divisi */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Tanggal Kasbon
@@ -620,7 +618,7 @@ export default function Kasbon() {
                     required
                     value={formData.tglKasbon}
                     onChange={(e) => setFormData({ ...formData, tglKasbon: e.target.value })}
-                    className="w-full h-10 px-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 text-xs focus:bg-white focus:border-amber-600 focus:outline-none"
+                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 text-xs focus:bg-white focus:border-amber-600 focus:outline-none"
                   />
                 </div>
 
@@ -628,25 +626,25 @@ export default function Kasbon() {
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Divisi / Bagian
                   </label>
-                  <div className="w-full h-10 px-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-600 flex items-center text-xs">
+                  <div className="w-full h-9 px-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-600 flex items-center text-xs">
                     🧵 Penjahit Konveksi
                   </div>
                 </div>
               </div>
 
               {/* 3. INPUT NOMINAL KASBON DENGAN FORMAT RUPIAH INTERAKTIF */}
-              <div className="bg-gradient-to-br from-amber-50/90 to-orange-50/80 p-4 rounded-2xl border-2 border-amber-300/80 space-y-2.5">
+              <div className="bg-gradient-to-br from-amber-50/90 to-orange-50/80 p-3 sm:p-3.5 rounded-2xl border border-amber-300 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-extrabold text-amber-950 uppercase tracking-wider block">
                     Nominal Pinjaman / Kasbon <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded">
-                    Format Rupiah Otomatis
+                  <span className="text-[9.5px] font-bold text-amber-800 bg-amber-200/60 px-1.5 py-0.2 rounded">
+                    Format Rupiah
                   </span>
                 </div>
 
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono font-black text-base text-amber-700 select-none">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-black text-sm text-amber-700 select-none">
                     Rp
                   </span>
                   <input
@@ -659,46 +657,41 @@ export default function Kasbon() {
                       const raw = e.target.value.replace(/\D/g, '');
                       setFormData({ ...formData, nominal: raw ? Number(raw) : '' });
                     }}
-                    className="w-full h-12 pl-12 pr-4 bg-white border-2 border-amber-400 rounded-xl font-mono font-black text-xl text-slate-900 text-right focus:outline-none focus:border-amber-600 focus:ring-4 focus:ring-amber-500/20 shadow-inner tracking-tight"
+                    className="w-full h-10 pl-10 pr-3.5 bg-white border-2 border-amber-400 rounded-xl font-mono font-black text-lg text-slate-900 text-right focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 shadow-inner tracking-tight"
                   />
                 </div>
 
                 {/* Terbilang Rupiah */}
                 {Number(formData.nominal) > 0 && (
-                  <div className="p-2 bg-white/80 rounded-lg border border-amber-200/80 text-[11px] text-amber-950 font-medium italic flex items-center gap-1.5 animate-in fade-in">
+                  <div className="p-1.5 bg-white/90 rounded-lg border border-amber-200 text-[10.5px] text-amber-950 font-medium italic flex items-center gap-1.5 animate-in fade-in">
                     <span className="font-bold text-amber-700 not-italic shrink-0">Terbilang:</span>
-                    <span className="line-clamp-2">"{getTerbilang(formData.nominal)}"</span>
+                    <span className="line-clamp-1">"{getTerbilang(formData.nominal)}"</span>
                   </div>
                 )}
 
                 {/* Quick Add Chips Nominal */}
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 block mb-1">
-                    Pilihan Cepat Tambah Nominal:
-                  </span>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {[50000, 100000, 200000, 500000, 1000000].map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => {
-                          const current = Number(formData.nominal) || 0;
-                          setFormData({ ...formData, nominal: current + val });
-                        }}
-                        className="px-2.5 py-1 bg-white hover:bg-amber-100/80 active:scale-95 border border-amber-300 rounded-lg text-[10.5px] font-mono font-bold text-amber-900 shadow-2xs transition-all cursor-pointer"
-                      >
-                        + Rp {(val / 1000).toLocaleString('id-ID')} Rb
-                      </button>
-                    ))}
+                <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                  {[50000, 100000, 200000, 500000, 1000000].map((val) => (
                     <button
+                      key={val}
                       type="button"
-                      onClick={() => setFormData({ ...formData, nominal: '' })}
-                      className="px-2 py-1 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg text-[10.5px] font-bold text-slate-600 transition-all cursor-pointer ml-auto"
-                      title="Reset Nominal ke 0"
+                      onClick={() => {
+                        const current = Number(formData.nominal) || 0;
+                        setFormData({ ...formData, nominal: current + val });
+                      }}
+                      className="px-2 py-0.5 bg-white hover:bg-amber-100 active:scale-95 border border-amber-300 rounded text-[10px] font-mono font-bold text-amber-900 shadow-2xs transition-all cursor-pointer"
                     >
-                      Reset
+                      +{(val / 1000).toLocaleString('id-ID')}Rb
                     </button>
-                  </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, nominal: '' })}
+                    className="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded text-[10px] font-bold text-slate-600 transition-all cursor-pointer ml-auto"
+                    title="Reset Nominal ke 0"
+                  >
+                    Reset
+                  </button>
                 </div>
               </div>
 
@@ -712,36 +705,37 @@ export default function Kasbon() {
                   placeholder="Misal: Biaya berobat, keperluan mendesak keluarga, bensin..."
                   value={formData.keperluan}
                   onChange={(e) => setFormData({ ...formData, keperluan: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-amber-600 focus:outline-none text-xs text-slate-800"
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-amber-600 focus:outline-none text-xs text-slate-800"
                 />
               </div>
 
               {/* Info Otomatisasi */}
-              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-2xl text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
-                <span className="text-base leading-none">💡</span>
+              <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-[10.5px] text-amber-900 leading-snug flex items-start gap-1.5">
+                <span className="text-sm leading-none shrink-0">💡</span>
                 <div>
-                  <strong>Otomatis Potong Upah:</strong> Saat admin membuka menu <i>Pembayaran Upah</i> untuk penjahit ini, sistem otomatis mendeteksi sisa kasbon dan memotong gaji bersihnya.
+                  <strong>Otomatis Potong Upah:</strong> Nominal kasbon ini akan otomatis muncul sebagai opsi pemotongan saat admin membayar upah penjahit bersangkutan.
                 </div>
               </div>
-
-              {/* Tombol Aksi */}
-              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer text-xs"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-amber-700 to-orange-600 hover:from-amber-700 hover:to-orange-700 active:scale-95 text-white font-black text-xs shadow-lg shadow-amber-600/30 transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <Wallet className="w-4 h-4" />
-                  <span>{editingId ? 'Simpan Perubahan' : 'Simpan Kasbon'}</span>
-                </button>
-              </div>
             </form>
+
+            {/* 3. Footer Action Buttons (Fixed di bawah modal, SELALU TERLIHAT) */}
+            <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-300 font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer text-xs"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-amber-700 to-orange-600 hover:from-amber-700 hover:to-orange-700 active:scale-95 text-white font-black text-xs shadow-md shadow-amber-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Wallet className="w-4 h-4" />
+                <span>{editingId ? 'Simpan Perubahan' : 'Simpan Kasbon'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

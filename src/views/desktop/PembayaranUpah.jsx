@@ -1128,7 +1128,6 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                     <th className="py-1.5 px-3 border border-black w-28">Harga</th>
                     <th className="py-1.5 px-3 border border-black w-20">Qty</th>
                     <th className="py-1.5 px-3 border border-black w-36">Total</th>
-                    <th className="py-1.5 px-3 border border-black w-24 print:hidden">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1153,19 +1152,6 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                           <span>{Number(item.totalUpah || 0).toLocaleString('id-ID')}</span>
                         </div>
                       </td>
-                      <td className="py-1 px-2 border border-black text-center print:hidden">
-                        {item.statusBayar !== 'Lunas' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPay([item])}
-                            className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10.5px] font-bold cursor-pointer shadow-2xs"
-                          >
-                            Bayar
-                          </button>
-                        ) : (
-                          <span className="text-emerald-700 font-bold text-[10.5px]">Lunas</span>
-                        )}
-                      </td>
                     </tr>
                   ))}
 
@@ -1177,7 +1163,6 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                       <td className="border border-black"></td>
                       <td className="border border-black"></td>
                       <td className="border border-black"></td>
-                      <td className="border border-black print:hidden"></td>
                     </tr>
                   ))}
                 </tbody>

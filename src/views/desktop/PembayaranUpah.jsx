@@ -111,6 +111,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
   // Data Kasbon untuk deteksi pinjaman aktif
   const [kasbonAll, setKasbonAll] = useState([]);
+  const [manualPotonganMap, setManualPotonganMap] = useState({});
 
   // Filter State
   const [activeTahapTab, setActiveTahapTab] = useState('Semua'); // 'Semua' | 'Cutting' | 'Jahit' | 'QC' | 'Finishing'
@@ -438,6 +439,24 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
     return sheetTeamsList.find((t) => t.namaPetugas === sheetTeam) || null;
   }, [sheetTeamsList, sheetTeam]);
 
+  // Nominal Potongan Kasbon Manual (Khusus Penjahit)
+  const currentManualPotongan = useMemo(() => {
+    if (sheetTahap !== 'Jahit' || !sheetTeam) return 0;
+    if (manualPotonganMap[sheetTeam] !== undefined && manualPotonganMap[sheetTeam] !== '') {
+      return Number(manualPotonganMap[sheetTeam]) || 0;
+    }
+    return Number(activeSheetTeamData?.totalPotonganKasbon || 0);
+  }, [sheetTahap, sheetTeam, manualPotonganMap, activeSheetTeamData]);
+
+  // Total Gaji Bersih yang ditampilkan
+  const displayTotalBersih = useMemo(() => {
+    if (!activeSheetTeamData) return 0;
+    if (sheetTahap !== 'Jahit') {
+      return activeSheetTeamData.totalKotor;
+    }
+    return Math.max(0, activeSheetTeamData.totalKotor - currentManualPotongan);
+  }, [activeSheetTeamData, sheetTahap, currentManualPotongan]);
+
   // Daftar Histori Pembayaran yang sudah diinput/dibayarkan (Lunas)
   // Dikelompokkan per transaksi pembayaran (tgl_bayar + namaPetugas + tahapan)
   const historiBayarList = useMemo(() => {
@@ -584,7 +603,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   };
 
   // Open Pay Modal (Single / Batch)
-  const handleOpenPay = async (items) => {
+  const handleOpenPay = async (items, initialPotong = null) => {
     if (!items || items.length === 0) return;
     setTargetPayItems(items);
     setPayForm({
@@ -596,13 +615,28 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
     const totalGross = items.reduce((acc, c) => acc + (Number(c.totalUpah) || 0), 0);
     const uniquePetugas = [...new Set(items.map(i => (i.namaPetugas || i.nama_petugas || '').trim()))].filter(Boolean);
 
-    // Cek saldo kasbon petugas jika bayar untuk 1 orang petugas
-    if (uniquePetugas.length === 1) {
+    // Selain Penjahit (Pemotong, QC, Finishing), tidak ada potongan kasbon
+    if (sheetTahap !== 'Jahit') {
+      setKasbonInfo(null);
+      setPotonganKasbon(0);
+      setIsPayModalOpen(true);
+      return;
+    }
+
+    // Khusus Penjahit:
+    if (initialPotong !== null && initialPotong !== undefined) {
+      setPotonganKasbon(initialPotong);
+      if (uniquePetugas.length === 1) {
+        try {
+          const saldoData = await api.getKasbonSaldo(uniquePetugas[0]);
+          setKasbonInfo(saldoData);
+        } catch (_) {}
+      }
+    } else if (uniquePetugas.length === 1) {
       try {
         const saldoData = await api.getKasbonSaldo(uniquePetugas[0]);
         if (saldoData && saldoData.totalSisa > 0) {
           setKasbonInfo(saldoData);
-          // Default otomatis potong sebesar sisa kasbon atau maksimal total upah
           const defaultPotong = Math.min(totalGross, saldoData.totalSisa);
           setPotonganKasbon(defaultPotong);
         } else {
@@ -1034,20 +1068,46 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                 </div>
               </div>
 
-              <div className="flex items-end">
-                <span className="w-48 shrink-0 italic text-slate-800">Potongan Pinjaman</span>
-                <span className="w-4 shrink-0 text-center font-bold">:</span>
-                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
-                  <span className="font-bold">
-                    {(activeSheetTeamData?.totalPotonganKasbon || 0) > 0 ? 'Rp' : ''}
-                  </span>
-                  <span className="font-bold font-mono">
-                    {(activeSheetTeamData?.totalPotonganKasbon || 0) > 0
-                      ? (activeSheetTeamData.totalPotonganKasbon).toLocaleString('id-ID')
-                      : ''}
-                  </span>
+              {/* KHUSUS PENJAHIT: POTONGAN PINJAMAN BISA DIINPUT MANUAL */}
+              {sheetTahap === 'Jahit' && (
+                <div className="flex items-center py-0.5">
+                  <span className="w-48 shrink-0 italic text-slate-800">Potongan Pinjaman</span>
+                  <span className="w-4 shrink-0 text-center font-bold">:</span>
+                  <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between gap-2">
+                    <span className="font-bold">Rp</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0"
+                        max={activeSheetTeamData?.totalKotor || 0}
+                        value={
+                          manualPotonganMap[sheetTeam] !== undefined
+                            ? manualPotonganMap[sheetTeam]
+                            : (activeSheetTeamData?.totalPotonganKasbon || '')
+                        }
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const val = raw === '' ? '' : Math.max(0, Number(raw) || 0);
+                          setManualPotonganMap((prev) => ({ ...prev, [sheetTeam]: val }));
+                        }}
+                        placeholder="0"
+                        className="w-44 px-2.5 py-0.5 text-right font-mono font-black text-[13px] text-black bg-amber-50/90 hover:bg-amber-100/70 focus:bg-white border-2 border-amber-400 focus:border-amber-600 focus:ring-2 focus:ring-amber-300 rounded shadow-inner outline-none transition-all placeholder:text-slate-400 print:border-none print:bg-transparent print:p-0"
+                        title="Klik disini untuk ketik nominal potongan kasbon manual"
+                      />
+                      {manualPotonganMap[sheetTeam] !== undefined && manualPotonganMap[sheetTeam] !== '' && Number(manualPotonganMap[sheetTeam]) > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setManualPotonganMap((prev) => ({ ...prev, [sheetTeam]: '' }))}
+                          className="text-[10px] font-bold text-rose-600 hover:text-rose-800 hover:underline px-1 py-0.5 cursor-pointer print:hidden"
+                          title="Hapus / Reset potongan manual"
+                        >
+                          ✕ Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* 4. SOLID THICK BLACK DIVIDER BAR */}
@@ -1063,27 +1123,30 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                 <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
                   <span className="font-bold">Rp</span>
                   <span className="font-black font-mono text-base">
-                    {(activeSheetTeamData?.totalBersih || 0).toLocaleString('id-ID')}
+                    {displayTotalBersih.toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-end">
-                <span className="w-48 shrink-0 font-bold">
-                  <span className="text-red-600 font-bold mr-1">*</span>Sisa Pinjaman
-                </span>
-                <span className="w-4 shrink-0 text-center font-bold">:</span>
-                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
-                  <span className="font-bold">
-                    {(activeSheetTeamData?.sisaPinjamanAktif || 0) > 0 ? 'Rp' : ''}
+              {/* KHUSUS PENJAHIT: SISA PINJAMAN DITAMPILKAN */}
+              {sheetTahap === 'Jahit' && (
+                <div className="flex items-end">
+                  <span className="w-48 shrink-0 font-bold">
+                    <span className="text-red-600 font-bold mr-1">*</span>Sisa Pinjaman
                   </span>
-                  <span className="font-bold font-mono">
-                    {(activeSheetTeamData?.sisaPinjamanAktif || 0) > 0
-                      ? (activeSheetTeamData.sisaPinjamanAktif).toLocaleString('id-ID')
-                      : ''}
-                  </span>
+                  <span className="w-4 shrink-0 text-center font-bold">:</span>
+                  <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
+                    <span className="font-bold">
+                      {(activeSheetTeamData?.sisaPinjamanAktif || 0) > 0 ? 'Rp' : ''}
+                    </span>
+                    <span className="font-bold font-mono">
+                      {(activeSheetTeamData?.sisaPinjamanAktif || 0) > 0
+                        ? (activeSheetTeamData.sisaPinjamanAktif).toLocaleString('id-ID')
+                        : '-'}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex items-end">
                 <span className="w-48 shrink-0 font-bold">
@@ -1092,7 +1155,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                 <span className="w-4 shrink-0 text-center font-bold">:</span>
                 <div className="flex-1 border-b border-dotted border-black pb-0.5">
                   <span className="italic font-sans text-xs text-slate-800">
-                    {activeSheetTeamData ? angkaTerbilang(activeSheetTeamData.totalBersih || 0) : ''}
+                    {activeSheetTeamData ? angkaTerbilang(displayTotalBersih) : ''}
                   </span>
                 </div>
               </div>
@@ -1186,13 +1249,13 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                     type="button"
                     onClick={() => {
                       const pendingItems = activeSheetTeamData.items.filter((i) => i.statusBayar !== 'Lunas');
-                      handleOpenPay(pendingItems);
+                      handleOpenPay(pendingItems, sheetTahap === 'Jahit' ? currentManualPotongan : 0);
                     }}
                     className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all"
                   >
                     <CreditCard className="w-4 h-4 stroke-[2.5]" />
                     <span>
-                      Bayar Gaji {sheetTahap === 'Jahit' ? 'Penjahit' : 'Tim'} Ini (Rp {activeSheetTeamData.totalBersih.toLocaleString('id-ID')})
+                      Bayar Gaji {sheetTahap === 'Jahit' ? 'Penjahit' : 'Tim'} Ini (Rp {displayTotalBersih.toLocaleString('id-ID')})
                     </span>
                   </button>
                 )}
@@ -1944,39 +2007,60 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">Potongan Pinjaman (Kasbon)</span>
-                  <span className="font-mono font-bold text-amber-700">
-                    {currentSlipKaryawan.totalPotonganKasbon > 0
-                      ? `- Rp ${currentSlipKaryawan.totalPotonganKasbon.toLocaleString('id-ID')}`
-                      : '-'}
-                  </span>
-                </div>
+                {/* KHUSUS PENJAHIT: POTONGAN & SISA PINJAMAN DITAMPILKAN */}
+                {(currentSlipKaryawan.tahapan === 'Jahit' || (currentSlipKaryawan.tahapan || '').toLowerCase().includes('jahit')) && (() => {
+                  const manualVal = manualPotonganMap[currentSlipKaryawan.namaPetugas];
+                  const potongVal = (manualVal !== undefined && manualVal !== '')
+                    ? (Number(manualVal) || 0)
+                    : currentSlipKaryawan.totalPotonganKasbon;
+                  return (
+                    <div className="flex items-center justify-between py-0.5">
+                      <span className="text-slate-600 font-medium">Potongan Pinjaman (Kasbon)</span>
+                      <span className="font-mono font-bold text-amber-700">
+                        {potongVal > 0 ? `- Rp ${potongVal.toLocaleString('id-ID')}` : '-'}
+                      </span>
+                    </div>
+                  );
+                })()}
 
-                <div className="pt-2 border-t border-slate-300 flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900 uppercase text-xs">
-                    * Total GAJI (Bersih Diterima)
-                  </span>
-                  <span className="font-mono font-black text-base text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
-                    Rp {currentSlipKaryawan.totalBersih.toLocaleString('id-ID')}
-                  </span>
-                </div>
+                {(() => {
+                  const isJahit = currentSlipKaryawan.tahapan === 'Jahit' || (currentSlipKaryawan.tahapan || '').toLowerCase().includes('jahit');
+                  const manualVal = manualPotonganMap[currentSlipKaryawan.namaPetugas];
+                  const potongVal = isJahit
+                    ? ((manualVal !== undefined && manualVal !== '') ? (Number(manualVal) || 0) : currentSlipKaryawan.totalPotonganKasbon)
+                    : 0;
+                  const modalBersih = Math.max(0, currentSlipKaryawan.totalKotor - potongVal);
+                  return (
+                    <>
+                      <div className="pt-2 border-t border-slate-300 flex items-center justify-between">
+                        <span className="font-extrabold text-slate-900 uppercase text-xs">
+                          * Total GAJI (Bersih Diterima)
+                        </span>
+                        <span className="font-mono font-black text-base text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
+                          Rp {modalBersih.toLocaleString('id-ID')}
+                        </span>
+                      </div>
 
-                <div className="flex items-center justify-between py-0.5 text-slate-600">
-                  <span className="text-[11px] font-medium">* Sisa Pinjaman / Kasbon Aktif</span>
-                  <span className="font-mono font-bold text-slate-700">
-                    {currentSlipKaryawan.sisaPinjamanAktif > 0
-                      ? `Rp ${currentSlipKaryawan.sisaPinjamanAktif.toLocaleString('id-ID')}`
-                      : '-'}
-                  </span>
-                </div>
+                      {isJahit && (
+                        <div className="flex items-center justify-between py-0.5 text-slate-600">
+                          <span className="text-[11px] font-medium">* Sisa Pinjaman / Kasbon Aktif</span>
+                          <span className="font-mono font-bold text-slate-700">
+                            {currentSlipKaryawan.sisaPinjamanAktif > 0
+                              ? `Rp ${currentSlipKaryawan.sisaPinjamanAktif.toLocaleString('id-ID')}`
+                              : '-'}
+                          </span>
+                        </div>
+                      )}
 
-                <div className="pt-1 text-[11px] text-slate-600">
-                  <span className="font-bold">* Terbilang : </span>
-                  <span className="font-semibold italic text-slate-800">
-                    "{angkaTerbilang(currentSlipKaryawan.totalBersih)}"
-                  </span>
-                </div>
+                      <div className="pt-1 text-[11px] text-slate-600">
+                        <span className="font-bold">* Terbilang : </span>
+                        <span className="font-semibold italic text-slate-800">
+                          "{angkaTerbilang(modalBersih)}"
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Rincian Pembayaran Table (Grand Total Qty & Breakdown) */}
@@ -2085,11 +2169,15 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                   <button
                     type="button"
                     onClick={() => {
+                      const isJahit = currentSlipKaryawan.tahapan === 'Jahit' || (currentSlipKaryawan.tahapan || '').toLowerCase().includes('jahit');
+                      const manualVal = manualPotonganMap[currentSlipKaryawan.namaPetugas];
+                      const potongVal = isJahit
+                        ? ((manualVal !== undefined && manualVal !== '') ? (Number(manualVal) || 0) : currentSlipKaryawan.totalPotonganKasbon)
+                        : 0;
                       setIsSlipKaryawanModalOpen(false);
                       handleOpenPay(
-                        currentSlipKaryawan.items.filter(
-                          (i) => i.statusBayar !== 'Lunas',
-                        ),
+                        currentSlipKaryawan.items.filter((i) => i.statusBayar !== 'Lunas'),
+                        potongVal
                       );
                     }}
                     className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"

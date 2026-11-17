@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   ListOrdered,
   Plus,
@@ -43,44 +43,54 @@ import {
   Warehouse,
   Settings,
   Edit2,
-  Share2
-} from 'lucide-react';
-import { api } from '../../services/api';
-import { Swal } from '../../utils/swal';
+  Share2,
+} from "lucide-react";
+import { api } from "../../services/api";
+import { Swal } from "../../utils/swal";
 import {
   SUMBER_PERMINTAAN_OPTIONS,
   ANTREAN_PRIORITAS_OPTIONS,
-  ANTREAN_STATUS_OPTIONS
-} from '../../constants/appConstants';
+  ANTREAN_STATUS_OPTIONS,
+} from "../../constants/appConstants";
 
 // Sub-komponen Modular
-import SewingMachineIcon from './antrean/SewingMachineIcon';
-import ModalShowAntrean from './antrean/ModalShowAntrean';
-import ModalSerahCutting from './antrean/ModalSerahCutting';
-import ModalSerahJahit from './antrean/ModalSerahJahit';
-import ModalSerahQC from './antrean/ModalSerahQC';
-import ModalSerahFinishing from './antrean/ModalSerahFinishing';
-import ModalSelesaiGudangJadi from './antrean/ModalSelesaiGudangJadi';
-import ModalHistoriCutting from './antrean/ModalHistoriCutting';
-import ShareTrackingModal from '../../components/common/ShareTrackingModal';
+import SewingMachineIcon from "./antrean/SewingMachineIcon";
+import ModalShowAntrean from "./antrean/ModalShowAntrean";
+import ModalSerahCutting from "./antrean/ModalSerahCutting";
+import ModalSerahJahit from "./antrean/ModalSerahJahit";
+import ModalSerahQC from "./antrean/ModalSerahQC";
+import ModalSerahFinishing from "./antrean/ModalSerahFinishing";
+import ModalSelesaiGudangJadi from "./antrean/ModalSelesaiGudangJadi";
+import ModalHistoriCutting from "./antrean/ModalHistoriCutting";
+import ShareTrackingModal from "../../components/common/ShareTrackingModal";
 
 export default function Antrean({
   antreanList = [],
   setAntreanList,
   products = [],
   employees = [],
-  jasa = []
+  jasa = [],
+  timFinishingList: propTimFinishingList = [],
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterSumber, setFilterSumber] = useState('');
-  const [filterPrioritas, setFilterPrioritas] = useState('');
-  const [activeTab, setActiveTab] = useState('Semua Antrean'); // 'Semua Antrean' | 'Menunggu Cutting' | 'Proses Cutting' | 'Proses Jahit' | 'Proses QC' | 'Proses Finishing' | 'Selesai'
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterSumber, setFilterSumber] = useState("");
+  const [filterPrioritas, setFilterPrioritas] = useState("");
+  const [activeTab, setActiveTab] = useState("Semua Antrean"); // 'Semua Antrean' | 'Menunggu Cutting' | 'Proses Cutting' | 'Proses Jahit' | 'Proses QC' | 'Proses Finishing' | 'Selesai'
   const [shareTrackingItem, setShareTrackingItem] = useState(null);
+
+  // State Manajemen List Tim Finishing
+  const [timFinishingList, setTimFinishingList] = useState(propTimFinishingList);
+
+  useEffect(() => {
+    if (propTimFinishingList && propTimFinishingList.length > 0) {
+      setTimFinishingList(propTimFinishingList);
+    }
+  }, [propTimFinishingList]);
 
   // State Manajemen List Sumber Permintaan (Tersinkron ke Database SQLite)
   const [sumberOptions, setSumberOptions] = useState(() => {
     try {
-      const cached = localStorage.getItem('konveksi_sumber_permintaan');
+      const cached = localStorage.getItem("konveksi_sumber_permintaan");
       return cached ? JSON.parse(cached) : SUMBER_PERMINTAAN_OPTIONS;
     } catch (_) {
       return SUMBER_PERMINTAAN_OPTIONS;
@@ -90,24 +100,38 @@ export default function Antrean({
   // Ambil list sumber permintaan real dari database SQLite & Sinkronisasi Antrean Real-time
   useEffect(() => {
     // Sinkronisasi data antrean langsung dari database saat komponen desktop dimuat
-    api.getAntrean()
-      .then(list => {
+    api
+      .getAntrean()
+      .then((list) => {
         if (Array.isArray(list)) {
           setAntreanList(list);
           try {
-            localStorage.setItem('konveksi_antrean_list', JSON.stringify(list));
+            localStorage.setItem("konveksi_antrean_list", JSON.stringify(list));
           } catch (_) {}
         }
       })
       .catch(() => {});
 
-    api.getSumberPermintaan()
-      .then(list => {
+    api
+      .getSumberPermintaan()
+      .then((list) => {
         if (Array.isArray(list) && list.length > 0) {
           setSumberOptions(list);
           try {
-            localStorage.setItem('konveksi_sumber_permintaan', JSON.stringify(list));
+            localStorage.setItem(
+              "konveksi_sumber_permintaan",
+              JSON.stringify(list),
+            );
           } catch (_) {}
+        }
+      })
+      .catch(() => {});
+
+    api
+      .getTimFinishing()
+      .then((list) => {
+        if (Array.isArray(list)) {
+          setTimFinishingList(list);
         }
       })
       .catch(() => {});
@@ -115,12 +139,15 @@ export default function Antrean({
 
   const [isSumberModalOpen, setIsSumberModalOpen] = useState(false);
   const [editingSumberIndex, setEditingSumberIndex] = useState(null);
-  const [sumberInputText, setSumberInputText] = useState('');
+  const [sumberInputText, setSumberInputText] = useState("");
 
   const saveSumberOptions = (newList) => {
     setSumberOptions(newList);
     try {
-      localStorage.setItem('konveksi_sumber_permintaan', JSON.stringify(newList));
+      localStorage.setItem(
+        "konveksi_sumber_permintaan",
+        JSON.stringify(newList),
+      );
     } catch (_) {}
   };
 
@@ -134,40 +161,51 @@ export default function Antrean({
       const oldVal = updated[editingSumberIndex];
       updated[editingSumberIndex] = val;
       saveSumberOptions(updated);
-      api.deleteSumberPermintaan(oldVal).then(() => api.addSumberPermintaan(val)).catch(() => {});
+      api
+        .deleteSumberPermintaan(oldVal)
+        .then(() => api.addSumberPermintaan(val))
+        .catch(() => {});
       if (formData.sumberPermintaan === oldVal) {
-        setFormData(prev => ({ ...prev, sumberPermintaan: val }));
+        setFormData((prev) => ({ ...prev, sumberPermintaan: val }));
       }
       setEditingSumberIndex(null);
     } else {
       if (sumberOptions.includes(val)) {
-        Swal.fire({ icon: 'warning', title: 'Sudah Ada', text: `Sumber "${val}" sudah terdaftar.` });
+        Swal.fire({
+          icon: "warning",
+          title: "Sudah Ada",
+          text: `Sumber "${val}" sudah terdaftar.`,
+        });
         return;
       }
       saveSumberOptions([...sumberOptions, val]);
       api.addSumberPermintaan(val).catch(() => {});
-      setFormData(prev => ({ ...prev, sumberPermintaan: val }));
+      setFormData((prev) => ({ ...prev, sumberPermintaan: val }));
     }
-    setSumberInputText('');
+    setSumberInputText("");
   };
 
   const handleDeleteSumber = (idxToDelete) => {
     const target = sumberOptions[idxToDelete];
     if (sumberOptions.length <= 1) {
-      Swal.fire({ icon: 'warning', title: 'Tidak Bisa Dihapus', text: 'Minimal harus ada 1 sumber permintaan.' });
+      Swal.fire({
+        icon: "warning",
+        title: "Tidak Bisa Dihapus",
+        text: "Minimal harus ada 1 sumber permintaan.",
+      });
       return;
     }
     const updated = sumberOptions.filter((_, i) => i !== idxToDelete);
     saveSumberOptions(updated);
     api.deleteSumberPermintaan(target).catch(() => {});
     if (formData.sumberPermintaan === target) {
-      setFormData(prev => ({ ...prev, sumberPermintaan: updated[0] }));
+      setFormData((prev) => ({ ...prev, sumberPermintaan: updated[0] }));
     }
   };
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
+  const [modalMode, setModalMode] = useState("create"); // 'create' | 'edit'
   const [currentId, setCurrentId] = useState(null);
   const [selectedAntreanShow, setSelectedAntreanShow] = useState(null); // Fullscreen Show View
 
@@ -181,15 +219,16 @@ export default function Antrean({
   const cuttingDropdownRef = useRef(null);
 
   // State Modal Histori Penyerahan Cutting
-  const [isCuttingHistoryModalOpen, setIsCuttingHistoryModalOpen] = useState(false);
+  const [isCuttingHistoryModalOpen, setIsCuttingHistoryModalOpen] =
+    useState(false);
 
   // Form Penyerahan ke Tim Cutting
   const initialCuttingForm = {
     tglSerahCutting: new Date().toISOString().slice(0, 10),
-    timCutting: 'Tim Cutting 1 (Budi Santoso)',
-    customTimCutting: '',
+    timCutting: "Tim Cutting 1 (Budi Santoso)",
+    customTimCutting: "",
     tarifCutting: 1500, // Default 1500 per instruksi user
-    catatanCutting: ''
+    catatanCutting: "",
   };
   const [cuttingForm, setCuttingForm] = useState(initialCuttingForm);
 
@@ -198,10 +237,10 @@ export default function Antrean({
   const [jahitTargetItems, setJahitTargetItems] = useState([]);
   const initialJahitForm = {
     tglSerahJahit: new Date().toISOString().slice(0, 10),
-    timJahit: 'Tim Jahit 1 (Siti Aminah)',
-    customTimJahit: '',
+    timJahit: "Tim Jahit 1 (Siti Aminah)",
+    customTimJahit: "",
     tarifJahit: 3500, // Default tarif jahit
-    catatanJahit: ''
+    catatanJahit: "",
   };
   const [jahitForm, setJahitForm] = useState(initialJahitForm);
 
@@ -210,9 +249,9 @@ export default function Antrean({
   const [qcTargetItems, setQcTargetItems] = useState([]);
   const initialQcForm = {
     tglSerahQc: new Date().toISOString().slice(0, 10),
-    timQc: 'Tim QC 1 (Inspeksi Jahitan & Pola)',
-    catatanQc: '',
-    statusQc: 'Pemeriksaan'
+    timQc: "Tim QC 1 (Inspeksi Jahitan & Pola)",
+    catatanQc: "",
+    statusQc: "Pemeriksaan",
   };
   const [qcForm, setQcForm] = useState(initialQcForm);
 
@@ -222,10 +261,10 @@ export default function Antrean({
   const initialFinishingForm = {
     qtyPassQc: 0,
     qtyRejectQc: 0,
-    catatanRejectQc: '',
+    catatanRejectQc: "",
     tglSerahFinishing: new Date().toISOString().slice(0, 10),
-    timFinishing: 'Tim Finishing & Packing 1 (Uap & Lipat)',
-    catatanFinishing: ''
+    timFinishing: "Tim Finishing & Packing 1 (Uap & Lipat)",
+    catatanFinishing: "",
   };
   const [finishingForm, setFinishingForm] = useState(initialFinishingForm);
 
@@ -235,7 +274,7 @@ export default function Antrean({
 
   // Combobox Product Dropdown State in Modal
   const [isProductComboboxOpen, setIsProductComboboxOpen] = useState(false);
-  const [productComboboxSearch, setProductComboboxSearch] = useState('');
+  const [productComboboxSearch, setProductComboboxSearch] = useState("");
   const comboboxRef = useRef(null);
 
   // Close combobox & dropdown when clicking outside
@@ -244,37 +283,40 @@ export default function Antrean({
       if (comboboxRef.current && !comboboxRef.current.contains(event.target)) {
         setIsProductComboboxOpen(false);
       }
-      if (cuttingDropdownRef.current && !cuttingDropdownRef.current.contains(event.target)) {
+      if (
+        cuttingDropdownRef.current &&
+        !cuttingDropdownRef.current.contains(event.target)
+      ) {
         setIsCuttingDropdownOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // List Tim Cutting dari Master Karyawan
   const cuttingEmployees = useMemo(() => {
-    const list = employees.filter(e => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('cut') || b.includes('pola');
+    const list = employees.filter((e) => {
+      const b = (e.bagian || "").toLowerCase();
+      return b.includes("cut") || b.includes("pola");
     });
     return list.length > 0 ? list : employees;
   }, [employees]);
 
   // List Tim Jahit: Diambil langsung dari Data Karyawan (bagian Penjahit / Jahit)
   const jahitEmployees = useMemo(() => {
-    const list = employees.filter(e => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('jahit') || b.includes('penjahit') || b.includes('sew');
+    const list = employees.filter((e) => {
+      const b = (e.bagian || "").toLowerCase();
+      return b.includes("jahit") || b.includes("penjahit") || b.includes("sew");
     });
     return list.length > 0 ? list : employees;
   }, [employees]);
 
   // List Tim QC dari Master Karyawan
   const qcEmployees = useMemo(() => {
-    const list = employees.filter(e => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('qc') || b.includes('quality') || b.includes('control');
+    const list = employees.filter((e) => {
+      const b = (e.bagian || "").toLowerCase();
+      return b.includes("qc") || b.includes("quality") || b.includes("control");
     });
     return list.length > 0 ? list : employees;
   }, [employees]);
@@ -282,102 +324,118 @@ export default function Antrean({
   // List Tim Finishing: Khusus dari Master Tim Finishing (TIDAK BOLEH campur Penjahit!)
   const finishingEmployees = useMemo(() => {
     if (timFinishingList.length > 0) {
-      return timFinishingList.map(f => ({
+      return timFinishingList.map((f) => ({
         id: f.id,
         nama: f.namaTim,
-        bagian: 'Finishing & Packing',
-        kapasitas: f.kapasitasHarian
+        bagian: "Finishing & Packing",
+        kapasitas: f.kapasitasHarian,
       }));
     }
-    const fromEmp = employees.filter(e => {
-      const b = (e.bagian || '').toLowerCase();
-      return b.includes('finish') || b.includes('pack');
+    const fromEmp = employees.filter((e) => {
+      const b = (e.bagian || "").toLowerCase();
+      return b.includes("finish") || b.includes("pack");
     });
     if (fromEmp.length > 0) return fromEmp;
     return [
-      { id: 1, nama: 'Tim Finishing & Packing 1 (Uap & Lipat)', bagian: 'Finishing' },
-      { id: 2, nama: 'Tim Finishing 2 (Hangtag & Plastik OPP)', bagian: 'Finishing' },
-      { id: 3, nama: 'Gudang Packing Akhir', bagian: 'Packing' },
+      {
+        id: 1,
+        nama: "Tim Finishing & Packing 1 (Uap & Lipat)",
+        bagian: "Finishing",
+      },
+      {
+        id: 2,
+        nama: "Tim Finishing 2 (Hangtag & Plastik OPP)",
+        bagian: "Finishing",
+      },
+      { id: 3, nama: "Gudang Packing Akhir", bagian: "Packing" },
     ];
   }, [timFinishingList, employees]);
 
   // Default Tarif Cutting dari Master Jasa
   const defaultTarifCutting = useMemo(() => {
-    const item = (jasa || []).find(j => {
-      const k = (j.kodeJasa || '').toLowerCase();
-      const n = (j.namaJasa || '').toLowerCase();
-      return k.includes('cut') || n.includes('potong') || n.includes('cutting');
+    const item = (jasa || []).find((j) => {
+      const k = (j.kodeJasa || "").toLowerCase();
+      const n = (j.namaJasa || "").toLowerCase();
+      return k.includes("cut") || n.includes("potong") || n.includes("cutting");
     });
     return item?.harga ? Number(item.harga) : 1500;
   }, [jasa]);
 
   // Default Tarif Jahit dari Master Jasa
   const defaultTarifJahit = useMemo(() => {
-    const item = (jasa || []).find(j => {
-      const k = (j.kodeJasa || '').toLowerCase();
-      const n = (j.namaJasa || '').toLowerCase();
-      return k.includes('jahit') || n.includes('jahit') || n.includes('sew');
+    const item = (jasa || []).find((j) => {
+      const k = (j.kodeJasa || "").toLowerCase();
+      const n = (j.namaJasa || "").toLowerCase();
+      return k.includes("jahit") || n.includes("jahit") || n.includes("sew");
     });
     return item?.harga ? Number(item.harga) : 3500;
   }, [jasa]);
 
   // Form Fields State
   const initialForm = {
-    noAntrian: '',
+    noAntrian: "",
     tglMasuk: new Date().toISOString().slice(0, 10),
-    sumberPermintaan: 'PO Pelanggan',
-    noReff: '',
-    sku: '',
+    sumberPermintaan: "PO Pelanggan",
+    noReff: "",
+    sku: "",
     qty: 50,
-    prioritas: 'Normal',
-    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-    status: 'Menunggu Cutting',
-    catatan: ''
+    prioritas: "Normal",
+    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10),
+    status: "Menunggu Cutting",
+    catatan: "",
   };
   const [formData, setFormData] = useState(initialForm);
 
   // Helper get product name safely
-  const getProdName = (p) => p?.nama || p?.namaProduk || p?.nama_produk || '-';
-  const getProdBahan = (p) => p?.skuBahan || p?.sku_bahan || '-';
+  const getProdName = (p) => p?.nama || p?.namaProduk || p?.nama_produk || "-";
+  const getProdBahan = (p) => p?.skuBahan || p?.sku_bahan || "-";
 
   // Selected product detail preview
   const selectedProduct = useMemo(() => {
     if (!formData.sku) return null;
-    return products.find(p => p.sku === formData.sku) || null;
+    return products.find((p) => p.sku === formData.sku) || null;
   }, [formData.sku, products]);
 
   // Filtered products inside combobox dropdown
   const filteredComboboxProducts = useMemo(() => {
     if (!productComboboxSearch.trim()) return products;
     const q = productComboboxSearch.toLowerCase();
-    return products.filter(p => {
+    return products.filter((p) => {
       const name = getProdName(p).toLowerCase();
-      const sku = (p.sku || '').toLowerCase();
-      const kat = (p.kategori || '').toLowerCase();
-      const varColor = (p.varian || '').toLowerCase();
-      const sz = (p.ukuran || '').toLowerCase();
-      return name.includes(q) || sku.includes(q) || kat.includes(q) || varColor.includes(q) || sz.includes(q);
+      const sku = (p.sku || "").toLowerCase();
+      const kat = (p.kategori || "").toLowerCase();
+      const varColor = (p.varian || "").toLowerCase();
+      const sz = (p.ukuran || "").toLowerCase();
+      return (
+        name.includes(q) ||
+        sku.includes(q) ||
+        kat.includes(q) ||
+        varColor.includes(q) ||
+        sz.includes(q)
+      );
     });
   }, [products, productComboboxSearch]);
 
   // Generate automated No Antrian
   const generateNoAntrian = () => {
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const rand = Math.floor(100 + Math.random() * 900);
     return `ANT-${today}-${rand}`;
   };
 
   // Open Modal Create
   const handleOpenCreate = () => {
-    const defaultSku = products && products.length > 0 ? products[0].sku : '';
+    const defaultSku = products && products.length > 0 ? products[0].sku : "";
     setFormData({
       ...initialForm,
       noAntrian: generateNoAntrian(),
-      sku: defaultSku
+      sku: defaultSku,
     });
-    setModalMode('create');
+    setModalMode("create");
     setCurrentId(null);
-    setProductComboboxSearch('');
+    setProductComboboxSearch("");
     setIsProductComboboxOpen(false);
     setIsModalOpen(true);
   };
@@ -385,28 +443,28 @@ export default function Antrean({
   // Open Modal Edit
   const handleOpenEdit = (item) => {
     setFormData({
-      noAntrian: item.noAntrian || '',
-      tglMasuk: item.tglMasuk || '',
-      sumberPermintaan: item.sumberPermintaan || 'PO Pelanggan',
-      noReff: item.noReff || '',
-      sku: item.sku || '',
+      noAntrian: item.noAntrian || "",
+      tglMasuk: item.tglMasuk || "",
+      sumberPermintaan: item.sumberPermintaan || "PO Pelanggan",
+      noReff: item.noReff || "",
+      sku: item.sku || "",
       qty: item.qty || 1,
-      prioritas: item.prioritas || 'Normal',
-      deadline: item.deadline || '',
-      status: item.status || 'Menunggu Cutting',
-      catatan: item.catatan || ''
+      prioritas: item.prioritas || "Normal",
+      deadline: item.deadline || "",
+      status: item.status || "Menunggu Cutting",
+      catatan: item.catatan || "",
     });
-    setModalMode('edit');
+    setModalMode("edit");
     setCurrentId(item.id);
-    setProductComboboxSearch('');
+    setProductComboboxSearch("");
     setIsProductComboboxOpen(false);
     setIsModalOpen(true);
   };
 
   // Selection Handlers (Centang antrean yang mau ke tahap Cutting)
   const handleToggleSelect = (id) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
@@ -414,7 +472,7 @@ export default function Antrean({
     if (selectedIds.length === filteredList.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredList.map(a => a.id));
+      setSelectedIds(filteredList.map((a) => a.id));
     }
   };
 
@@ -424,10 +482,12 @@ export default function Antrean({
     setCuttingTargetItems(items);
     setCuttingForm({
       tglSerahCutting: new Date().toISOString().slice(0, 10),
-      timCutting: cuttingEmployees[0]?.nama ? `Tim ${cuttingEmployees[0].nama}` : 'Tim Cutting 1 (Budi Santoso)',
-      customTimCutting: '',
+      timCutting: cuttingEmployees[0]?.nama
+        ? `Tim ${cuttingEmployees[0].nama}`
+        : "Tim Cutting 1 (Budi Santoso)",
+      customTimCutting: "",
       tarifCutting: defaultTarifCutting || 1500,
-      catatanCutting: ''
+      catatanCutting: "",
     });
     setIsCuttingModalOpen(true);
   };
@@ -437,12 +497,16 @@ export default function Antrean({
     e?.preventDefault();
     if (!cuttingTargetItems || cuttingTargetItems.length === 0) return;
 
-    const finalTim = cuttingForm.timCutting === 'LAINNYA' 
-      ? (cuttingForm.customTimCutting.trim() || 'Tim Cutting')
-      : cuttingForm.timCutting;
+    const finalTim =
+      cuttingForm.timCutting === "LAINNYA"
+        ? cuttingForm.customTimCutting.trim() || "Tim Cutting"
+        : cuttingForm.timCutting;
 
-    const targetIds = cuttingTargetItems.map(item => item.id);
-    const totalQty = cuttingTargetItems.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+    const targetIds = cuttingTargetItems.map((item) => item.id);
+    const totalQty = cuttingTargetItems.reduce(
+      (acc, curr) => acc + (Number(curr.qty) || 0),
+      0,
+    );
     const tarif = Number(cuttingForm.tarifCutting) || 0;
     const totalBiaya = totalQty * tarif;
 
@@ -454,77 +518,80 @@ export default function Antrean({
           tglSerahCutting: cuttingForm.tglSerahCutting,
           timCutting: finalTim,
           tarifCutting: tarif,
-          catatanCutting: cuttingForm.catatanCutting
+          catatanCutting: cuttingForm.catatanCutting,
         });
       } catch (apiErr) {
-        console.warn('API serahCutting error, update local state fallback:', apiErr);
+        console.warn(
+          "API serahCutting error, update local state fallback:",
+          apiErr,
+        );
       }
 
       // 2. Update state lokal & localStorage
-      setAntreanList(prev => {
-        const next = prev.map(item => {
+      setAntreanList((prev) => {
+        const next = prev.map((item) => {
           if (targetIds.includes(item.id)) {
             const itemQty = Number(item.qty) || 0;
             return {
               ...item,
-              status: 'Proses Cutting',
+              status: "Proses Cutting",
               tglSerahCutting: cuttingForm.tglSerahCutting,
               timCutting: finalTim,
               tarifCutting: tarif,
               totalBiayaCutting: itemQty * tarif,
-              catatanCutting: cuttingForm.catatanCutting
+              catatanCutting: cuttingForm.catatanCutting,
             };
           }
           return item;
         });
         try {
-          localStorage.setItem('konveksi_antrean_list', JSON.stringify(next));
+          localStorage.setItem("konveksi_antrean_list", JSON.stringify(next));
         } catch (_) {}
         return next;
       });
 
       // 3. Clear selections & modal
-      setSelectedIds(prev => prev.filter(id => !targetIds.includes(id)));
+      setSelectedIds((prev) => prev.filter((id) => !targetIds.includes(id)));
       setIsCuttingModalOpen(false);
 
       // 4. Update modal detail jika sedang dibuka
       if (selectedAntreanShow && targetIds.includes(selectedAntreanShow.id)) {
         const currentQty = Number(selectedAntreanShow.qty) || 0;
-        setSelectedAntreanShow(prev => ({
+        setSelectedAntreanShow((prev) => ({
           ...prev,
-          status: 'Proses Cutting',
+          status: "Proses Cutting",
           tglSerahCutting: cuttingForm.tglSerahCutting,
           timCutting: finalTim,
           tarifCutting: tarif,
           totalBiayaCutting: currentQty * tarif,
-          catatanCutting: cuttingForm.catatanCutting
+          catatanCutting: cuttingForm.catatanCutting,
         }));
       }
 
       await Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Diserahkan ke Cutting!',
+        icon: "success",
+        title: "Berhasil Diserahkan ke Cutting!",
         html: `
           <div style="font-size:12px; text-align:left; line-height:1.6; color:#334155;">
-            <p><strong>${targetIds.length} Antrean (${totalQty.toLocaleString('id-ID')} Pcs)</strong> telah diserahkan ke <strong>${finalTim}</strong> (Status: Proses Cutting).</p>
+            <p><strong>${targetIds.length} Antrean (${totalQty.toLocaleString("id-ID")} Pcs)</strong> telah diserahkan ke <strong>${finalTim}</strong> (Status: Proses Cutting).</p>
             <div style="margin-top:10px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #cbd5e1; font-family:monospace;">
               <div>📅 Tgl Penyerahan : <b>${cuttingForm.tglSerahCutting}</b></div>
               <div>✂️ Tim Cutting : <b>${finalTim}</b></div>
-              <div>💰 Tarif Jasa : <b>Rp ${tarif.toLocaleString('id-ID')} / Pcs</b></div>
+              <div>💰 Tarif Jasa : <b>Rp ${tarif.toLocaleString("id-ID")} / Pcs</b></div>
               <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; font-size:13px; color:#0284c7;">
-                📊 Total Biaya : <b>Rp ${totalBiaya.toLocaleString('id-ID')}</b>
+                📊 Total Biaya : <b>Rp ${totalBiaya.toLocaleString("id-ID")}</b>
               </div>
             </div>
           </div>
         `,
-        confirmButtonText: 'Selesai & Tutup',
-        confirmButtonColor: '#0284c7'
+        confirmButtonText: "Selesai & Tutup",
+        confirmButtonColor: "#0284c7",
       });
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyerahkan',
-        text: err.message || 'Terjadi kesalahan sistem'
+        icon: "error",
+        title: "Gagal Menyerahkan",
+        text: err.message || "Terjadi kesalahan sistem",
       });
     }
   };
@@ -535,10 +602,12 @@ export default function Antrean({
     setJahitTargetItems(items);
     setJahitForm({
       tglSerahJahit: new Date().toISOString().slice(0, 10),
-      timJahit: jahitEmployees[0]?.nama ? `Tim ${jahitEmployees[0].nama}` : 'Tim Jahit 1 (Siti Aminah)',
-      customTimJahit: '',
+      timJahit: jahitEmployees[0]?.nama
+        ? `Tim ${jahitEmployees[0].nama}`
+        : "Tim Jahit 1 (Siti Aminah)",
+      customTimJahit: "",
       tarifJahit: defaultTarifJahit || 3500,
-      catatanJahit: ''
+      catatanJahit: "",
     });
     setIsJahitModalOpen(true);
   };
@@ -548,12 +617,16 @@ export default function Antrean({
     e?.preventDefault();
     if (!jahitTargetItems || jahitTargetItems.length === 0) return;
 
-    const finalTim = jahitForm.timJahit === 'LAINNYA' 
-      ? (jahitForm.customTimJahit.trim() || 'Tim Jahit')
-      : jahitForm.timJahit;
+    const finalTim =
+      jahitForm.timJahit === "LAINNYA"
+        ? jahitForm.customTimJahit.trim() || "Tim Jahit"
+        : jahitForm.timJahit;
 
-    const targetIds = jahitTargetItems.map(item => item.id);
-    const totalQty = jahitTargetItems.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+    const targetIds = jahitTargetItems.map((item) => item.id);
+    const totalQty = jahitTargetItems.reduce(
+      (acc, curr) => acc + (Number(curr.qty) || 0),
+      0,
+    );
     const tarif = Number(jahitForm.tarifJahit) || 0;
     const totalBiaya = totalQty * tarif;
 
@@ -564,74 +637,74 @@ export default function Antrean({
           tglSerahJahit: jahitForm.tglSerahJahit,
           timJahit: finalTim,
           tarifJahit: tarif,
-          catatanJahit: jahitForm.catatanJahit
+          catatanJahit: jahitForm.catatanJahit,
         });
       } catch (apiErr) {
-        console.warn('API serahJahit error, fallback to local state:', apiErr);
+        console.warn("API serahJahit error, fallback to local state:", apiErr);
       }
 
-      setAntreanList(prev => {
-        const next = prev.map(item => {
+      setAntreanList((prev) => {
+        const next = prev.map((item) => {
           if (targetIds.includes(item.id)) {
             const itemQty = Number(item.qty) || 0;
             return {
               ...item,
-              status: 'Proses Jahit',
+              status: "Proses Jahit",
               tglSerahJahit: jahitForm.tglSerahJahit,
               timJahit: finalTim,
               tarifJahit: tarif,
               totalBiayaJahit: itemQty * tarif,
-              catatanJahit: jahitForm.catatanJahit
+              catatanJahit: jahitForm.catatanJahit,
             };
           }
           return item;
         });
         try {
-          localStorage.setItem('konveksi_antrean_list', JSON.stringify(next));
+          localStorage.setItem("konveksi_antrean_list", JSON.stringify(next));
         } catch (_) {}
         return next;
       });
 
-      setSelectedIds(prev => prev.filter(id => !targetIds.includes(id)));
+      setSelectedIds((prev) => prev.filter((id) => !targetIds.includes(id)));
       setIsJahitModalOpen(false);
 
       if (selectedAntreanShow && targetIds.includes(selectedAntreanShow.id)) {
         const currentQty = Number(selectedAntreanShow.qty) || 0;
-        setSelectedAntreanShow(prev => ({
+        setSelectedAntreanShow((prev) => ({
           ...prev,
-          status: 'Proses Jahit',
+          status: "Proses Jahit",
           tglSerahJahit: jahitForm.tglSerahJahit,
           timJahit: finalTim,
           tarifJahit: tarif,
           totalBiayaJahit: currentQty * tarif,
-          catatanJahit: jahitForm.catatanJahit
+          catatanJahit: jahitForm.catatanJahit,
         }));
       }
 
       await Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Diserahkan ke Tim Jahit!',
+        icon: "success",
+        title: "Berhasil Diserahkan ke Tim Jahit!",
         html: `
           <div style="font-size:12px; text-align:left; line-height:1.6; color:#334155;">
-            <p><strong>${targetIds.length} Antrean (${totalQty.toLocaleString('id-ID')} Pcs)</strong> telah diserahkan ke <strong>${finalTim}</strong> untuk penjahitan (Step 3 SOP).</p>
+            <p><strong>${targetIds.length} Antrean (${totalQty.toLocaleString("id-ID")} Pcs)</strong> telah diserahkan ke <strong>${finalTim}</strong> untuk penjahitan (Step 3 SOP).</p>
             <div style="margin-top:10px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #cbd5e1; font-family:monospace;">
               <div>📅 Tgl Penyerahan : <b>${jahitForm.tglSerahJahit}</b></div>
               <div>🧵 Tim Jahit : <b>${finalTim}</b></div>
-              <div>💰 Tarif Jasa Jahit : <b>Rp ${tarif.toLocaleString('id-ID')} / Pcs</b></div>
+              <div>💰 Tarif Jasa Jahit : <b>Rp ${tarif.toLocaleString("id-ID")} / Pcs</b></div>
               <div style="margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; font-size:13px; color:#4f46e5;">
-                📊 Total Biaya Jahit : <b>Rp ${totalBiaya.toLocaleString('id-ID')}</b>
+                📊 Total Biaya Jahit : <b>Rp ${totalBiaya.toLocaleString("id-ID")}</b>
               </div>
             </div>
           </div>
         `,
-        confirmButtonText: 'Selesai & Tutup',
-        confirmButtonColor: '#4f46e5'
+        confirmButtonText: "Selesai & Tutup",
+        confirmButtonColor: "#4f46e5",
       });
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyerahkan ke Jahit',
-        text: err.message || 'Terjadi kesalahan sistem'
+        icon: "error",
+        title: "Gagal Menyerahkan ke Jahit",
+        text: err.message || "Terjadi kesalahan sistem",
       });
     }
   };
@@ -642,9 +715,11 @@ export default function Antrean({
     setQcTargetItems(items);
     setQcForm({
       tglSerahQc: new Date().toISOString().slice(0, 10),
-      timQc: qcEmployees[0]?.nama ? `Tim ${qcEmployees[0].nama} (QC)` : 'Tim QC 1 (Inspeksi Jahitan & Pola)',
-      catatanQc: '',
-      statusQc: 'Pemeriksaan'
+      timQc: qcEmployees[0]?.nama
+        ? `Tim ${qcEmployees[0].nama} (QC)`
+        : "Tim QC 1 (Inspeksi Jahitan & Pola)",
+      catatanQc: "",
+      statusQc: "Pemeriksaan",
     });
     setIsQcModalOpen(true);
   };
@@ -654,9 +729,12 @@ export default function Antrean({
     e?.preventDefault();
     if (!qcTargetItems || qcTargetItems.length === 0) return;
 
-    const finalTim = qcForm.timQc || 'Tim QC';
-    const targetIds = qcTargetItems.map(item => item.id);
-    const totalQty = qcTargetItems.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+    const finalTim = qcForm.timQc || "Tim QC";
+    const targetIds = qcTargetItems.map((item) => item.id);
+    const totalQty = qcTargetItems.reduce(
+      (acc, curr) => acc + (Number(curr.qty) || 0),
+      0,
+    );
     const tarif = Number(qcForm.tarifQc ?? 500);
 
     try {
@@ -667,55 +745,55 @@ export default function Antrean({
           timQc: finalTim,
           tarifQc: tarif,
           catatanQc: qcForm.catatanQc,
-          statusQc: qcForm.statusQc || 'Pemeriksaan'
+          statusQc: qcForm.statusQc || "Pemeriksaan",
         });
       } catch (apiErr) {
-        console.warn('API serahQc error, fallback to local state:', apiErr);
+        console.warn("API serahQc error, fallback to local state:", apiErr);
       }
 
-      setAntreanList(prev => {
-        const next = prev.map(item => {
+      setAntreanList((prev) => {
+        const next = prev.map((item) => {
           if (targetIds.includes(item.id)) {
             const itemQty = Number(item.qty) || 0;
             return {
               ...item,
-              status: 'Proses QC',
+              status: "Proses QC",
               tglSerahQc: qcForm.tglSerahQc,
               timQc: finalTim,
               tarifQc: tarif,
               totalBiayaQc: itemQty * tarif,
               catatanQc: qcForm.catatanQc,
-              statusQc: qcForm.statusQc || 'Pemeriksaan'
+              statusQc: qcForm.statusQc || "Pemeriksaan",
             };
           }
           return item;
         });
         try {
-          localStorage.setItem('konveksi_antrean_list', JSON.stringify(next));
+          localStorage.setItem("konveksi_antrean_list", JSON.stringify(next));
         } catch (_) {}
         return next;
       });
 
-      setSelectedIds(prev => prev.filter(id => !targetIds.includes(id)));
+      setSelectedIds((prev) => prev.filter((id) => !targetIds.includes(id)));
       setIsQcModalOpen(false);
 
       if (selectedAntreanShow && targetIds.includes(selectedAntreanShow.id)) {
-        setSelectedAntreanShow(prev => ({
+        setSelectedAntreanShow((prev) => ({
           ...prev,
-          status: 'Proses QC',
+          status: "Proses QC",
           tglSerahQc: qcForm.tglSerahQc,
           timQc: finalTim,
           catatanQc: qcForm.catatanQc,
-          statusQc: qcForm.statusQc || 'Pemeriksaan'
+          statusQc: qcForm.statusQc || "Pemeriksaan",
         }));
       }
 
       await Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Diserahkan ke Tim QC!',
+        icon: "success",
+        title: "Berhasil Diserahkan ke Tim QC!",
         html: `
           <div style="font-size:12px; text-align:left; line-height:1.6; color:#334155;">
-            <p><strong>${targetIds.length} Antrean (${totalQty.toLocaleString('id-ID')} Pcs)</strong> telah diserahkan ke <strong>${finalTim}</strong> untuk inspeksi & pemeriksaan kualitas (Step 4 SOP).</p>
+            <p><strong>${targetIds.length} Antrean (${totalQty.toLocaleString("id-ID")} Pcs)</strong> telah diserahkan ke <strong>${finalTim}</strong> untuk inspeksi & pemeriksaan kualitas (Step 4 SOP).</p>
             <div style="margin-top:10px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #cbd5e1; font-family:monospace;">
               <div>📅 Tgl Masuk QC : <b>${qcForm.tglSerahQc}</b></div>
               <div>🔍 Tim QC : <b>${finalTim}</b></div>
@@ -723,14 +801,14 @@ export default function Antrean({
             </div>
           </div>
         `,
-        confirmButtonText: 'Selesai & Tutup',
-        confirmButtonColor: '#0f766e'
+        confirmButtonText: "Selesai & Tutup",
+        confirmButtonColor: "#0f766e",
       });
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyerahkan ke QC',
-        text: err.message || 'Terjadi kesalahan sistem'
+        icon: "error",
+        title: "Gagal Menyerahkan ke QC",
+        text: err.message || "Terjadi kesalahan sistem",
       });
     }
   };
@@ -739,15 +817,19 @@ export default function Antrean({
   const handleOpenFinishingModal = (items = []) => {
     if (!items || items.length === 0) return;
     setFinishingTargetItems(items);
-    const totalQty = items.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
-    const defaultTim = finishingEmployees[0]?.nama || 'Tim Finishing & Packing 1 (Uap & Lipat)';
+    const totalQty = items.reduce(
+      (acc, curr) => acc + (Number(curr.qty) || 0),
+      0,
+    );
+    const defaultTim =
+      finishingEmployees[0]?.nama || "Tim Finishing & Packing 1 (Uap & Lipat)";
     setFinishingForm({
       qtyPassQc: totalQty,
       qtyRejectQc: 0,
-      catatanRejectQc: '',
+      catatanRejectQc: "",
       tglSerahFinishing: new Date().toISOString().slice(0, 10),
       timFinishing: defaultTim,
-      catatanFinishing: ''
+      catatanFinishing: "",
     });
     setIsFinishingModalOpen(true);
   };
@@ -757,9 +839,12 @@ export default function Antrean({
     e?.preventDefault();
     if (!finishingTargetItems || finishingTargetItems.length === 0) return;
 
-    const finalTim = finishingForm.timFinishing || 'Tim Finishing & Packing';
-    const targetIds = finishingTargetItems.map(item => item.id);
-    const totalQty = finishingTargetItems.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+    const finalTim = finishingForm.timFinishing || "Tim Finishing & Packing";
+    const targetIds = finishingTargetItems.map((item) => item.id);
+    const totalQty = finishingTargetItems.reduce(
+      (acc, curr) => acc + (Number(curr.qty) || 0),
+      0,
+    );
     const passQty = Number(finishingForm.qtyPassQc) || 0;
     const rejectQty = Number(finishingForm.qtyRejectQc) || 0;
     const tarif = Number(finishingForm.tarifFinishing ?? 1000);
@@ -775,7 +860,7 @@ export default function Antrean({
           tglSerahFinishing: finishingForm.tglSerahFinishing,
           timFinishing: finalTim,
           tarifFinishing: tarif,
-          catatanFinishing: finishingForm.catatanFinishing
+          catatanFinishing: finishingForm.catatanFinishing,
         });
 
         // Refresh data antrean terbaru dari database untuk sinkronisasi antrean pecahan retur
@@ -783,29 +868,35 @@ export default function Antrean({
         if (Array.isArray(freshList)) {
           setAntreanList(freshList);
           try {
-            localStorage.setItem('konveksi_antrean_list', JSON.stringify(freshList));
+            localStorage.setItem(
+              "konveksi_antrean_list",
+              JSON.stringify(freshList),
+            );
           } catch (_) {}
         }
       } catch (apiErr) {
-        console.warn('API serahFinishing error, fallback to local state:', apiErr);
+        console.warn(
+          "API serahFinishing error, fallback to local state:",
+          apiErr,
+        );
         // Fallback local state jika server offline
-        setAntreanList(prev => {
+        setAntreanList((prev) => {
           let next = [...prev];
           if (rejectQty > 0 && passQty > 0) {
             // Split: update asli jadi passQty, buat baru untuk rejectQty
-            next = next.map(item => {
+            next = next.map((item) => {
               if (targetIds.includes(item.id)) {
                 return {
                   ...item,
                   qty: passQty,
-                  status: 'Proses Finishing',
-                  statusQc: 'Selesai QC (Lolos Sebagian)',
+                  status: "Proses Finishing",
+                  statusQc: "Selesai QC (Lolos Sebagian)",
                   qtyPassQc: passQty,
                   qtyRejectQc: rejectQty,
                   catatanRejectQc: finishingForm.catatanRejectQc,
                   tglSerahFinishing: finishingForm.tglSerahFinishing,
                   timFinishing: finalTim,
-                  catatanFinishing: finishingForm.catatanFinishing
+                  catatanFinishing: finishingForm.catatanFinishing,
                 };
               }
               return item;
@@ -818,62 +909,62 @@ export default function Antrean({
                 id: Date.now(),
                 noAntrian: `${firstTarget.noAntrian}-R`,
                 qty: rejectQty,
-                status: 'Proses Jahit',
-                statusQc: 'Perbaikan Jahit',
-                prioritas: 'Urgent',
-                catatan: `[RETUR REVISI QC]: ${finishingForm.catatanRejectQc || 'Perbaikan cacat jahit'}`,
-                catatanJahit: `[PERBAIKAN REJECT QC]: ${finishingForm.catatanRejectQc || 'Perbaiki jahitan yang meleset'}`,
+                status: "Proses Jahit",
+                statusQc: "Perbaikan Jahit",
+                prioritas: "Urgent",
+                catatan: `[RETUR REVISI QC]: ${finishingForm.catatanRejectQc || "Perbaikan cacat jahit"}`,
+                catatanJahit: `[PERBAIKAN REJECT QC]: ${finishingForm.catatanRejectQc || "Perbaiki jahitan yang meleset"}`,
                 tglSerahJahit: new Date().toISOString().slice(0, 10),
                 qtyPassQc: 0,
                 qtyRejectQc: rejectQty,
                 catatanRejectQc: finishingForm.catatanRejectQc,
                 tglSerahFinishing: null,
-                timFinishing: null
+                timFinishing: null,
               };
               next.unshift(returItem);
             }
           } else if (rejectQty > 0 && passQty === 0) {
             // 100% Reject: kembalikan ke Proses Jahit
-            next = next.map(item => {
+            next = next.map((item) => {
               if (targetIds.includes(item.id)) {
                 return {
                   ...item,
-                  status: 'Proses Jahit',
-                  statusQc: 'Reject (Kembali Jahit)',
+                  status: "Proses Jahit",
+                  statusQc: "Reject (Kembali Jahit)",
                   qtyPassQc: 0,
                   qtyRejectQc: rejectQty,
                   catatanRejectQc: finishingForm.catatanRejectQc,
-                  catatan: `[RETUR QC]: ${finishingForm.catatanRejectQc || 'Cacat jahit'}`
+                  catatan: `[RETUR QC]: ${finishingForm.catatanRejectQc || "Cacat jahit"}`,
                 };
               }
               return item;
             });
           } else {
             // 100% Lolos
-            next = next.map(item => {
+            next = next.map((item) => {
               if (targetIds.includes(item.id)) {
                 return {
                   ...item,
-                  status: 'Proses Finishing',
-                  statusQc: 'Selesai QC',
+                  status: "Proses Finishing",
+                  statusQc: "Selesai QC",
                   qtyPassQc: passQty,
                   qtyRejectQc: 0,
                   tglSerahFinishing: finishingForm.tglSerahFinishing,
                   timFinishing: finalTim,
-                  catatanFinishing: finishingForm.catatanFinishing
+                  catatanFinishing: finishingForm.catatanFinishing,
                 };
               }
               return item;
             });
           }
           try {
-            localStorage.setItem('konveksi_antrean_list', JSON.stringify(next));
+            localStorage.setItem("konveksi_antrean_list", JSON.stringify(next));
           } catch (_) {}
           return next;
         });
       }
 
-      setSelectedIds(prev => prev.filter(id => !targetIds.includes(id)));
+      setSelectedIds((prev) => prev.filter((id) => !targetIds.includes(id)));
       setIsFinishingModalOpen(false);
 
       if (selectedAntreanShow && targetIds.includes(selectedAntreanShow.id)) {
@@ -881,38 +972,51 @@ export default function Antrean({
       }
 
       const returList = apiResult?.returItems || [];
-      const returNoText = returList.map(r => `<b>${r.noAntrian}</b> (${r.qty} Pcs)`).join(', ');
+      const returNoText = returList
+        .map((r) => `<b>${r.noAntrian}</b> (${r.qty} Pcs)`)
+        .join(", ");
 
       await Swal.fire({
-        icon: 'success',
-        title: rejectQty > 0 ? 'QC Terverifikasi: Lolos & Retur Jahit Terpisah' : 'Hasil QC Terverifikasi & Masuk Finishing!',
+        icon: "success",
+        title:
+          rejectQty > 0
+            ? "QC Terverifikasi: Lolos & Retur Jahit Terpisah"
+            : "Hasil QC Terverifikasi & Masuk Finishing!",
         html: `
           <div style="font-size:12px; text-align:left; line-height:1.6; color:#334155;">
             <p>Pemeriksaan QC selesai. Alokasi kuantitas telah diproses:</p>
             <div style="margin-top:10px; padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #cbd5e1; font-family:sans-serif;">
-              ${passQty > 0 ? `
+              ${
+                passQty > 0
+                  ? `
                 <div style="color:#059669; font-weight:bold; margin-bottom:6px;">
-                  ✨ ${passQty.toLocaleString('id-ID')} Pcs Lolos ➔ Lanjut ke <u>Proses Finishing</u> (${finalTim})
+                  ✨ ${passQty.toLocaleString("id-ID")} Pcs Lolos ➔ Lanjut ke <u>Proses Finishing</u> (${finalTim})
                 </div>
-              ` : ''}
-              ${rejectQty > 0 ? `
+              `
+                  : ""
+              }
+              ${
+                rejectQty > 0
+                  ? `
                 <div style="color:#e11d48; font-weight:bold; padding-top:6px; border-top:1px dashed #fecdd3;">
-                  🧵 ${rejectQty.toLocaleString('id-ID')} Pcs Reject ➔ Otomatis KEMBALI ke <u>Proses Jahit</u> (Perbaikan)
-                  ${returNoText ? `<div style="font-size:11px; color:#be123c; margin-top:3px;">No Antrean Retur: ${returNoText}</div>` : ''}
-                  ${finishingForm.catatanRejectQc ? `<div style="font-size:11px; color:#64748b; font-style:italic; margin-top:2px;">Catatan: "${finishingForm.catatanRejectQc}"</div>` : ''}
+                  🧵 ${rejectQty.toLocaleString("id-ID")} Pcs Reject ➔ Otomatis KEMBALI ke <u>Proses Jahit</u> (Perbaikan)
+                  ${returNoText ? `<div style="font-size:11px; color:#be123c; margin-top:3px;">No Antrean Retur: ${returNoText}</div>` : ""}
+                  ${finishingForm.catatanRejectQc ? `<div style="font-size:11px; color:#64748b; font-style:italic; margin-top:2px;">Catatan: "${finishingForm.catatanRejectQc}"</div>` : ""}
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           </div>
         `,
-        confirmButtonText: 'Selesai & Tutup',
-        confirmButtonColor: '#059669'
+        confirmButtonText: "Selesai & Tutup",
+        confirmButtonColor: "#059669",
       });
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyerahkan ke Finishing',
-        text: err.message || 'Terjadi kesalahan sistem'
+        icon: "error",
+        title: "Gagal Menyerahkan ke Finishing",
+        text: err.message || "Terjadi kesalahan sistem",
       });
     }
   };
@@ -936,24 +1040,40 @@ export default function Antrean({
           ids: [item.id],
           tglDiserahkan: formValues.tglDiserahkan,
           petugasSerah: formValues.petugasSerah,
-          catatan: formValues.catatan
+          catatan: formValues.catatan,
         });
 
         const freshAntrean = await api.getAntrean();
         if (Array.isArray(freshAntrean)) {
           setAntreanList(freshAntrean);
-          try { localStorage.setItem('konveksi_antrean_list', JSON.stringify(freshAntrean)); } catch (_) {}
+          try {
+            localStorage.setItem(
+              "konveksi_antrean_list",
+              JSON.stringify(freshAntrean),
+            );
+          } catch (_) {}
         }
       } catch (apiErr) {
-        console.warn('API selesaiFinishing offline/error, updating local state:', apiErr);
-        setAntreanList(prev => {
-          const next = prev.map(a => a.id === item.id ? {
-            ...a,
-            status: 'Selesai',
-            tglSerahGudang: formValues.tglDiserahkan || new Date().toISOString().slice(0, 10),
-            timFinishing: formValues.petugasSerah
-          } : a);
-          try { localStorage.setItem('konveksi_antrean_list', JSON.stringify(next)); } catch (_) {}
+        console.warn(
+          "API selesaiFinishing offline/error, updating local state:",
+          apiErr,
+        );
+        setAntreanList((prev) => {
+          const next = prev.map((a) =>
+            a.id === item.id
+              ? {
+                  ...a,
+                  status: "Selesai",
+                  tglSerahGudang:
+                    formValues.tglDiserahkan ||
+                    new Date().toISOString().slice(0, 10),
+                  timFinishing: formValues.petugasSerah,
+                }
+              : a,
+          );
+          try {
+            localStorage.setItem("konveksi_antrean_list", JSON.stringify(next));
+          } catch (_) {}
           return next;
         });
       }
@@ -962,13 +1082,13 @@ export default function Antrean({
       setGudangJadiTargetItem(null);
 
       await Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Diserahkan ke Gudang Jadi!',
+        icon: "success",
+        title: "Berhasil Diserahkan ke Gudang Jadi!",
         html: `
           <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
             <p>Antrean <b>${item.noAntrian}</b> berhasil diserahkan ke Tim Gudang.</p>
             <div style="margin-top:8px; padding:10px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; color:#166534;">
-              <div>📦 <b>+${finalQty.toLocaleString('id-ID')} Pcs</b> siap diperiksa & disimpan di rak gudang</div>
+              <div>📦 <b>+${finalQty.toLocaleString("id-ID")} Pcs</b> siap diperiksa & disimpan di rak gudang</div>
               <div>📅 Tgl Diserahkan: <b>${formValues.tglDiserahkan}</b></div>
               <div>👤 Diserahkan Oleh: <b>${formValues.petugasSerah}</b></div>
               <div style="margin-top:6px; padding-top:6px; border-top:1px dashed #86efac; font-size:11px; color:#15803d;">
@@ -977,14 +1097,14 @@ export default function Antrean({
             </div>
           </div>
         `,
-        confirmButtonText: 'Tutup',
-        confirmButtonColor: '#059669'
+        confirmButtonText: "Tutup",
+        confirmButtonColor: "#059669",
       });
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyerahkan ke Gudang',
-        text: err.message || 'Terjadi kesalahan sistem'
+        icon: "error",
+        title: "Gagal Menyerahkan ke Gudang",
+        text: err.message || "Terjadi kesalahan sistem",
       });
     }
   };
@@ -993,28 +1113,35 @@ export default function Antrean({
   const handleRollbackTahap = async (item) => {
     if (!item) return;
 
-    let targetTahap = 'Menunggu Cutting';
-    let detailKeterangan = '';
+    let targetTahap = "Menunggu Cutting";
+    let detailKeterangan = "";
 
-    if (item.status === 'Proses Cutting' || item.status === 'Sedang Diproses') {
-      targetTahap = 'Menunggu Cutting';
-      detailKeterangan = 'Data penyerahan cutting, alokasi tim cutting, dan biaya potong akan di-reset.';
-    } else if (item.status === 'Proses Jahit') {
-      targetTahap = 'Proses Cutting';
-      detailKeterangan = 'Data penyerahan jahit, tim jahit, dan biaya jahit akan di-reset.';
-    } else if (item.status === 'Proses QC') {
-      targetTahap = 'Proses Jahit';
-      detailKeterangan = 'Data pemeriksaan QC akan di-reset.';
-    } else if (item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang') {
-      targetTahap = 'Proses Finishing';
-      detailKeterangan = 'Status dikembalikan ke Proses Finishing dan mutasi masuk gudang jadi dibatalkan.';
-    } else if (item.status === 'Proses Finishing') {
-      targetTahap = 'Proses QC';
-      detailKeterangan = 'Data alokasi finishing dan rekap hasil lolos/reject akan di-reset.';
+    if (item.status === "Proses Cutting" || item.status === "Sedang Diproses") {
+      targetTahap = "Menunggu Cutting";
+      detailKeterangan =
+        "Data penyerahan cutting, alokasi tim cutting, dan biaya potong akan di-reset.";
+    } else if (item.status === "Proses Jahit") {
+      targetTahap = "Proses Cutting";
+      detailKeterangan =
+        "Data penyerahan jahit, tim jahit, dan biaya jahit akan di-reset.";
+    } else if (item.status === "Proses QC") {
+      targetTahap = "Proses Jahit";
+      detailKeterangan = "Data pemeriksaan QC akan di-reset.";
+    } else if (
+      item.status === "Selesai" ||
+      item.status === "Menunggu Penerimaan Gudang"
+    ) {
+      targetTahap = "Proses Finishing";
+      detailKeterangan =
+        "Status dikembalikan ke Proses Finishing dan mutasi masuk gudang jadi dibatalkan.";
+    } else if (item.status === "Proses Finishing") {
+      targetTahap = "Proses QC";
+      detailKeterangan =
+        "Data alokasi finishing dan rekap hasil lolos/reject akan di-reset.";
     }
 
     const res = await Swal.fire({
-      icon: 'warning',
+      icon: "warning",
       title: `Batalkan Tahap ${item.status}?`,
       html: `
         <div style="font-size:12px; text-align:left; line-height:1.6; color:#334155;">
@@ -1028,9 +1155,9 @@ export default function Antrean({
       `,
       showCancelButton: true,
       confirmButtonText: `Ya, Kembalikan ke ${targetTahap}`,
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#d97706',
-      cancelButtonColor: '#64748b'
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#d97706",
+      cancelButtonColor: "#64748b",
     });
 
     if (res.isConfirmed) {
@@ -1042,97 +1169,116 @@ export default function Antrean({
           const fresh = await api.getAntrean();
           if (Array.isArray(fresh) && fresh.length > 0) {
             setAntreanList(fresh);
-            try { localStorage.setItem('konveksi_antrean_list', JSON.stringify(fresh)); } catch (_) {}
+            try {
+              localStorage.setItem(
+                "konveksi_antrean_list",
+                JSON.stringify(fresh),
+              );
+            } catch (_) {}
           }
         } catch (apiErr) {
-          console.warn('API rollback warning, update local fallback:', apiErr);
+          console.warn("API rollback warning, update local fallback:", apiErr);
         }
 
-        setAntreanList(prev => {
-          const next = prev.map(a => {
+        setAntreanList((prev) => {
+          const next = prev.map((a) => {
             if (a.id === item.id) {
               if (rolledBackItem) return { ...a, ...rolledBackItem };
-              if (item.status === 'Proses Cutting' || item.status === 'Sedang Diproses') {
+              if (
+                item.status === "Proses Cutting" ||
+                item.status === "Sedang Diproses"
+              ) {
                 return {
                   ...a,
-                  status: 'Menunggu Cutting',
+                  status: "Menunggu Cutting",
                   tglSerahCutting: null,
                   timCutting: null,
                   tarifCutting: 0,
                   totalBiayaCutting: 0,
-                  catatanCutting: null
+                  catatanCutting: null,
                 };
-              } else if (item.status === 'Proses Jahit') {
+              } else if (item.status === "Proses Jahit") {
                 return {
                   ...a,
-                  status: 'Proses Cutting',
+                  status: "Proses Cutting",
                   tglSerahJahit: null,
                   timJahit: null,
                   tarifJahit: 0,
                   totalBiayaJahit: 0,
-                  catatanJahit: null
+                  catatanJahit: null,
                 };
-              } else if (item.status === 'Proses QC') {
+              } else if (item.status === "Proses QC") {
                 return {
                   ...a,
-                  status: 'Proses Jahit',
+                  status: "Proses Jahit",
                   tglSerahQc: null,
                   timQc: null,
                   catatanQc: null,
-                  statusQc: null
+                  statusQc: null,
                 };
-              } else if (item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang') {
+              } else if (
+                item.status === "Selesai" ||
+                item.status === "Menunggu Penerimaan Gudang"
+              ) {
                 return {
                   ...a,
-                  status: 'Proses Finishing',
-                  tglSerahGudang: null
+                  status: "Proses Finishing",
+                  tglSerahGudang: null,
                 };
-              } else if (item.status === 'Proses Finishing') {
+              } else if (item.status === "Proses Finishing") {
                 return {
                   ...a,
-                  status: 'Proses QC',
-                  statusQc: 'Pemeriksaan',
+                  status: "Proses QC",
+                  statusQc: "Pemeriksaan",
                   qtyPassQc: 0,
                   qtyRejectQc: 0,
                   catatanRejectQc: null,
                   tglSerahFinishing: null,
                   timFinishing: null,
-                  catatanFinishing: null
+                  catatanFinishing: null,
                 };
               }
             }
             return a;
           });
           try {
-            localStorage.setItem('konveksi_antrean_list', JSON.stringify(next));
+            localStorage.setItem("konveksi_antrean_list", JSON.stringify(next));
           } catch (_) {}
           return next;
         });
 
         // Update modal detail jika dibuka
         if (selectedAntreanShow && selectedAntreanShow.id === item.id) {
-          setSelectedAntreanShow(prev => ({
+          setSelectedAntreanShow((prev) => ({
             ...prev,
             status: targetTahap,
-            ...(targetTahap === 'Menunggu Cutting' ? { tglSerahCutting: null, timCutting: null } : {}),
-            ...(targetTahap === 'Proses Cutting' ? { tglSerahJahit: null, timJahit: null } : {}),
-            ...(targetTahap === 'Proses Jahit' ? { tglSerahQc: null, timQc: null } : {}),
-            ...(targetTahap === 'Proses QC' ? { tglSerahFinishing: null, timFinishing: null } : {})
+            ...(targetTahap === "Menunggu Cutting"
+              ? { tglSerahCutting: null, timCutting: null }
+              : {}),
+            ...(targetTahap === "Proses Cutting"
+              ? { tglSerahJahit: null, timJahit: null }
+              : {}),
+            ...(targetTahap === "Proses Jahit"
+              ? { tglSerahQc: null, timQc: null }
+              : {}),
+            ...(targetTahap === "Proses QC"
+              ? { tglSerahFinishing: null, timFinishing: null }
+              : {}),
           }));
         }
 
         Swal.fire({
-          icon: 'success',
-          title: 'Tahap Berhasil Dibatalkan!',
+          icon: "success",
+          title: "Tahap Berhasil Dibatalkan!",
           text: `Antrean ${item.noAntrian} telah dikembalikan ke status "${targetTahap}".`,
           timer: 1800,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       } catch (err) {
         Swal.fire({
-          icon: 'error',
-          title: 'Gagal Membatalkan Tahap',
-          text: err.message || 'Terjadi kesalahan sistem'
+          icon: "error",
+          title: "Gagal Membatalkan Tahap",
+          text: err.message || "Terjadi kesalahan sistem",
         });
       }
     }
@@ -1144,44 +1290,44 @@ export default function Antrean({
 
     if (!formData.sku) {
       Swal.fire({
-        icon: 'warning',
-        title: 'SKU Wajib Dipilih',
-        text: 'Silakan pilih model produk/SKU untuk antrean produksi ini.'
+        icon: "warning",
+        title: "SKU Wajib Dipilih",
+        text: "Silakan pilih model produk/SKU untuk antrean produksi ini.",
       });
       return;
     }
 
     if (!formData.qty || Number(formData.qty) <= 0) {
       Swal.fire({
-        icon: 'warning',
-        title: 'Qty Tidak Valid',
-        text: 'Target kuantiti produksi harus lebih dari 0.'
+        icon: "warning",
+        title: "Qty Tidak Valid",
+        text: "Target kuantiti produksi harus lebih dari 0.",
       });
       return;
     }
 
-    const matchedProd = products.find(p => p.sku === formData.sku);
+    const matchedProd = products.find((p) => p.sku === formData.sku);
     const prodDetails = {
       namaProduk: getProdName(matchedProd),
-      kategori: matchedProd?.kategori || '-',
-      varian: matchedProd?.varian || '-',
-      ukuran: matchedProd?.ukuran || '-',
-      skuBahan: getProdBahan(matchedProd)
+      kategori: matchedProd?.kategori || "-",
+      varian: matchedProd?.varian || "-",
+      ukuran: matchedProd?.ukuran || "-",
+      skuBahan: getProdBahan(matchedProd),
     };
 
-    if (modalMode === 'create') {
+    if (modalMode === "create") {
       const tempId = Date.now();
       const newRecord = {
         id: tempId,
         ...formData,
         ...prodDetails,
-        qty: Number(formData.qty)
+        qty: Number(formData.qty),
       };
 
       // Simpan ke state & localStorage agar saat refresh TIDAK HILANG
-      setAntreanList(prev => {
+      setAntreanList((prev) => {
         const nextList = [newRecord, ...(prev || [])];
-        localStorage.setItem('konveksi_antrean_list', JSON.stringify(nextList));
+        localStorage.setItem("konveksi_antrean_list", JSON.stringify(nextList));
         return nextList;
       });
       setIsModalOpen(false);
@@ -1189,27 +1335,32 @@ export default function Antrean({
       try {
         const saved = await api.createAntrean(newRecord);
         if (saved && saved.id) {
-          setAntreanList(prev => {
-            const nextList = (prev || []).map(item => (item.id === tempId ? { ...saved, ...prodDetails } : item));
-            localStorage.setItem('konveksi_antrean_list', JSON.stringify(nextList));
+          setAntreanList((prev) => {
+            const nextList = (prev || []).map((item) =>
+              item.id === tempId ? { ...saved, ...prodDetails } : item,
+            );
+            localStorage.setItem(
+              "konveksi_antrean_list",
+              JSON.stringify(nextList),
+            );
             return nextList;
           });
         }
         Swal.fire({
-          icon: 'success',
-          title: 'Antrean Berhasil Disimpan!',
+          icon: "success",
+          title: "Antrean Berhasil Disimpan!",
           text: `No. ${newRecord.noAntrian} tersimpan permanen ke sistem.`,
           timer: 1600,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       } catch (err) {
-        console.warn('API sync warning:', err);
+        console.warn("API sync warning:", err);
         Swal.fire({
-          icon: 'success',
-          title: 'Antrean Tersimpan!',
+          icon: "success",
+          title: "Antrean Tersimpan!",
           text: `No. ${newRecord.noAntrian} aman tersimpan di sistem.`,
           timer: 1600,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       }
     } else {
@@ -1217,12 +1368,14 @@ export default function Antrean({
         id: currentId,
         ...formData,
         ...prodDetails,
-        qty: Number(formData.qty)
+        qty: Number(formData.qty),
       };
 
-      setAntreanList(prev => {
-        const nextList = (prev || []).map(item => (item.id === currentId ? updatedRecord : item));
-        localStorage.setItem('konveksi_antrean_list', JSON.stringify(nextList));
+      setAntreanList((prev) => {
+        const nextList = (prev || []).map((item) =>
+          item.id === currentId ? updatedRecord : item,
+        );
+        localStorage.setItem("konveksi_antrean_list", JSON.stringify(nextList));
         return nextList;
       });
       setIsModalOpen(false);
@@ -1230,14 +1383,14 @@ export default function Antrean({
       try {
         await api.updateAntrean(currentId, updatedRecord);
         Swal.fire({
-          icon: 'success',
-          title: 'Antrean Diperbarui!',
+          icon: "success",
+          title: "Antrean Diperbarui!",
           text: `Data antrean ${updatedRecord.noAntrian} telah diperbarui.`,
           timer: 1600,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       } catch (err) {
-        console.warn('API error saat updateAntrean:', err);
+        console.warn("API error saat updateAntrean:", err);
       }
     }
   };
@@ -1245,31 +1398,31 @@ export default function Antrean({
   // Handle Delete with SweetAlert
   const handleDelete = async (item) => {
     const res = await Swal.fire({
-      icon: 'warning',
-      title: 'Hapus Antrean?',
+      icon: "warning",
+      title: "Hapus Antrean?",
       text: `Yakin ingin menghapus antrean "${item.noAntrian}" (${item.namaProduk || item.sku})?`,
       showCancelButton: true,
-      confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal'
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal",
     });
 
     if (res.isConfirmed) {
-      setAntreanList(prev => {
-        const nextList = (prev || []).filter(a => a.id !== item.id);
-        localStorage.setItem('konveksi_antrean_list', JSON.stringify(nextList));
+      setAntreanList((prev) => {
+        const nextList = (prev || []).filter((a) => a.id !== item.id);
+        localStorage.setItem("konveksi_antrean_list", JSON.stringify(nextList));
         return nextList;
       });
       try {
         await api.deleteAntrean(item.id);
       } catch (err) {
-        console.warn('API error deleteAntrean:', err);
+        console.warn("API error deleteAntrean:", err);
       }
       Swal.fire({
-        icon: 'success',
-        title: 'Terhapus!',
+        icon: "success",
+        title: "Terhapus!",
         text: `Antrean ${item.noAntrian} telah dihapus.`,
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     }
   };
@@ -1280,21 +1433,21 @@ export default function Antrean({
       const data = await api.getAntrean();
       if (Array.isArray(data)) {
         setAntreanList(data);
-        localStorage.setItem('konveksi_antrean_list', JSON.stringify(data));
+        localStorage.setItem("konveksi_antrean_list", JSON.stringify(data));
       }
       Swal.fire({
-        icon: 'success',
-        title: 'Data Dimuat Ulang',
+        icon: "success",
+        title: "Data Dimuat Ulang",
         timer: 1200,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     } catch (_) {
       Swal.fire({
-        icon: 'info',
-        title: 'Antrean Siap',
-        text: 'Daftar antrean sudah sinkron.',
+        icon: "info",
+        title: "Antrean Siap",
+        text: "Daftar antrean sudah sinkron.",
         timer: 1200,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     }
   };
@@ -1303,14 +1456,26 @@ export default function Antrean({
   const stats = useMemo(() => {
     const list = antreanList || [];
     const total = list.length;
-    const countWaiting = list.filter(a => a.status === 'Menunggu Cutting').length;
-    const countCutting = list.filter(a => a.status === 'Proses Cutting' || a.status === 'Sedang Diproses').length;
-    const countJahit = list.filter(a => a.status === 'Proses Jahit').length;
-    const countQc = list.filter(a => a.status === 'Proses QC').length;
-    const countFinishing = list.filter(a => a.status === 'Proses Finishing').length;
-    const countDone = list.filter(a => a.status === 'Selesai' || a.status === 'Menunggu Penerimaan Gudang').length;
-    const countUrgent = list.filter(a => a.prioritas === 'Urgent').length;
-    const totalQty = list.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+    const countWaiting = list.filter(
+      (a) => a.status === "Menunggu Cutting",
+    ).length;
+    const countCutting = list.filter(
+      (a) => a.status === "Proses Cutting" || a.status === "Sedang Diproses",
+    ).length;
+    const countJahit = list.filter((a) => a.status === "Proses Jahit").length;
+    const countQc = list.filter((a) => a.status === "Proses QC").length;
+    const countFinishing = list.filter(
+      (a) => a.status === "Proses Finishing",
+    ).length;
+    const countDone = list.filter(
+      (a) =>
+        a.status === "Selesai" || a.status === "Menunggu Penerimaan Gudang",
+    ).length;
+    const countUrgent = list.filter((a) => a.prioritas === "Urgent").length;
+    const totalQty = list.reduce(
+      (acc, curr) => acc + (Number(curr.qty) || 0),
+      0,
+    );
 
     return {
       total,
@@ -1321,20 +1486,40 @@ export default function Antrean({
       countFinishing,
       countDone,
       countUrgent,
-      totalQty
+      totalQty,
     };
   }, [antreanList]);
 
   // Filtering Table
   const filteredList = useMemo(() => {
-    return (antreanList || []).filter(item => {
+    return (antreanList || []).filter((item) => {
       // Tab filter
-      if (activeTab === 'Menunggu Cutting' && item.status !== 'Menunggu Cutting') return false;
-      if (activeTab === 'Proses Cutting' && item.status !== 'Proses Cutting' && item.status !== 'Sedang Diproses') return false;
-      if (activeTab === 'Proses Jahit' && item.status !== 'Proses Jahit') return false;
-      if (activeTab === 'Proses QC' && item.status !== 'Proses QC') return false;
-      if (activeTab === 'Proses Finishing' && item.status !== 'Proses Finishing') return false;
-      if (activeTab === 'Selesai' && item.status !== 'Selesai' && item.status !== 'Menunggu Penerimaan Gudang') return false;
+      if (
+        activeTab === "Menunggu Cutting" &&
+        item.status !== "Menunggu Cutting"
+      )
+        return false;
+      if (
+        activeTab === "Proses Cutting" &&
+        item.status !== "Proses Cutting" &&
+        item.status !== "Sedang Diproses"
+      )
+        return false;
+      if (activeTab === "Proses Jahit" && item.status !== "Proses Jahit")
+        return false;
+      if (activeTab === "Proses QC" && item.status !== "Proses QC")
+        return false;
+      if (
+        activeTab === "Proses Finishing" &&
+        item.status !== "Proses Finishing"
+      )
+        return false;
+      if (
+        activeTab === "Selesai" &&
+        item.status !== "Selesai" &&
+        item.status !== "Menunggu Penerimaan Gudang"
+      )
+        return false;
 
       // Dropdown Sumber Permintaan
       if (filterSumber && item.sumberPermintaan !== filterSumber) return false;
@@ -1351,7 +1536,14 @@ export default function Antrean({
         const matchNama = item.namaProduk?.toLowerCase().includes(q);
         const matchSumber = item.sumberPermintaan?.toLowerCase().includes(q);
         const matchCatatan = item.catatan?.toLowerCase().includes(q);
-        if (!matchNo && !matchReff && !matchSku && !matchNama && !matchSumber && !matchCatatan) {
+        if (
+          !matchNo &&
+          !matchReff &&
+          !matchSku &&
+          !matchNama &&
+          !matchSumber &&
+          !matchCatatan
+        ) {
           return false;
         }
       }
@@ -1378,7 +1570,8 @@ export default function Antrean({
               </span>
             </div>
             <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
-              Pendaftaran permintaan masuk dari PO, barang kosong, atau rencana internal berelasi ke Master Produk
+              Pendaftaran permintaan masuk dari PO, barang kosong, atau rencana
+              internal berelasi ke Master Produk
             </p>
           </div>
         </div>
@@ -1410,7 +1603,10 @@ export default function Antrean({
               Total Antrean Masuk
             </div>
             <div className="text-lg sm:text-xl font-black text-[#0f172a] mt-0.5 leading-none">
-              {stats.total} <span className="text-xs font-semibold text-slate-400">Order</span>
+              {stats.total}{" "}
+              <span className="text-xs font-semibold text-slate-400">
+                Order
+              </span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-sky-50 text-[#0284c7] flex items-center justify-center shrink-0">
@@ -1424,7 +1620,10 @@ export default function Antrean({
               Prioritas Urgent
             </div>
             <div className="text-lg sm:text-xl font-black text-[#ef4444] mt-0.5 leading-none">
-              {stats.countUrgent} <span className="text-xs font-semibold text-slate-500">Batch Prioritas</span>
+              {stats.countUrgent}{" "}
+              <span className="text-xs font-semibold text-slate-500">
+                Batch Prioritas
+              </span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-[#fef2f2] text-[#b91c1c] flex items-center justify-center shrink-0">
@@ -1438,7 +1637,10 @@ export default function Antrean({
               Menunggu Cutting
             </div>
             <div className="text-lg sm:text-xl font-black text-[#059669] mt-0.5 leading-none">
-              {stats.countWaiting} <span className="text-xs font-semibold text-slate-500">Siap Potong</span>
+              {stats.countWaiting}{" "}
+              <span className="text-xs font-semibold text-slate-500">
+                Siap Potong
+              </span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-[#ecfdf5] text-[#047857] flex items-center justify-center shrink-0">
@@ -1452,7 +1654,8 @@ export default function Antrean({
               Total Target Volume
             </div>
             <div className="text-lg sm:text-xl font-black text-[#0284c7] mt-0.5 leading-none">
-              {stats.totalQty.toLocaleString('id-ID')} <span className="text-xs font-semibold text-slate-400">Pcs</span>
+              {stats.totalQty.toLocaleString("id-ID")}{" "}
+              <span className="text-xs font-semibold text-slate-400">Pcs</span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#0284c7] flex items-center justify-center shrink-0">
@@ -1464,11 +1667,11 @@ export default function Antrean({
       {/* 3. FILTER TABS (PM TAB STYLES PERSIS MUTASI BAHAN) */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
         <button
-          onClick={() => setActiveTab('Semua Antrean')}
+          onClick={() => setActiveTab("Semua Antrean")}
           className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-            activeTab === 'Semua Antrean'
-              ? 'bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]'
-              : 'bg-[#eff6ff] text-[#0284c7] border border-[#bae6fd] hover:bg-sky-100/60'
+            activeTab === "Semua Antrean"
+              ? "bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]"
+              : "bg-[#eff6ff] text-[#0284c7] border border-[#bae6fd] hover:bg-sky-100/60"
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -1476,11 +1679,11 @@ export default function Antrean({
         </button>
 
         <button
-          onClick={() => setActiveTab('Menunggu Cutting')}
+          onClick={() => setActiveTab("Menunggu Cutting")}
           className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-            activeTab === 'Menunggu Cutting'
-              ? 'bg-[#d97706] text-white border border-[#d97706] shadow-[0_1px_4px_rgba(217,119,6,0.25)]'
-              : 'bg-[#fffbeb] text-[#b45309] border border-[#fde68a] hover:bg-amber-100/60'
+            activeTab === "Menunggu Cutting"
+              ? "bg-[#d97706] text-white border border-[#d97706] shadow-[0_1px_4px_rgba(217,119,6,0.25)]"
+              : "bg-[#fffbeb] text-[#b45309] border border-[#fde68a] hover:bg-amber-100/60"
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
@@ -1488,11 +1691,11 @@ export default function Antrean({
         </button>
 
         <button
-          onClick={() => setActiveTab('Proses Cutting')}
+          onClick={() => setActiveTab("Proses Cutting")}
           className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-            activeTab === 'Proses Cutting'
-              ? 'bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]'
-              : 'bg-[#eff6ff] text-[#0284c7] border border-[#bae6fd] hover:bg-sky-100/60'
+            activeTab === "Proses Cutting"
+              ? "bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]"
+              : "bg-[#eff6ff] text-[#0284c7] border border-[#bae6fd] hover:bg-sky-100/60"
           }`}
         >
           <Scissors className="w-3.5 h-3.5" />
@@ -1500,11 +1703,11 @@ export default function Antrean({
         </button>
 
         <button
-          onClick={() => setActiveTab('Proses Jahit')}
+          onClick={() => setActiveTab("Proses Jahit")}
           className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-            activeTab === 'Proses Jahit'
-              ? 'bg-[#4f46e5] text-white border border-[#4f46e5] shadow-[0_1px_4px_rgba(79,70,229,0.25)]'
-              : 'bg-[#eef2ff] text-[#4338ca] border border-[#c7d2fe] hover:bg-indigo-100/60'
+            activeTab === "Proses Jahit"
+              ? "bg-[#4f46e5] text-white border border-[#4f46e5] shadow-[0_1px_4px_rgba(79,70,229,0.25)]"
+              : "bg-[#eef2ff] text-[#4338ca] border border-[#c7d2fe] hover:bg-indigo-100/60"
           }`}
         >
           <SewingMachineIcon className="w-3.5 h-3.5" />
@@ -1512,11 +1715,11 @@ export default function Antrean({
         </button>
 
         <button
-          onClick={() => setActiveTab('Proses QC')}
+          onClick={() => setActiveTab("Proses QC")}
           className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-            activeTab === 'Proses QC'
-              ? 'bg-[#0f766e] text-white border border-[#0f766e] shadow-[0_1px_4px_rgba(15,118,110,0.25)]'
-              : 'bg-[#f0fdfa] text-[#0f766e] border border-[#99f6e4] hover:bg-teal-100/60'
+            activeTab === "Proses QC"
+              ? "bg-[#0f766e] text-white border border-[#0f766e] shadow-[0_1px_4px_rgba(15,118,110,0.25)]"
+              : "bg-[#f0fdfa] text-[#0f766e] border border-[#99f6e4] hover:bg-teal-100/60"
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -1524,11 +1727,11 @@ export default function Antrean({
         </button>
 
         <button
-          onClick={() => setActiveTab('Proses Finishing')}
+          onClick={() => setActiveTab("Proses Finishing")}
           className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-            activeTab === 'Proses Finishing'
-              ? 'bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]'
-              : 'bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60'
+            activeTab === "Proses Finishing"
+              ? "bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]"
+              : "bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60"
           }`}
         >
           <PackageCheck className="w-3.5 h-3.5" />
@@ -1536,11 +1739,11 @@ export default function Antrean({
         </button>
 
         <button
-          onClick={() => setActiveTab('Selesai')}
+          onClick={() => setActiveTab("Selesai")}
           className={`h-7.5 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-            activeTab === 'Selesai'
-              ? 'bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]'
-              : 'bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60'
+            activeTab === "Selesai"
+              ? "bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]"
+              : "bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60"
           }`}
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1568,7 +1771,7 @@ export default function Antrean({
             className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
           >
             <option value="">Semua Sumber Permintaan</option>
-            {sumberOptions.map(opt => (
+            {sumberOptions.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
               </option>
@@ -1596,12 +1799,13 @@ export default function Antrean({
           <div className="flex items-center gap-2 font-semibold">
             <CheckSquare className="w-4 h-4 text-[#0284c7]" />
             <span>
-              <strong>{selectedIds.length}</strong> antrean dipilih (Total Target:{' '}
+              <strong>{selectedIds.length}</strong> antrean dipilih (Total
+              Target:{" "}
               <strong className="text-[#0284c7]">
                 {antreanList
-                  .filter(a => selectedIds.includes(a.id))
+                  .filter((a) => selectedIds.includes(a.id))
                   .reduce((sum, a) => sum + (Number(a.qty) || 0), 0)
-                  .toLocaleString('id-ID')}{' '}
+                  .toLocaleString("id-ID")}{" "}
                 Pcs
               </strong>
               )
@@ -1618,7 +1822,9 @@ export default function Antrean({
             <button
               type="button"
               onClick={() => {
-                const items = antreanList.filter(a => selectedIds.includes(a.id));
+                const items = antreanList.filter((a) =>
+                  selectedIds.includes(a.id),
+                );
                 handleOpenCuttingModal(items);
               }}
               className="px-3 py-1 bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
@@ -1629,7 +1835,9 @@ export default function Antrean({
             <button
               type="button"
               onClick={() => {
-                const items = antreanList.filter(a => selectedIds.includes(a.id));
+                const items = antreanList.filter((a) =>
+                  selectedIds.includes(a.id),
+                );
                 handleOpenJahitModal(items);
               }}
               className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
@@ -1640,7 +1848,9 @@ export default function Antrean({
             <button
               type="button"
               onClick={() => {
-                const items = antreanList.filter(a => selectedIds.includes(a.id));
+                const items = antreanList.filter((a) =>
+                  selectedIds.includes(a.id),
+                );
                 handleOpenQcModal(items);
               }}
               className="px-3 py-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
@@ -1661,39 +1871,65 @@ export default function Antrean({
                 <th className="py-2.5 px-2 text-center w-9 min-w-[36px] border border-slate-800 text-white font-bold">
                   <input
                     type="checkbox"
-                    checked={filteredList.length > 0 && selectedIds.length === filteredList.length}
+                    checked={
+                      filteredList.length > 0 &&
+                      selectedIds.length === filteredList.length
+                    }
                     onChange={handleSelectAll}
                     className="rounded border-slate-300 text-[#0284c7] focus:ring-0 cursor-pointer w-4 h-4"
                     title="Pilih Semua Antrean"
                   />
                 </th>
-                <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-slate-800 text-white font-bold">NO</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[180px] border border-slate-800 text-white font-bold">NO. ANTREAN & TGL</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">SUMBER & REFF</th>
-                <th className="py-2.5 px-3 min-w-[240px] border border-slate-800 text-white font-bold">RINCIAN MODEL PRODUK (SKU)</th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[120px] border border-slate-800 text-white font-bold">TARGET & PRIORITAS</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] border border-slate-800 text-white font-bold">STATUS</th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">AKSI</th>
+                <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-slate-800 text-white font-bold">
+                  NO
+                </th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[180px] border border-slate-800 text-white font-bold">
+                  NO. ANTREAN & TGL
+                </th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">
+                  SUMBER & REFF
+                </th>
+                <th className="py-2.5 px-3 min-w-[240px] border border-slate-800 text-white font-bold">
+                  RINCIAN MODEL PRODUK (SKU)
+                </th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[120px] border border-slate-800 text-white font-bold">
+                  TARGET & PRIORITAS
+                </th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] border border-slate-800 text-white font-bold">
+                  STATUS
+                </th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">
+                  AKSI
+                </th>
               </tr>
             </thead>
             <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-8 text-center text-slate-400 border border-slate-800">
+                  <td
+                    colSpan="8"
+                    className="py-8 text-center text-slate-400 border border-slate-800"
+                  >
                     <FolderOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
-                    <p className="text-xs font-semibold">Tidak ada data antrean produksi</p>
+                    <p className="text-xs font-semibold">
+                      Tidak ada data antrean produksi
+                    </p>
                     <p className="text-[11px] text-slate-400">
-                      Klik "+ Antrean Baru" untuk mendaftarkan permintaan produksi pertama
+                      Klik "+ Antrean Baru" untuk mendaftarkan permintaan
+                      produksi pertama
                     </p>
                   </td>
                 </tr>
               ) : (
                 filteredList.map((item, idx) => {
-                  const isUrgent = item.prioritas === 'Urgent';
+                  const isUrgent = item.prioritas === "Urgent";
                   const isSelected = selectedIds.includes(item.id);
 
                   return (
-                    <tr key={item.id} className={`transition-colors border-b border-slate-800 ${isSelected ? 'bg-blue-50/60' : 'hover:bg-slate-50'}`}>
+                    <tr
+                      key={item.id}
+                      className={`transition-colors border-b border-slate-800 ${isSelected ? "bg-blue-50/60" : "hover:bg-slate-50"}`}
+                    >
                       {/* 0. CHECKBOX SELECT */}
                       <td className="py-2 px-2 text-center border border-slate-800">
                         <input
@@ -1725,13 +1961,16 @@ export default function Antrean({
                       {/* 3. SUMBER PERMINTAAN & NO REFF (GABUNGAN) */}
                       <td className="py-2 px-3 border border-slate-800">
                         <div className="flex flex-col min-w-0">
-                          <span className="text-xs sm:text-sm font-bold text-slate-900" title={item.sumberPermintaan}>
+                          <span
+                            className="text-xs sm:text-sm font-bold text-slate-900"
+                            title={item.sumberPermintaan}
+                          >
                             {item.sumberPermintaan}
                           </span>
                           <div className="flex items-center gap-1.5 text-xs text-slate-600 font-mono mt-0.5">
                             <span className="text-slate-500">Reff:</span>
                             <span className="font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-300">
-                              {item.noReff || '-'}
+                              {item.noReff || "-"}
                             </span>
                           </div>
                         </div>
@@ -1745,8 +1984,11 @@ export default function Antrean({
                             <span className="font-mono font-bold text-xs text-[#0284c7]">
                               {item.sku}
                             </span>
-                            <span className="font-bold text-slate-900 text-xs sm:text-sm truncate" title={item.namaProduk}>
-                              {item.namaProduk || '-'}
+                            <span
+                              className="font-bold text-slate-900 text-xs sm:text-sm truncate"
+                              title={item.namaProduk}
+                            >
+                              {item.namaProduk || "-"}
                             </span>
                           </div>
 
@@ -1759,10 +2001,11 @@ export default function Antrean({
                             )}
                             {(item.varian || item.ukuran) && (
                               <span className="text-slate-700 font-medium">
-                                {item.varian || 'Polos'} ({item.ukuran || 'All Size'})
+                                {item.varian || "Polos"} (
+                                {item.ukuran || "All Size"})
                               </span>
                             )}
-                            {item.skuBahan && item.skuBahan !== '-' && (
+                            {item.skuBahan && item.skuBahan !== "-" && (
                               <>
                                 <span className="text-slate-400">•</span>
                                 <span className="font-mono text-cyan-800 font-bold text-xs">
@@ -1778,19 +2021,23 @@ export default function Antrean({
                       <td className="py-2 px-2.5 text-center border border-slate-800">
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-mono font-bold text-sm sm:text-base text-slate-900">
-                            {Number(item.qty).toLocaleString('id-ID')}{' '}
-                            <span className="text-xs font-semibold text-slate-500">Pcs</span>
+                            {Number(item.qty).toLocaleString("id-ID")}{" "}
+                            <span className="text-xs font-semibold text-slate-500">
+                              Pcs
+                            </span>
                           </span>
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${
                               isUrgent
-                                ? 'bg-rose-100 text-rose-800 border-rose-300'
-                                : item.prioritas === 'Low'
-                                ? 'bg-slate-100 text-slate-600 border-slate-300'
-                                : 'bg-blue-100 text-blue-800 border-blue-300'
+                                ? "bg-rose-100 text-rose-800 border-rose-300"
+                                : item.prioritas === "Low"
+                                  ? "bg-slate-100 text-slate-600 border-slate-300"
+                                  : "bg-blue-100 text-blue-800 border-blue-300"
                             }`}
                           >
-                            {isUrgent && <Flame className="w-3 h-3 text-rose-600 shrink-0" />}
+                            {isUrgent && (
+                              <Flame className="w-3 h-3 text-rose-600 shrink-0" />
+                            )}
                             <span>{item.prioritas}</span>
                           </span>
                         </div>
@@ -1801,39 +2048,49 @@ export default function Antrean({
                         <div className="flex flex-col items-center gap-1">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold border ${
-                              item.status === 'Menunggu Cutting'
-                                ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                : item.status === 'Proses Cutting' || item.status === 'Sedang Diproses'
-                                ? 'bg-sky-100 text-sky-800 border-sky-300'
-                                : item.status === 'Proses Jahit'
-                                ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
-                                : item.status === 'Proses QC'
-                                ? 'bg-teal-100 text-teal-800 border-teal-300'
-                                : item.status === 'Proses Finishing'
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang'
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : 'bg-rose-100 text-rose-800 border-rose-300'
+                              item.status === "Menunggu Cutting"
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : item.status === "Proses Cutting" ||
+                                    item.status === "Sedang Diproses"
+                                  ? "bg-sky-100 text-sky-800 border-sky-300"
+                                  : item.status === "Proses Jahit"
+                                    ? "bg-indigo-100 text-indigo-800 border-indigo-300"
+                                    : item.status === "Proses QC"
+                                      ? "bg-teal-100 text-teal-800 border-teal-300"
+                                      : item.status === "Proses Finishing"
+                                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                        : item.status === "Selesai" ||
+                                            item.status ===
+                                              "Menunggu Penerimaan Gudang"
+                                          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                          : "bg-rose-100 text-rose-800 border-rose-300"
                             }`}
                           >
-                            {item.status === 'Sedang Diproses' ? 'Proses Cutting' : item.status === 'Menunggu Penerimaan Gudang' ? 'Selesai' : item.status}
+                            {item.status === "Sedang Diproses"
+                              ? "Proses Cutting"
+                              : item.status === "Menunggu Penerimaan Gudang"
+                                ? "Selesai"
+                                : item.status}
                           </span>
 
                           {/* Tanggal Update / Masuk Tahapan Proses */}
                           <div className="flex items-center gap-1 text-[11px] text-slate-600 font-mono">
                             <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>
-                              {item.status === 'Proses Finishing'
-                                ? (item.tglSerahFinishing || item.tglMasuk)
-                                : item.status === 'Proses QC'
-                                ? (item.tglSerahQc || item.tglMasuk)
-                                : item.status === 'Proses Jahit'
-                                ? (item.tglSerahJahit || item.tglMasuk)
-                                : item.status === 'Proses Cutting' || item.status === 'Sedang Diproses'
-                                ? (item.tglSerahCutting || item.tglMasuk)
-                                : item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang'
-                                ? (item.tglSerahGudang || item.tglMasuk)
-                                : item.tglMasuk}
+                              {item.status === "Proses Finishing"
+                                ? item.tglSerahFinishing || item.tglMasuk
+                                : item.status === "Proses QC"
+                                  ? item.tglSerahQc || item.tglMasuk
+                                  : item.status === "Proses Jahit"
+                                    ? item.tglSerahJahit || item.tglMasuk
+                                    : item.status === "Proses Cutting" ||
+                                        item.status === "Sedang Diproses"
+                                      ? item.tglSerahCutting || item.tglMasuk
+                                      : item.status === "Selesai" ||
+                                          item.status ===
+                                            "Menunggu Penerimaan Gudang"
+                                        ? item.tglSerahGudang || item.tglMasuk
+                                        : item.tglMasuk}
                             </span>
                           </div>
 
@@ -1850,7 +2107,8 @@ export default function Antrean({
                       {/* 7. AKSI: IKON SERAHKAN CUTTING / JAHIT / QC / FINISHING, EYE, EDIT, TRASH */}
                       <td className="py-2 px-2.5 text-center border border-slate-800">
                         <div className="inline-flex items-center justify-center gap-1.5 flex-nowrap">
-                          {item.status === 'Proses Cutting' || item.status === 'Sedang Diproses' ? (
+                          {item.status === "Proses Cutting" ||
+                          item.status === "Sedang Diproses" ? (
                             <button
                               onClick={() => handleOpenJahitModal([item])}
                               className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
@@ -1858,7 +2116,7 @@ export default function Antrean({
                             >
                               <SewingMachineIcon className="w-4 h-4" />
                             </button>
-                          ) : item.status === 'Proses Jahit' ? (
+                          ) : item.status === "Proses Jahit" ? (
                             <button
                               onClick={() => handleOpenQcModal([item])}
                               className="w-8 h-8 rounded-lg bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
@@ -1866,7 +2124,7 @@ export default function Antrean({
                             >
                               <ShieldCheck className="w-4 h-4" />
                             </button>
-                          ) : item.status === 'Proses QC' ? (
+                          ) : item.status === "Proses QC" ? (
                             <button
                               onClick={() => handleOpenFinishingModal([item])}
                               className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
@@ -1874,7 +2132,7 @@ export default function Antrean({
                             >
                               <PackageCheck className="w-4 h-4" />
                             </button>
-                          ) : item.status === 'Proses Finishing' ? (
+                          ) : item.status === "Proses Finishing" ? (
                             <button
                               onClick={() => handleOpenGudangJadiModal(item)}
                               className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
@@ -1882,8 +2140,12 @@ export default function Antrean({
                             >
                               <Warehouse className="w-4 h-4" />
                             </button>
-                          ) : item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang' ? (
-                            <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold shrink-0" title="Produksi Selesai (Di Gudang Jadi)">
+                          ) : item.status === "Selesai" ||
+                            item.status === "Menunggu Penerimaan Gudang" ? (
+                            <span
+                              className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold shrink-0"
+                              title="Produksi Selesai (Di Gudang Jadi)"
+                            >
                               ✓
                             </span>
                           ) : (
@@ -1891,10 +2153,14 @@ export default function Antrean({
                               onClick={() => handleOpenCuttingModal([item])}
                               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0 ${
                                 item.tglSerahCutting
-                                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                  ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                  : "bg-blue-600 hover:bg-blue-700 text-white"
                               }`}
-                              title={item.tglSerahCutting ? 'Edit / Lihat Penyerahan Cutting' : 'Serahkan ke Tim Cutting (Hitung Biaya)'}
+                              title={
+                                item.tglSerahCutting
+                                  ? "Edit / Lihat Penyerahan Cutting"
+                                  : "Serahkan ke Tim Cutting (Hitung Biaya)"
+                              }
                             >
                               <Scissors className="w-4 h-4" />
                             </button>
@@ -1905,9 +2171,13 @@ export default function Antrean({
                             onClick={() => {
                               setSelectedAntreanShow(item);
                               if (item?.id) {
-                                api.getAntreanById(item.id).then((fresh) => {
-                                  if (fresh && fresh.id) setSelectedAntreanShow(fresh);
-                                }).catch(() => {});
+                                api
+                                  .getAntreanById(item.id)
+                                  .then((fresh) => {
+                                    if (fresh && fresh.id)
+                                      setSelectedAntreanShow(fresh);
+                                  })
+                                  .catch(() => {});
                               }
                             }}
                             className="w-8 h-8 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
@@ -1927,7 +2197,7 @@ export default function Antrean({
                           </button>
 
                           {/* Tombol Edit & Hapus HANYA muncul jika status 'Menunggu Cutting' */}
-                          {item.status === 'Menunggu Cutting' ? (
+                          {item.status === "Menunggu Cutting" ? (
                             <>
                               <button
                                 onClick={() => handleOpenEdit(item)}
@@ -1968,12 +2238,22 @@ export default function Antrean({
         {/* BOTTOM SUMMARY FOOTER */}
         <div className="bg-[#f8fafc] border-t border-[#cbd5e1] px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-600 gap-2">
           <div>
-            Menampilkan <span className="font-bold text-slate-800">{filteredList.length}</span> dari{' '}
-            <span className="font-bold text-slate-800">{antreanList.length}</span> antrean
+            Menampilkan{" "}
+            <span className="font-bold text-slate-800">
+              {filteredList.length}
+            </span>{" "}
+            dari{" "}
+            <span className="font-bold text-slate-800">
+              {antreanList.length}
+            </span>{" "}
+            antrean
           </div>
           <div className="flex items-center gap-3 font-semibold text-slate-700">
             <span>
-              Total Target: <strong className="text-[#0284c7] font-bold">{stats.totalQty.toLocaleString('id-ID')} Pcs</strong>
+              Total Target:{" "}
+              <strong className="text-[#0284c7] font-bold">
+                {stats.totalQty.toLocaleString("id-ID")} Pcs
+              </strong>
             </span>
           </div>
         </div>
@@ -2117,14 +2397,17 @@ export default function Antrean({
                 <div>
                   <div className="flex items-center gap-1.5 leading-none">
                     <h3 className="font-extrabold text-[13px] tracking-tight text-white">
-                      {modalMode === 'create' ? 'Pendaftaran Antrean Permintaan Baru' : 'Edit Lembar Antrean Produksi'}
+                      {modalMode === "create"
+                        ? "Pendaftaran Antrean Permintaan Baru"
+                        : "Edit Lembar Antrean Produksi"}
                     </h3>
                     <span className="px-1.5 py-0.2 rounded bg-white/20 text-white font-mono text-[9px] font-extrabold border border-white/25">
                       STEP 1 SOP
                     </span>
                   </div>
                   <p className="text-[9.5px] text-sky-100/90 mt-0.5 leading-none">
-                    Formulir pendaftaran permintaan masuk sebelum rencana cutting & alokasi kebutuhan bahan
+                    Formulir pendaftaran permintaan masuk sebelum rencana
+                    cutting & alokasi kebutuhan bahan
                   </p>
                 </div>
               </div>
@@ -2142,7 +2425,11 @@ export default function Antrean({
 
           {/* Scrollable Form Body Full Screen 100% Width (COMPACT) */}
           <div className="flex-1 overflow-y-auto p-2 sm:p-2.5 w-full">
-            <form id="form-antrean-fullscreen" onSubmit={handleSubmit} className="w-full space-y-1.5 text-xs">
+            <form
+              id="form-antrean-fullscreen"
+              onSubmit={handleSubmit}
+              className="w-full space-y-1.5 text-xs"
+            >
               {/* SECTION 1: DOKUMEN & REGISTRASI ANTREAN */}
               <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-1">
@@ -2150,7 +2437,9 @@ export default function Antrean({
                     <Hash className="w-3 h-3 text-[#0284c7]" />
                     Informasi Dokumen & Registrasi
                   </span>
-                  <span className="text-[9.5px] text-slate-400">Otomatis / Manual</span>
+                  <span className="text-[9.5px] text-slate-400">
+                    Otomatis / Manual
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -2163,12 +2452,22 @@ export default function Antrean({
                         type="text"
                         required
                         value={formData.noAntrian}
-                        onChange={e => setFormData({ ...formData, noAntrian: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            noAntrian: e.target.value,
+                          })
+                        }
                         className="w-full h-7 px-2 rounded border border-slate-300 font-mono font-bold text-[#0284c7] bg-sky-50/40 text-xs focus:outline-none focus:border-[#0284c7] focus:bg-white transition-all"
                       />
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, noAntrian: generateNoAntrian() })}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            noAntrian: generateNoAntrian(),
+                          })
+                        }
                         className="absolute right-1 top-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500 hover:text-[#0284c7] hover:bg-white cursor-pointer transition-all"
                         title="Acak / Generate Baru"
                       >
@@ -2185,7 +2484,9 @@ export default function Antrean({
                       type="date"
                       required
                       value={formData.tglMasuk}
-                      onChange={e => setFormData({ ...formData, tglMasuk: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tglMasuk: e.target.value })
+                      }
                       className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7] transition-all"
                     />
                   </div>
@@ -2195,13 +2496,14 @@ export default function Antrean({
                   <div>
                     <div className="flex items-center justify-between mb-0.5">
                       <label className="text-[10.5px] font-bold text-slate-700">
-                        Sumber Permintaan <span className="text-rose-500">*</span>
+                        Sumber Permintaan{" "}
+                        <span className="text-rose-500">*</span>
                       </label>
                       <button
                         type="button"
                         onClick={() => {
                           setEditingSumberIndex(null);
-                          setSumberInputText('');
+                          setSumberInputText("");
                           setIsSumberModalOpen(true);
                         }}
                         className="text-[9.5px] text-[#0284c7] hover:text-[#0369a1] font-bold flex items-center gap-1 cursor-pointer hover:underline"
@@ -2213,10 +2515,15 @@ export default function Antrean({
                     </div>
                     <select
                       value={formData.sumberPermintaan}
-                      onChange={e => setFormData({ ...formData, sumberPermintaan: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sumberPermintaan: e.target.value,
+                        })
+                      }
                       className="w-full h-7 px-2 rounded border border-slate-300 text-xs bg-white text-slate-800 font-medium focus:outline-none focus:border-[#0284c7] transition-all cursor-pointer"
                     >
-                      {sumberOptions.map(opt => (
+                      {sumberOptions.map((opt) => (
                         <option key={opt} value={opt}>
                           {opt}
                         </option>
@@ -2231,7 +2538,9 @@ export default function Antrean({
                     <input
                       type="text"
                       value={formData.noReff}
-                      onChange={e => setFormData({ ...formData, noReff: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, noReff: e.target.value })
+                      }
                       placeholder="mis: PO-2026-CLIENT-08"
                       className="w-full h-7 px-2 rounded border border-slate-300 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7] focus:bg-white transition-all"
                     />
@@ -2244,7 +2553,8 @@ export default function Antrean({
                 <div className="flex items-center justify-between border-b border-slate-200 pb-1">
                   <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                     <Tag className="w-3 h-3 text-[#0284c7]" />
-                    Pilih Produk Konveksi (Searchable SKU) <span className="text-rose-500">*</span>
+                    Pilih Produk Konveksi (Searchable SKU){" "}
+                    <span className="text-rose-500">*</span>
                   </span>
                   <span className="px-1.5 py-0.2 rounded bg-sky-100 text-[#0284c7] text-[9.5px] font-bold border border-sky-200">
                     {products.length} Model Terdaftar
@@ -2255,11 +2565,11 @@ export default function Antrean({
                 <div className="relative" ref={comboboxRef}>
                   <button
                     type="button"
-                    onClick={() => setIsProductComboboxOpen(prev => !prev)}
+                    onClick={() => setIsProductComboboxOpen((prev) => !prev)}
                     className={`w-full h-7.5 px-2.5 rounded border text-left flex items-center justify-between transition-all cursor-pointer ${
                       isProductComboboxOpen
-                        ? 'border-[#0284c7] ring-1 ring-[#0284c7]/20 bg-white'
-                        : 'border-slate-300 bg-white hover:border-[#0284c7] shadow-2xs'
+                        ? "border-[#0284c7] ring-1 ring-[#0284c7]/20 bg-white"
+                        : "border-slate-300 bg-white hover:border-[#0284c7] shadow-2xs"
                     }`}
                   >
                     {selectedProduct ? (
@@ -2271,15 +2581,18 @@ export default function Antrean({
                           {getProdName(selectedProduct)}
                         </span>
                         <span className="text-[10px] text-slate-400 truncate shrink-0">
-                          ({selectedProduct.varian || 'Polos'} - {selectedProduct.ukuran || 'All Size'})
+                          ({selectedProduct.varian || "Polos"} -{" "}
+                          {selectedProduct.ukuran || "All Size"})
                         </span>
                       </div>
                     ) : (
-                      <span className="text-slate-400 font-medium text-xs">-- Ketik atau Pilih Produk / SKU --</span>
+                      <span className="text-slate-400 font-medium text-xs">
+                        -- Ketik atau Pilih Produk / SKU --
+                      </span>
                     )}
                     <ChevronDown
                       className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-                        isProductComboboxOpen ? 'rotate-180 text-[#0284c7]' : ''
+                        isProductComboboxOpen ? "rotate-180 text-[#0284c7]" : ""
                       }`}
                     />
                   </button>
@@ -2295,13 +2608,15 @@ export default function Antrean({
                           autoFocus
                           placeholder="Cari SKU, Nama Baju, Kategori, atau Varian Warna..."
                           value={productComboboxSearch}
-                          onChange={e => setProductComboboxSearch(e.target.value)}
+                          onChange={(e) =>
+                            setProductComboboxSearch(e.target.value)
+                          }
                           className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400"
                         />
                         {productComboboxSearch && (
                           <button
                             type="button"
-                            onClick={() => setProductComboboxSearch('')}
+                            onClick={() => setProductComboboxSearch("")}
                             className="p-0.5 hover:bg-slate-200 rounded text-slate-400"
                           >
                             <X className="w-3 h-3" />
@@ -2314,10 +2629,12 @@ export default function Antrean({
                         {filteredComboboxProducts.length === 0 ? (
                           <div className="py-4 text-center text-slate-400 text-xs">
                             <Shirt className="w-5 h-5 mx-auto mb-1 text-slate-300" />
-                            <p className="font-semibold text-slate-500">Produk tidak ditemukan</p>
+                            <p className="font-semibold text-slate-500">
+                              Produk tidak ditemukan
+                            </p>
                           </div>
                         ) : (
-                          filteredComboboxProducts.map(p => {
+                          filteredComboboxProducts.map((p) => {
                             const isSelected = formData.sku === p.sku;
                             const prodName = getProdName(p);
                             const bahan = getProdBahan(p);
@@ -2329,19 +2646,20 @@ export default function Antrean({
                                 onClick={() => {
                                   setFormData({ ...formData, sku: p.sku });
                                   setIsProductComboboxOpen(false);
-                                  setProductComboboxSearch('');
+                                  setProductComboboxSearch("");
                                 }}
                                 className={`w-full p-1.5 rounded text-left transition-colors flex items-center justify-between gap-2 cursor-pointer ${
                                   isSelected
-                                    ? 'bg-sky-50/80 border border-sky-300/60'
-                                    : 'hover:bg-slate-100/80 border border-transparent'
+                                    ? "bg-sky-50/80 border border-sky-300/60"
+                                    : "hover:bg-slate-100/80 border border-transparent"
                                 }`}
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   <div
                                     className="w-6 h-6 rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs"
                                     style={{
-                                      backgroundColor: p.warnaHex || p.warna_hex || '#f1f5f9'
+                                      backgroundColor:
+                                        p.warnaHex || p.warna_hex || "#f1f5f9",
                                     }}
                                   >
                                     <Shirt className="w-3 h-3 text-slate-700/80" />
@@ -2357,13 +2675,18 @@ export default function Antrean({
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1 text-[9.5px] text-slate-500 mt-0.5 truncate">
-                                      <span>{p.kategori || 'Kaos'}</span>
+                                      <span>{p.kategori || "Kaos"}</span>
                                       <span>•</span>
-                                      <span>{p.varian || 'Polos'} ({p.ukuran || 'All Size'})</span>
-                                      {bahan && bahan !== '-' && (
+                                      <span>
+                                        {p.varian || "Polos"} (
+                                        {p.ukuran || "All Size"})
+                                      </span>
+                                      {bahan && bahan !== "-" && (
                                         <>
                                           <span>•</span>
-                                          <span className="font-mono text-cyan-700">Kain: {bahan}</span>
+                                          <span className="font-mono text-cyan-700">
+                                            Kain: {bahan}
+                                          </span>
                                         </>
                                       )}
                                     </div>
@@ -2388,28 +2711,37 @@ export default function Antrean({
                 {selectedProduct && (
                   <div className="bg-[#f8fafc] rounded border border-[#cbd5e1] p-2 shadow-2xs grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Model Produk</span>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
+                        Model Produk
+                      </span>
                       <span className="font-bold text-slate-900 truncate block mt-0.5 text-xs">
                         {getProdName(selectedProduct)}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Kategori</span>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
+                        Kategori
+                      </span>
                       <span className="font-semibold text-slate-700 block mt-0.5 text-xs">
-                        {selectedProduct.kategori || '-'}
+                        {selectedProduct.kategori || "-"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Varian / Size</span>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
+                        Varian / Size
+                      </span>
                       <span className="font-semibold text-slate-700 block mt-0.5 text-xs">
-                        {selectedProduct.varian || 'Polos'} / {selectedProduct.ukuran || 'All Size'}
+                        {selectedProduct.varian || "Polos"} /{" "}
+                        {selectedProduct.ukuran || "All Size"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Kebutuhan Kain</span>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
+                        Kebutuhan Kain
+                      </span>
                       <span className="font-mono font-bold text-[#0284c7] block mt-0.5 truncate text-xs">
                         {getProdBahan(selectedProduct)}
                       </span>
@@ -2425,7 +2757,9 @@ export default function Antrean({
                     <Boxes className="w-3 h-3 text-[#0284c7]" />
                     Target Kuantitas & Parameter Waktu
                   </span>
-                  <span className="text-[9.5px] text-slate-400">Wajib diisi</span>
+                  <span className="text-[9.5px] text-slate-400">
+                    Wajib diisi
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2437,7 +2771,12 @@ export default function Antrean({
                     <div className="relative flex items-center">
                       <button
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, qty: Math.max(1, Number(prev.qty || 1) - 10) }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            qty: Math.max(1, Number(prev.qty || 1) - 10),
+                          }))
+                        }
                         className="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-l border border-slate-300 border-r-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
                       >
                         -
@@ -2447,12 +2786,19 @@ export default function Antrean({
                         min="1"
                         required
                         value={formData.qty}
-                        onChange={e => setFormData({ ...formData, qty: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, qty: e.target.value })
+                        }
                         className="w-full h-7 px-2 text-center border-y border-slate-300 font-mono font-extrabold text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
                       />
                       <button
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, qty: Number(prev.qty || 0) + 10 }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            qty: Number(prev.qty || 0) + 10,
+                          }))
+                        }
                         className="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-r border border-slate-300 border-l-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
                       >
                         +
@@ -2461,15 +2807,15 @@ export default function Antrean({
 
                     {/* Quick Add Chips */}
                     <div className="flex items-center gap-1 mt-1">
-                      {[50, 100, 200, 500].map(val => (
+                      {[50, 100, 200, 500].map((val) => (
                         <button
                           key={val}
                           type="button"
                           onClick={() => setFormData({ ...formData, qty: val })}
                           className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all cursor-pointer ${
                             Number(formData.qty) === val
-                              ? 'bg-[#0284c7] text-white shadow-2xs'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              ? "bg-[#0284c7] text-white shadow-2xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                           }`}
                         >
                           {val}
@@ -2485,17 +2831,43 @@ export default function Antrean({
                     </label>
                     <div className="grid grid-cols-3 gap-1">
                       {[
-                        { id: 'Urgent', label: 'Urgent', icon: Flame, activeClass: 'bg-rose-500 text-white border-rose-600 shadow-2xs', inactiveClass: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' },
-                        { id: 'Normal', label: 'Normal', icon: Clock, activeClass: 'bg-[#0284c7] text-white border-[#0369a1] shadow-2xs', inactiveClass: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
-                        { id: 'Low', label: 'Low', icon: Sparkles, activeClass: 'bg-slate-700 text-white border-slate-800 shadow-2xs', inactiveClass: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' }
-                      ].map(prio => {
+                        {
+                          id: "Urgent",
+                          label: "Urgent",
+                          icon: Flame,
+                          activeClass:
+                            "bg-rose-500 text-white border-rose-600 shadow-2xs",
+                          inactiveClass:
+                            "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
+                        },
+                        {
+                          id: "Normal",
+                          label: "Normal",
+                          icon: Clock,
+                          activeClass:
+                            "bg-[#0284c7] text-white border-[#0369a1] shadow-2xs",
+                          inactiveClass:
+                            "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+                        },
+                        {
+                          id: "Low",
+                          label: "Low",
+                          icon: Sparkles,
+                          activeClass:
+                            "bg-slate-700 text-white border-slate-800 shadow-2xs",
+                          inactiveClass:
+                            "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200",
+                        },
+                      ].map((prio) => {
                         const Icon = prio.icon;
                         const isSelected = formData.prioritas === prio.id;
                         return (
                           <button
                             key={prio.id}
                             type="button"
-                            onClick={() => setFormData({ ...formData, prioritas: prio.id })}
+                            onClick={() =>
+                              setFormData({ ...formData, prioritas: prio.id })
+                            }
                             className={`h-7 px-1 rounded border text-[10px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                               isSelected ? prio.activeClass : prio.inactiveClass
                             }`}
@@ -2517,7 +2889,9 @@ export default function Antrean({
                       type="date"
                       required
                       value={formData.deadline}
-                      onChange={e => setFormData({ ...formData, deadline: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, deadline: e.target.value })
+                      }
                       className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7] transition-all"
                     />
                   </div>
@@ -2531,7 +2905,9 @@ export default function Antrean({
                     <CheckCircle2 className="w-3 h-3 text-[#0284c7]" />
                     Status Tahapan & Catatan SOP
                   </span>
-                  <span className="text-[9.5px] text-slate-400">Instruksi Produksi</span>
+                  <span className="text-[9.5px] text-slate-400">
+                    Instruksi Produksi
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -2541,7 +2917,9 @@ export default function Antrean({
                     </label>
                     <select
                       value={formData.status}
-                      onChange={e => setFormData({ ...formData, status: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
                       className="w-full h-7 px-2 rounded border border-slate-300 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] transition-all cursor-pointer"
                     >
                       <option value="Menunggu Cutting">Menunggu Cutting</option>
@@ -2561,14 +2939,15 @@ export default function Antrean({
                     <input
                       type="text"
                       value={formData.catatan}
-                      onChange={e => setFormData({ ...formData, catatan: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, catatan: e.target.value })
+                      }
                       placeholder="mis: Sablon DTF dada 10cm, jahit rantai pundak, kemasan satuan..."
                       className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7] transition-all"
                     />
                   </div>
                 </div>
               </div>
-
             </form>
           </div>
 
@@ -2576,11 +2955,17 @@ export default function Antrean({
           <div className="bg-white border-t border-[#cbd5e1] px-3 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-xs shrink-0 w-full">
             <div className="flex items-center gap-2.5 text-xs">
               <div className="text-slate-500 font-medium">
-                No. Antrean: <span className="font-mono font-bold text-slate-800">{formData.noAntrian || '-'}</span>
+                No. Antrean:{" "}
+                <span className="font-mono font-bold text-slate-800">
+                  {formData.noAntrian || "-"}
+                </span>
               </div>
               <span className="text-slate-300 hidden sm:inline">•</span>
               <div className="font-semibold text-slate-700">
-                Target: <strong className="text-[#0284c7]">{Number(formData.qty || 0).toLocaleString('id-ID')} Pcs</strong>
+                Target:{" "}
+                <strong className="text-[#0284c7]">
+                  {Number(formData.qty || 0).toLocaleString("id-ID")} Pcs
+                </strong>
               </div>
             </div>
 
@@ -2598,7 +2983,11 @@ export default function Antrean({
                 className="h-7 px-4 rounded bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
               >
                 <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>{modalMode === 'create' ? 'Simpan ke Antrean' : 'Perbarui Antrean'}</span>
+                <span>
+                  {modalMode === "create"
+                    ? "Simpan ke Antrean"
+                    : "Perbarui Antrean"}
+                </span>
               </button>
             </div>
           </div>
@@ -2638,14 +3027,14 @@ export default function Antrean({
                   type="submit"
                   className="px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shrink-0 shadow-xs"
                 >
-                  {editingSumberIndex !== null ? 'Simpan Edit' : '+ Tambah'}
+                  {editingSumberIndex !== null ? "Simpan Edit" : "+ Tambah"}
                 </button>
                 {editingSumberIndex !== null && (
                   <button
                     type="button"
                     onClick={() => {
                       setEditingSumberIndex(null);
-                      setSumberInputText('');
+                      setSumberInputText("");
                     }}
                     className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer"
                   >

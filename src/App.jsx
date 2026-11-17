@@ -9,7 +9,7 @@ import MutasiBahan from './views/desktop/MutasiBahan';
 import MutasiGudangJadi from './views/desktop/MutasiGudangJadi';
 import Antrean from './views/desktop/Antrean';
 import LaporanStokGudang from './views/desktop/LaporanStokGudang';
-import PembayaranUpah from './views/desktop/PembayaranUpah';
+import PembayaranUpah from './views/desktop/pembayaran';
 import Kasbon from './views/desktop/Kasbon';
 import Penjahit from './views/desktop/Penjahit';
 import TimFinishing from './views/desktop/TimFinishing';

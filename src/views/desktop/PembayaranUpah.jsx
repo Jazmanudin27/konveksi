@@ -63,6 +63,19 @@ function angkaTerbilang(nilai) {
   return sebut(angka).replace(/\s+/g, ' ').trim() + ' Rupiah';
 }
 
+function formatDateIndo(dateStr) {
+  if (!dateStr) return '-';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const parts = String(dateStr).slice(0, 10).split('-');
+  if (parts.length === 3) {
+    const year = parts[0];
+    const month = months[parseInt(parts[1], 10) - 1] || parts[1];
+    const day = parts[2];
+    return `${day} ${month} ${year}`;
+  }
+  return dateStr;
+}
+
 export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   const [dataList, setDataList] = useState([]);
   const [rekap, setRekap] = useState({
@@ -804,11 +817,12 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
         </button>
       </div>
 
-      {/* 3. KONTEN TAB: INPUT PEMBAYARAN (DATA MASTER PRODUK STYLE) */}
+      {/* 3. KONTEN TAB: INPUT PEMBAYARAN (GOOGLE SHEET SLIP GAJI EMRA PRODUCTION) */}
       {activeMainTab === 'input' && (
-        <div className="space-y-2.5">
-          {/* TAB PEMISAH DIVISI (POTONG, JAHIT, QC, FINISHING) */}
-          <div className="bg-white border border-slate-200 rounded-lg p-2 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+        <div className="space-y-3">
+          {/* TOOLBAR FILTER & DIVISI SELECTION */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+            {/* Divisi Tabs (Pemotong, Penjahit, QC, Finishing) */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {[
                 { key: 'Cutting', label: 'Pemotong (Cutting)', icon: Scissors },
@@ -846,351 +860,341 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
               })}
             </div>
 
-            {/* Quick Actions */}
-            {activeSheetTeamData && (
-              <div className="flex items-center gap-2">
+            {/* Filter Tanggal & Action Bar */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[11px] font-bold text-slate-500">Periode:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="h-6 px-1.5 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-slate-800 focus:outline-none"
+                />
+                <span className="text-slate-400 text-xs font-bold">s.d</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="h-6 px-1.5 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-slate-800 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleSetPresetDate('minggu')}
+                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[11px] font-bold cursor-pointer transition-colors"
+                >
+                  1 Minggu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPresetDate('bulan')}
+                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[11px] font-bold cursor-pointer transition-colors"
+                >
+                  Bulan Ini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPresetDate('semua')}
+                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[11px] font-bold cursor-pointer transition-colors"
+                >
+                  Semua
+                </button>
+              </div>
+
+              {activeSheetTeamData && (
                 <button
                   type="button"
                   onClick={() => handleOpenSlipKaryawan(activeSheetTeamData.namaPetugas)}
-                  className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold border border-slate-200 shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all"
+                  className="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all"
                 >
                   <Printer className="w-3.5 h-3.5 text-[#0284c7]" />
                   <span>Cetak Slip</span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* KARTU SLIP INPUT GAJI EMRA PRODUCTION (GOOGLE SHEET STYLE) */}
-          <div className="bg-white border-2 border-slate-300 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
-            {/* Header Section: Left Info Box & Right Orange Filter Box */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pb-3 border-b border-slate-200">
-              {/* Left Info Box */}
-              <div className="lg:col-span-2 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 text-white flex flex-col items-center justify-center shadow-xs shrink-0">
-                    <span className="font-serif font-black text-base leading-none tracking-tighter">EM</span>
-                    <span className="text-[7.5px] font-black tracking-widest uppercase text-amber-200">PROD</span>
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-black tracking-wider text-slate-900 uppercase">
-                      INPUT GAJI EMRA PRODUCTION
-                    </h2>
-                    <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-black uppercase tracking-wide bg-amber-100 text-amber-900 border border-amber-300">
-                      Divisi: {sheetTahap === 'Cutting' ? 'PEMOTONG (CUTTING)' : sheetTahap === 'Jahit' ? 'PENJAHIT (SEWING)' : sheetTahap === 'QC' ? 'QUALITY CONTROL (QC)' : 'FINISHING & PACKING'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-32 text-slate-500 font-bold">Tanggal Priode</span>
-                    <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                      : {startDate} s.d {endDate}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-32 text-slate-500 font-bold">
-                      {sheetTahap === 'Jahit' ? 'Nama Penjahit' : 'Nama Tim'}
-                    </span>
-                    <div className="flex items-center gap-1 font-bold">
-                      <span>:</span>
-                      <select
-                        value={sheetTeam}
-                        onChange={(e) => setSheetTeam(e.target.value)}
-                        className="h-8 px-3 bg-amber-50/50 border-2 border-amber-400 rounded-lg text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer min-w-[220px]"
-                      >
-                        {sheetTeamsList.length === 0 ? (
-                          <option value="">
-                            {sheetTahap === 'Jahit' ? '(Semua penjahit sudah lunas)' : '(Semua tim sudah lunas)'}
-                          </option>
-                        ) : (
-                          sheetTeamsList.map((t) => (
-                            <option key={t.namaPetugas} value={t.namaPetugas}>
-                              {t.namaPetugas}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-32 text-slate-500 font-bold">ID Karyawan</span>
-                    <span className="font-mono font-bold text-slate-600">
-                      : {activeSheetTeamData?.items?.[0]?.nik || activeSheetTeamData?.items?.[0]?.id ? `KRY-${activeSheetTeamData?.items?.[0]?.id}` : '-'}
-                    </span>
-                  </div>
-                </div>
+          {/* KERTAS SLIP GAJI EMRA PRODUCTION (PERSIS GAMBAR GOOGLE SHEET USER) */}
+          <div className="w-full max-w-4xl mx-auto bg-white border-2 border-sky-400 p-6 sm:p-8 shadow-sm font-mono text-black select-none">
+            {/* 1. TITLE & MONOGRAM LOGO ROW */}
+            <div className="flex items-start justify-between pb-1">
+              <div className="flex-1">
+                <h1 className="text-xl sm:text-2xl font-black tracking-wide text-black font-mono">
+                  SLIP GAJI EMRA PRODUCTION
+                </h1>
+                <div className="border-b-[2.5px] border-black mt-2 w-full"></div>
               </div>
 
-              {/* Right Orange Filter Box (FILTER TANGGAL VVV) */}
-              <div className="border-2 border-amber-400 rounded-xl overflow-hidden bg-amber-50/20 shadow-2xs">
-                <div className="bg-[#f97316] text-white text-center py-1 font-black text-xs uppercase tracking-wider shadow-xs">
-                  FILTER TANGGAL VVV
-                </div>
-                <div className="p-3 space-y-2 text-xs">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10.5px] font-bold text-slate-600 mb-0.5">Dari:</label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full h-7 px-2 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10.5px] font-bold text-slate-600 mb-0.5">Sampai:</label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full h-7 px-2 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => handleSetPresetDate('minggu')}
-                      className="flex-1 py-1 bg-white hover:bg-amber-100 text-slate-700 border border-slate-300 rounded text-[11px] font-bold cursor-pointer transition-colors shadow-2xs"
-                    >
-                      1 Minggu
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSetPresetDate('bulan')}
-                      className="flex-1 py-1 bg-white hover:bg-amber-100 text-slate-700 border border-slate-300 rounded text-[11px] font-bold cursor-pointer transition-colors shadow-2xs"
-                    >
-                      Bulan Ini
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSetPresetDate('semua')}
-                      className="flex-1 py-1 bg-white hover:bg-amber-100 text-slate-700 border border-slate-300 rounded text-[11px] font-bold cursor-pointer transition-colors shadow-2xs"
-                    >
-                      Semua
-                    </button>
-                  </div>
-
-                  <p className="text-[10px] text-amber-800 italic text-center font-medium">
-                    * Klik Tap2 pada kolom Tanggal untuk mengubah rentang laporan upah
-                  </p>
-                </div>
+              {/* Monogram Logo MR Gold Elegance */}
+              <div className="w-24 h-20 -mt-2 shrink-0 flex items-center justify-end">
+                <svg viewBox="0 0 120 100" className="w-24 h-20">
+                  <defs>
+                    <linearGradient id="goldMonogramMR" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#c59b27" />
+                      <stop offset="35%" stopColor="#f7e7a9" />
+                      <stop offset="70%" stopColor="#d4af37" />
+                      <stop offset="100%" stopColor="#9a7116" />
+                    </linearGradient>
+                  </defs>
+                  <text
+                    x="25"
+                    y="65"
+                    fontFamily="Cinzel, 'Times New Roman', Georgia, serif"
+                    fontSize="52"
+                    fontWeight="bold"
+                    fill="url(#goldMonogramMR)"
+                    letterSpacing="-2"
+                  >
+                    M
+                  </text>
+                  <text
+                    x="54"
+                    y="72"
+                    fontFamily="Cinzel, 'Times New Roman', Georgia, serif"
+                    fontSize="52"
+                    fontWeight="bold"
+                    fill="url(#goldMonogramMR)"
+                  >
+                    R
+                  </text>
+                  <path
+                    d="M 18 80 Q 60 92 102 80"
+                    fill="none"
+                    stroke="url(#goldMonogramMR)"
+                    strokeWidth="1.5"
+                    opacity="0.6"
+                  />
+                </svg>
               </div>
             </div>
 
-            {/* Rincian Finansial Box (Google Sheet Rincian) */}
-            <div className="border border-slate-300 rounded-xl p-4 bg-white space-y-2 text-xs">
-              <span className="font-black text-slate-800 block uppercase tracking-wider text-xs pb-1 border-b border-slate-200">
-                Rincian
-              </span>
-
-              <div className="flex items-center justify-between py-0.5">
-                <span className="text-slate-600 font-semibold">Total Pembayaran (Upah Kotor)</span>
-                <span className="font-mono font-bold text-slate-900 text-sm">
-                  Rp {(activeSheetTeamData?.totalKotor || 0).toLocaleString('id-ID')}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between py-0.5">
-                <span className="text-slate-600 font-semibold">Potongan Pinjaman (Kasbon)</span>
-                <span className="font-mono font-bold text-amber-700">
-                  {(activeSheetTeamData?.totalPotonganKasbon || 0) > 0
-                    ? `- Rp ${activeSheetTeamData.totalPotonganKasbon.toLocaleString('id-ID')}`
-                    : '-'}
-                </span>
-              </div>
-
-              <div className="pt-2 border-t border-slate-300 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-slate-900 uppercase text-xs">
-                    * TOTAL GAJI (BERSIH)
+            {/* 2. TOP INFO (Tanggal Priode, Nama, ID Karyawan) DENGAN DOTTED UNDERLINE */}
+            <div className="mt-3 space-y-1.5 text-[13px] text-black">
+              <div className="flex items-end">
+                <span className="w-40 shrink-0 font-bold">Tanggal Priode</span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5">
+                  <span className="font-bold">
+                    {formatDateIndo(startDate)} s.d {formatDateIndo(endDate)}
                   </span>
-                  {activeSheetTeamData && (
-                    activeSheetTeamData.pendingCount === 0 ? (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        Lunas
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">
-                        {activeSheetTeamData.pendingCount} Order Belum Dibayar
-                      </span>
-                    )
-                  )}
                 </div>
-                <span className="font-mono font-black text-base text-emerald-800 bg-emerald-50 px-3 py-0.5 rounded-lg border border-emerald-300">
-                  Rp {(activeSheetTeamData?.totalBersih || 0).toLocaleString('id-ID')}
-                </span>
               </div>
 
-              <div className="flex items-center justify-between py-0.5 text-slate-600">
-                <span className="text-[11px] font-semibold">* Sisa Pinjaman / Kasbon Aktif</span>
-                <span className="font-mono font-bold text-slate-700">
-                  {(activeSheetTeamData?.sisaPinjamanAktif || 0) > 0
-                    ? `Rp ${activeSheetTeamData.sisaPinjamanAktif.toLocaleString('id-ID')}`
-                    : '-'}
+              <div className="flex items-end">
+                <span className="w-40 shrink-0 font-bold">
+                  {sheetTahap === 'Jahit' ? 'Nama' : 'Nama Tim'}
                 </span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
+                  <select
+                    value={sheetTeam}
+                    onChange={(e) => setSheetTeam(e.target.value)}
+                    className="bg-transparent border-none outline-none font-bold text-black cursor-pointer font-mono text-[13px] w-full"
+                  >
+                    {sheetTeamsList.length === 0 ? (
+                      <option value="">(Semua tim/penjahit sudah lunas)</option>
+                    ) : (
+                      sheetTeamsList.map((t) => (
+                        <option key={t.namaPetugas} value={t.namaPetugas}>
+                          {t.namaPetugas}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <span className="text-[10px] text-slate-500 font-sans print:hidden">▼</span>
+                </div>
               </div>
 
-              <div className="pt-1 text-[11px] text-slate-600">
-                <span className="font-bold">* Terbilang : </span>
-                <span className="font-semibold italic text-slate-800">
-                  "{angkaTerbilang(activeSheetTeamData?.totalBersih || 0)}"
-                </span>
+              <div className="flex items-end">
+                <span className="w-40 shrink-0 font-bold">ID Karyawan</span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5">
+                  <span className="font-mono text-black">
+                    {activeSheetTeamData?.items?.[0]?.nik || (activeSheetTeamData?.items?.[0]?.id ? `KRY-${activeSheetTeamData?.items?.[0]?.id}` : '')}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Rincian Pembayaran Header Strip */}
-            <div className="flex items-center justify-between text-xs pt-1">
-              <span className="font-black text-slate-900 uppercase tracking-wider text-xs">
-                RINCIAN PEMBAYARAN
-              </span>
-              <div className="font-bold text-xs flex items-center gap-1.5">
-                <span className="text-slate-600">* Grand Total QTY :</span>
-                <span className="font-mono font-black text-xs text-rose-800 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200">
-                  {(activeSheetTeamData?.totalQty || 0).toLocaleString('id-ID')} Pcs
-                </span>
+            {/* 3. SECTION RINCIAN */}
+            <div className="mt-4 space-y-1.5 text-[13px] text-black">
+              <div className="font-bold text-sm">Rincian</div>
+
+              <div className="flex items-end">
+                <span className="w-48 shrink-0 italic text-slate-800">Total Pembayaran</span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
+                  <span className="font-bold">Rp</span>
+                  <span className="font-bold font-mono">
+                    {(activeSheetTeamData?.totalKotor || 0).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-end">
+                <span className="w-48 shrink-0 italic text-slate-800">Potongan Pinjaman</span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
+                  <span className="font-bold">
+                    {(activeSheetTeamData?.totalPotonganKasbon || 0) > 0 ? 'Rp' : ''}
+                  </span>
+                  <span className="font-bold font-mono">
+                    {(activeSheetTeamData?.totalPotonganKasbon || 0) > 0
+                      ? (activeSheetTeamData.totalPotonganKasbon).toLocaleString('id-ID')
+                      : ''}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Tabel Rincian Order Google Sheet Style */}
-            <div className="border border-slate-300 rounded-xl overflow-hidden shadow-2xs bg-white">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-[#1e293b] text-white font-extrabold text-[11px] uppercase tracking-wider">
-                  <tr className="divide-x divide-slate-700">
-                    <th className="py-2.5 px-3 w-10 text-center">NO</th>
-                    <th className="py-2.5 px-3">MODEL</th>
-                    <th className="py-2.5 px-3">WARNA</th>
-                    <th className="py-2.5 px-3 text-center w-20">UKURAN</th>
-                    <th className="py-2.5 px-3 text-right w-28">HARGA</th>
-                    <th className="py-2.5 px-3 text-center w-20">QTY</th>
-                    <th className="py-2.5 px-3 text-right w-32">TOTAL</th>
-                    <th className="py-2.5 px-3 text-center w-24">STATUS</th>
-                    <th className="py-2.5 px-3 text-center w-24">AKSI</th>
+            {/* 4. SOLID THICK BLACK DIVIDER BAR */}
+            <div className="h-2 bg-black my-2.5"></div>
+
+            {/* 5. TOTAL GAJI & SISA PINJAMAN (DENGAN ASTERISK MERAH) */}
+            <div className="space-y-1.5 text-[13px] text-black">
+              <div className="flex items-end">
+                <span className="w-48 shrink-0 font-bold">
+                  <span className="text-red-600 font-bold mr-1">*</span>Total GAJI
+                </span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
+                  <span className="font-bold">Rp</span>
+                  <span className="font-black font-mono text-base">
+                    {(activeSheetTeamData?.totalBersih || 0).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-end">
+                <span className="w-48 shrink-0 font-bold">
+                  <span className="text-red-600 font-bold mr-1">*</span>Sisa Pinjaman
+                </span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-between">
+                  <span className="font-bold">
+                    {(activeSheetTeamData?.sisaPinjamanAktif || 0) > 0 ? 'Rp' : ''}
+                  </span>
+                  <span className="font-bold font-mono">
+                    {(activeSheetTeamData?.sisaPinjamanAktif || 0) > 0
+                      ? (activeSheetTeamData.sisaPinjamanAktif).toLocaleString('id-ID')
+                      : ''}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-end">
+                <span className="w-48 shrink-0 font-bold">
+                  <span className="text-red-600 font-bold mr-1">*</span>Terbilang
+                </span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5">
+                  <span className="italic font-sans text-xs text-slate-800">
+                    {activeSheetTeamData ? angkaTerbilang(activeSheetTeamData.totalBersih || 0) : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 6. SUBTITLE RINCIAN PEMBAYARAN & GRAND TOTAL QTY */}
+            <div className="mt-5 space-y-1.5">
+              <div className="font-bold underline text-sm text-black">
+                Rincian Pembayaran
+              </div>
+
+              <div className="flex items-end text-[13px] text-black">
+                <span className="w-48 shrink-0 font-bold">
+                  <span className="text-red-600 font-bold mr-1">*</span>Grand Total QTY
+                </span>
+                <span className="w-4 shrink-0 text-center font-bold">:</span>
+                <div className="flex-1 border-b border-dotted border-black pb-0.5 flex items-center justify-end gap-2">
+                  <span className="font-black font-mono text-red-600 text-sm">
+                    {activeSheetTeamData ? (activeSheetTeamData.totalQty || 0).toLocaleString('id-ID') : 0}
+                  </span>
+                  <span className="font-bold text-slate-600 text-xs">Pcs</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 7. TABEL PERSIS GOOGLE SHEET (BORDER HITAM RAPAT & HEADER GELAP) */}
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full border-collapse border border-black text-xs font-mono">
+                <thead>
+                  <tr className="bg-[#334155] text-white font-bold uppercase text-center border-b border-black">
+                    <th className="py-1.5 px-3 border border-black text-left">MODEL</th>
+                    <th className="py-1.5 px-3 border border-black w-32">Warna</th>
+                    <th className="py-1.5 px-3 border border-black w-28">Harga</th>
+                    <th className="py-1.5 px-3 border border-black w-20">Qty</th>
+                    <th className="py-1.5 px-3 border border-black w-36">Total</th>
+                    <th className="py-1.5 px-3 border border-black w-24 print:hidden">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {!activeSheetTeamData || activeSheetTeamData.items.length === 0 ? (
-                    <tr>
-                      <td colSpan="9" className="py-8 text-center text-slate-400">
-                        {sheetTeamsList.length === 0
-                          ? 'Semua order untuk divisi ini sudah lunas. Silakan cek tab Histori Pembayaran.'
-                          : 'Pilih nama tim / penjahit di atas untuk menampilkan rincian.'}
+                <tbody>
+                  {/* Data Baris Order */}
+                  {activeSheetTeamData && activeSheetTeamData.items.map((item, idx) => (
+                    <tr key={item.id || idx} className="hover:bg-amber-50/20 border-b border-black text-black">
+                      <td className="py-1.5 px-2.5 border border-black font-bold uppercase truncate max-w-[240px]" title={item.namaProduk}>
+                        {item.skuInduk || item.namaProduk}
                       </td>
-                    </tr>
-                  ) : (
-                    activeSheetTeamData.items.map((item, idx) => {
-                      const smartColor = getSmartColorHex(item.varian);
-                      return (
-                        <tr key={item.id} className="hover:bg-amber-50/30 transition-colors divide-x divide-slate-200">
-                          <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">
-                            {idx + 1}
-                          </td>
-                          <td className="py-2 px-3">
-                            <span className="font-bold text-slate-900 block text-xs">
-                              {item.skuInduk || item.namaProduk}
-                            </span>
-                            <span className="font-mono text-[10px] text-slate-400">
-                              SKU: {item.sku || '-'} • Antrean: {item.noAntrian || '-'}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="w-3 h-3 rounded-full border border-slate-300 shadow-2xs shrink-0 ring-1 ring-white"
-                                style={{ backgroundColor: smartColor }}
-                                title={item.varian}
-                              />
-                              <span className="font-semibold text-slate-800 text-xs">
-                                {item.varian || 'Polos'}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-center font-mono font-bold text-slate-700">
-                            {item.ukuran || '-'}
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-700">
-                            Rp {Number(item.tarifPerPcs || 0).toLocaleString('id-ID')}
-                          </td>
-                          <td className="py-2 px-3 text-center font-mono font-black text-slate-900">
-                            {Number(item.qty || 0).toLocaleString('id-ID')}
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-black text-emerald-800 bg-emerald-50/30">
-                            Rp {Number(item.totalUpah || 0).toLocaleString('id-ID')}
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            {item.statusBayar === 'Lunas' ? (
-                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block">
-                                Lunas
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 inline-block">
-                                Belum Bayar
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            {item.statusBayar !== 'Lunas' ? (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenPay([item])}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
-                              >
-                                Bayar
-                              </button>
-                            ) : (
-                              <span className="text-slate-400 text-xs">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-                {activeSheetTeamData && activeSheetTeamData.items.length > 0 && (
-                  <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300 text-xs text-slate-800">
-                    <tr className="divide-x divide-slate-200">
-                      <td colSpan="5" className="py-2.5 px-3 text-right uppercase text-slate-700 font-extrabold text-[11px]">
-                        Grand Total Qty & Upah:
+                      <td className="py-1.5 px-2.5 border border-black text-center font-medium">
+                        {item.varian || '-'}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-mono font-black text-rose-700 text-sm">
-                        {activeSheetTeamData.totalQty.toLocaleString('id-ID')} Pcs
+                      <td className="py-1.5 px-2.5 border border-black text-right font-medium">
+                        Rp {Number(item.tarifPerPcs || 0).toLocaleString('id-ID')}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-800 text-sm bg-emerald-50/50">
-                        Rp {activeSheetTeamData.totalKotor.toLocaleString('id-ID')}
+                      <td className="py-1.5 px-2.5 border border-black text-center font-bold">
+                        {Number(item.qty || 0).toLocaleString('id-ID')}
                       </td>
-                      <td colSpan="2" className="py-2.5 px-3 text-center">
-                        {activeSheetTeamData.pendingCount === 0 ? (
-                          <span className="text-[10.5px] font-bold text-emerald-700">✅ Lunas Semua</span>
+                      <td className="py-1.5 px-2.5 border border-black text-right font-bold">
+                        <div className="flex items-center justify-between">
+                          <span>Rp</span>
+                          <span>{Number(item.totalUpah || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                      </td>
+                      <td className="py-1 px-2 border border-black text-center print:hidden">
+                        {item.statusBayar !== 'Lunas' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPay([item])}
+                            className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10.5px] font-bold cursor-pointer shadow-2xs"
+                          >
+                            Bayar
+                          </button>
                         ) : (
-                          <span className="text-[10.5px] font-bold text-rose-700">
-                            ⏳ {activeSheetTeamData.pendingCount} Belum Bayar
-                          </span>
+                          <span className="text-emerald-700 font-bold text-[10.5px]">Lunas</span>
                         )}
                       </td>
                     </tr>
-                  </tfoot>
-                )}
+                  ))}
+
+                  {/* Empty Grid Rows (Memberi tampilan persis kisi-kisi Google Sheet) */}
+                  {Array.from({ length: Math.max(3, 8 - (activeSheetTeamData?.items?.length || 0)) }).map((_, emptyIdx) => (
+                    <tr key={`empty-${emptyIdx}`} className="h-6 border-b border-black">
+                      <td className="border border-black"></td>
+                      <td className="border border-black"></td>
+                      <td className="border border-black"></td>
+                      <td className="border border-black"></td>
+                      <td className="border border-black"></td>
+                      <td className="border border-black print:hidden"></td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
 
-            {/* Bottom Actions Bar */}
+            {/* 8. FOOTER ACTION BUTTONS */}
             {activeSheetTeamData && (
-              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenSlipKaryawan(activeSheetTeamData.namaPetugas)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer transition-all"
-                  >
-                    <Printer className="w-4 h-4 text-amber-300" />
-                    <span>Cetak Slip Resmi ({activeSheetTeamData.namaPetugas})</span>
-                  </button>
-                </div>
+              <div className="mt-5 pt-3 border-t border-slate-300 flex flex-wrap items-center justify-between gap-3 print:hidden">
+                <button
+                  type="button"
+                  onClick={() => handleOpenSlipKaryawan(activeSheetTeamData.namaPetugas)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer transition-all"
+                >
+                  <Printer className="w-4 h-4 text-amber-300" />
+                  <span>Cetak Slip ({activeSheetTeamData.namaPetugas})</span>
+                </button>
 
                 {activeSheetTeamData.pendingCount > 0 && (
                   <button
@@ -1199,7 +1203,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                       const pendingItems = activeSheetTeamData.items.filter((i) => i.statusBayar !== 'Lunas');
                       handleOpenPay(pendingItems);
                     }}
-                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all"
                   >
                     <CreditCard className="w-4 h-4 stroke-[2.5]" />
                     <span>

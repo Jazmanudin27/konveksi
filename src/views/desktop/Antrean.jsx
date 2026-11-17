@@ -1653,12 +1653,12 @@ export default function Antrean({
       )}
 
       {/* 5. TABEL INDEX ANTREAN (KOLOM CHECKBOX + MERGE BIAR LEGA) */}
-      <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_6px_rgba(15,23,42,0.05)] overflow-hidden">
+      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse border border-[#cbd5e1]">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse border border-slate-800">
             <thead>
-              <tr className="bg-[#f8fafc] text-[#334155] font-extrabold text-xs tracking-wider uppercase">
-                <th className="py-2.5 px-2 text-center w-9 min-w-[36px] border border-[#cbd5e1]">
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
+                <th className="py-2.5 px-2 text-center w-9 min-w-[36px] border border-slate-800 text-white font-bold">
                   <input
                     type="checkbox"
                     checked={filteredList.length > 0 && selectedIds.length === filteredList.length}
@@ -1667,19 +1667,19 @@ export default function Antrean({
                     title="Pilih Semua Antrean"
                   />
                 </th>
-                <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-[#cbd5e1]">NO</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[180px] border border-[#cbd5e1]">NO. ANTREAN & TGL</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] border border-[#cbd5e1]">SUMBER & REFF</th>
-                <th className="py-2.5 px-3 min-w-[240px] border border-[#cbd5e1]">RINCIAN MODEL PRODUK (SKU)</th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">TARGET & PRIORITAS</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">STATUS</th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[150px] border border-[#cbd5e1]">AKSI</th>
+                <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border border-slate-800 text-white font-bold">NO</th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[180px] border border-slate-800 text-white font-bold">NO. ANTREAN & TGL</th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">SUMBER & REFF</th>
+                <th className="py-2.5 px-3 min-w-[240px] border border-slate-800 text-white font-bold">RINCIAN MODEL PRODUK (SKU)</th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[120px] border border-slate-800 text-white font-bold">TARGET & PRIORITAS</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] border border-slate-800 text-white font-bold">STATUS</th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">AKSI</th>
               </tr>
             </thead>
-            <tbody className="font-medium text-slate-700 divide-y divide-[#cbd5e1]">
+            <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-8 text-center text-slate-400 border border-[#cbd5e1]">
+                  <td colSpan="8" className="py-8 text-center text-slate-400 border border-slate-800">
                     <FolderOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">Tidak ada data antrean produksi</p>
                     <p className="text-[11px] text-slate-400">
@@ -1693,9 +1693,9 @@ export default function Antrean({
                   const isSelected = selectedIds.includes(item.id);
 
                   return (
-                    <tr key={item.id} className={`transition-colors ${isSelected ? 'bg-blue-50/60' : 'hover:bg-[#f1f5f9]'}`}>
+                    <tr key={item.id} className={`transition-colors border-b border-slate-800 ${isSelected ? 'bg-blue-50/60' : 'hover:bg-slate-50'}`}>
                       {/* 0. CHECKBOX SELECT */}
-                      <td className="py-2 px-2 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2 text-center border border-slate-800">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1705,17 +1705,17 @@ export default function Antrean({
                       </td>
 
                       {/* 1. NO */}
-                      <td className="py-2 px-2 text-center text-slate-500 font-bold text-xs sm:text-sm border border-[#cbd5e1]">
+                      <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs sm:text-sm border border-slate-800">
                         {idx + 1}
                       </td>
 
                       {/* 2. NO. ANTREAN & TGL MASUK (GABUNGAN) */}
-                      <td className="py-2 px-3 border border-[#cbd5e1] whitespace-nowrap">
+                      <td className="py-2 px-3 border border-slate-800 whitespace-nowrap">
                         <div className="flex flex-col gap-1">
-                          <span className="font-mono font-bold text-xs sm:text-[13px] text-[#0284c7] bg-[#eff6ff] px-2 py-0.5 rounded border border-[#bfdbfe] inline-block w-fit">
+                          <span className="font-mono font-bold text-xs sm:text-[13px] text-[#0284c7]">
                             {item.noAntrian}
                           </span>
-                          <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-0.5">
+                          <div className="flex items-center gap-1.5 text-slate-600 text-xs mt-0.5">
                             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-mono">{item.tglMasuk}</span>
                           </div>
@@ -1723,14 +1723,14 @@ export default function Antrean({
                       </td>
 
                       {/* 3. SUMBER PERMINTAAN & NO REFF (GABUNGAN) */}
-                      <td className="py-2 px-3 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 border border-slate-800">
                         <div className="flex flex-col min-w-0">
-                          <span className="text-xs sm:text-sm font-bold text-slate-800" title={item.sumberPermintaan}>
+                          <span className="text-xs sm:text-sm font-bold text-slate-900" title={item.sumberPermintaan}>
                             {item.sumberPermintaan}
                           </span>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mt-0.5">
-                            <span className="text-slate-400">Reff:</span>
-                            <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-mono mt-0.5">
+                            <span className="text-slate-500">Reff:</span>
+                            <span className="font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-300">
                               {item.noReff || '-'}
                             </span>
                           </div>
@@ -1738,33 +1738,33 @@ export default function Antrean({
                       </td>
 
                       {/* 4. MODEL PRODUK & SPESIFIKASI (SPACE LEBAR & LENGKAP) */}
-                      <td className="py-2 px-3 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 border border-slate-800">
                         <div className="flex flex-col min-w-0">
                           {/* SKU & Nama Produk */}
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-mono font-black text-xs text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                            <span className="font-mono font-bold text-xs text-[#0284c7]">
                               {item.sku}
                             </span>
-                            <span className="font-bold text-[#0f172a] text-xs sm:text-sm truncate" title={item.namaProduk}>
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm truncate" title={item.namaProduk}>
                               {item.namaProduk || '-'}
                             </span>
                           </div>
 
                           {/* Kategori, Varian, Ukuran, Kain */}
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1 flex-wrap">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-1 flex-wrap">
                             {item.kategori && (
-                              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-xs">
+                              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs">
                                 {item.kategori}
                               </span>
                             )}
                             {(item.varian || item.ukuran) && (
-                              <span className="text-slate-600 font-medium">
+                              <span className="text-slate-700 font-medium">
                                 {item.varian || 'Polos'} ({item.ukuran || 'All Size'})
                               </span>
                             )}
                             {item.skuBahan && item.skuBahan !== '-' && (
                               <>
-                                <span className="text-slate-300">•</span>
+                                <span className="text-slate-400">•</span>
                                 <span className="font-mono text-cyan-800 font-bold text-xs">
                                   Kain: {item.skuBahan}
                                 </span>
@@ -1775,19 +1775,19 @@ export default function Antrean({
                       </td>
 
                       {/* 5. TARGET QTY & PRIORITAS (GABUNGAN) */}
-                      <td className="py-2 px-2.5 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-center border border-slate-800">
                         <div className="flex flex-col items-center gap-1">
-                          <span className="font-mono font-black text-sm sm:text-base text-[#0f172a]">
+                          <span className="font-mono font-bold text-sm sm:text-base text-slate-900">
                             {Number(item.qty).toLocaleString('id-ID')}{' '}
                             <span className="text-xs font-semibold text-slate-500">Pcs</span>
                           </span>
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${
                               isUrgent
-                                ? 'bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]'
+                                ? 'bg-rose-100 text-rose-800 border-rose-300'
                                 : item.prioritas === 'Low'
-                                ? 'bg-slate-100 text-slate-600 border-slate-200'
-                                : 'bg-[#eff6ff] text-[#1d4ed8] border-[#bfdbfe]'
+                                ? 'bg-slate-100 text-slate-600 border-slate-300'
+                                : 'bg-blue-100 text-blue-800 border-blue-300'
                             }`}
                           >
                             {isUrgent && <Flame className="w-3 h-3 text-rose-600 shrink-0" />}
@@ -1797,23 +1797,23 @@ export default function Antrean({
                       </td>
 
                       {/* 6. STATUS & TGL PROSES */}
-                      <td className="py-2 px-3 text-center border border-[#cbd5e1] whitespace-nowrap">
+                      <td className="py-2 px-3 text-center border border-slate-800 whitespace-nowrap">
                         <div className="flex flex-col items-center gap-1">
                           <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold border ${
                               item.status === 'Menunggu Cutting'
-                                ? 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
                                 : item.status === 'Proses Cutting' || item.status === 'Sedang Diproses'
-                                ? 'bg-[#eff6ff] text-[#0284c7] border-[#bae6fd]'
+                                ? 'bg-sky-100 text-sky-800 border-sky-300'
                                 : item.status === 'Proses Jahit'
-                                ? 'bg-[#eef2ff] text-[#4338ca] border-[#c7d2fe]'
+                                ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
                                 : item.status === 'Proses QC'
-                                ? 'bg-[#f0fdfa] text-[#0f766e] border-[#99f6e4]'
+                                ? 'bg-teal-100 text-teal-800 border-teal-300'
                                 : item.status === 'Proses Finishing'
-                                ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                 : item.status === 'Selesai' || item.status === 'Menunggu Penerimaan Gudang'
-                                ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
-                                : 'bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : 'bg-rose-100 text-rose-800 border-rose-300'
                             }`}
                           >
                             {item.status === 'Sedang Diproses' ? 'Proses Cutting' : item.status === 'Menunggu Penerimaan Gudang' ? 'Selesai' : item.status}
@@ -1839,7 +1839,7 @@ export default function Antrean({
 
                           {/* Estimasi Selesai / Deadline */}
                           {item.deadline && (
-                            <div className="flex items-center gap-1 text-[10.5px] text-slate-400 font-mono">
+                            <div className="flex items-center gap-1 text-[10.5px] text-slate-500 font-mono">
                               <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                               <span>s/d {item.deadline}</span>
                             </div>
@@ -1848,7 +1848,7 @@ export default function Antrean({
                       </td>
 
                       {/* 7. AKSI: IKON SERAHKAN CUTTING / JAHIT / QC / FINISHING, EYE, EDIT, TRASH */}
-                      <td className="py-2 px-2.5 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-center border border-slate-800">
                         <div className="inline-flex items-center justify-center gap-1.5 flex-nowrap">
                           {item.status === 'Proses Cutting' || item.status === 'Sedang Diproses' ? (
                             <button

@@ -236,46 +236,46 @@ export default function Jasa({ jasa = [], setJasa }) {
       </div>
 
       {/* 4. TABEL JASA (EXACT REQUESTED COLUMNS: KODE JASA, SKU, NAMA JASA, QTY, HARGA, SATUAN) */}
-      <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_6px_rgba(15,23,42,0.05)] overflow-hidden">
+      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
+          <table className="w-full text-left text-xs border-collapse border border-slate-800">
             <thead>
-              <tr className="bg-[#f8fafc] text-[#475569] font-bold text-[10px] tracking-wide uppercase">
-                <th className="py-2 px-2.5 text-center w-12 border border-[#cbd5e1]">NO</th>
-                <th className="py-2 px-2.5 min-w-[130px] border border-[#cbd5e1]">KODE JASA</th>
-                <th className="py-2 px-2.5 min-w-[140px] border border-[#cbd5e1]">SKU</th>
-                <th className="py-2 px-2.5 min-w-[240px] border border-[#cbd5e1]">NAMA JASA</th>
-                <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">QTY</th>
-                <th className="py-2 px-2.5 text-right min-w-[130px] border border-[#cbd5e1]">HARGA</th>
-                <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">SATUAN</th>
-                <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">AKSI</th>
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
+                <th className="py-2.5 px-2.5 text-center w-12 border border-slate-800 text-white font-bold">NO</th>
+                <th className="py-2.5 px-2.5 min-w-[130px] border border-slate-800 text-white font-bold">KODE JASA</th>
+                <th className="py-2.5 px-2.5 min-w-[140px] border border-slate-800 text-white font-bold">SKU</th>
+                <th className="py-2.5 px-2.5 min-w-[240px] border border-slate-800 text-white font-bold">NAMA JASA</th>
+                <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">QTY</th>
+                <th className="py-2.5 px-2.5 text-right min-w-[130px] border border-slate-800 text-white font-bold">HARGA</th>
+                <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">SATUAN</th>
+                <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">AKSI</th>
               </tr>
             </thead>
-            <tbody className="font-medium text-slate-700">
+            <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
               {filteredJasa.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-10 text-center text-slate-400 border border-[#cbd5e1]">
+                  <td colSpan="8" className="py-10 text-center text-slate-400 border border-slate-800">
                     <FolderOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">Tidak ada jasa ditemukan</p>
                   </td>
                 </tr>
               ) : (
                 filteredJasa.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-[#f1f5f9] transition-colors">
-                    <td className="py-1.5 px-2 text-center text-slate-500 font-semibold text-[11px] border border-[#cbd5e1]">
+                  <tr key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-800">
+                    <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs border border-slate-800">
                       {idx + 1}
                     </td>
-                    <td className="py-1.5 px-2.5 border border-[#cbd5e1]">
-                      <span className="font-mono font-bold text-[11px] text-[#0284c7] bg-[#eff6ff] px-2 py-0.5 rounded border border-[#bfdbfe] inline-block">
+                    <td className="py-2 px-2.5 border border-slate-800">
+                      <span className="font-mono font-bold text-xs text-[#0284c7]">
                         {item.kodeJasa}
                       </span>
                     </td>
-                    <td className="py-1.5 px-2.5 border border-[#cbd5e1]">
-                      <span className="font-mono text-xs text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 inline-block font-semibold">
+                    <td className="py-2 px-2.5 border border-slate-800">
+                      <span className="font-mono text-xs text-slate-800 font-semibold">
                         {item.sku}
                       </span>
                     </td>
-                    <td className="py-1.5 px-2.5 font-bold text-[#0f172a] text-xs border border-[#cbd5e1]">
+                    <td className="py-2 px-2.5 font-bold text-slate-900 text-xs border border-slate-800">
                       <div>{item.namaJasa}</div>
                       {item.keterangan && (
                         <p className="text-[10px] text-slate-500 font-normal mt-0.5">
@@ -283,20 +283,20 @@ export default function Jasa({ jasa = [], setJasa }) {
                         </p>
                       )}
                     </td>
-                    <td className="py-1.5 px-2.5 text-center font-bold text-slate-800 border border-[#cbd5e1]">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px]">
+                    <td className="py-2 px-2.5 text-center font-bold text-slate-800 border border-slate-800">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 text-[11px] font-bold">
                         {item.qty}
                       </span>
                     </td>
-                    <td className="py-1.5 px-2.5 text-right font-extrabold text-[#059669] text-xs border border-[#cbd5e1]">
+                    <td className="py-2 px-2.5 text-right font-mono font-bold text-slate-900 text-xs border border-slate-800">
                       {formatRupiah(item.harga)}
                     </td>
-                    <td className="py-1.5 px-2.5 text-center border border-[#cbd5e1]">
-                      <span className="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10.5px] font-bold">
+                    <td className="py-2 px-2.5 text-center border border-slate-800">
+                      <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 text-[10.5px] font-bold">
                         {item.satuan}
                       </span>
                     </td>
-                    <td className="py-1.5 px-2.5 text-center border border-[#cbd5e1]">
+                    <td className="py-2 px-2.5 text-center border border-slate-800">
                       <div className="inline-flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleOpenEdit(item)}

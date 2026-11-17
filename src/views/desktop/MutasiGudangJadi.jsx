@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   Warehouse,
   ArrowDownLeft,
@@ -24,45 +24,45 @@ import {
   Send,
   FolderOpen,
   ArrowLeft,
-  Shirt
-} from 'lucide-react';
-import { api } from '../../services/api';
-import { Swal } from '../../utils/swal';
+  Shirt,
+} from "lucide-react";
+import { api } from "../../services/api";
+import { Swal } from "../../utils/swal";
 
 const RAK_PRESETS = [
-  'Gudang Utama - Rak A1 (Kaos)',
-  'Gudang Utama - Rak A2 (Polo)',
-  'Gudang Utama - Rak B1 (Kemeja)',
-  'Box Siap Kirim (Packing Ekspedisi)',
-  'Palet Transit (Siap Distribusi)'
+  "Gudang Utama - Rak A1 (Kaos)",
+  "Gudang Utama - Rak A2 (Polo)",
+  "Gudang Utama - Rak B1 (Kemeja)",
+  "Box Siap Kirim (Packing Ekspedisi)",
+  "Palet Transit (Siap Distribusi)",
 ];
 
 const PETUGAS_PRESETS = [
-  'Staff Gudang Jadi',
-  'Kepala Gudang Jadi',
-  'Tim Logistik & Ekspedisi',
-  'Admin Inventori'
+  "Staff Gudang Jadi",
+  "Kepala Gudang Jadi",
+  "Tim Logistik & Ekspedisi",
+  "Admin Inventori",
 ];
 
 export default function MutasiGudangJadi({
   mutasiList = [],
   setMutasiList,
-  products = []
+  products = [],
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterJenis, setFilterJenis] = useState('');
-  const [filterSumber, setFilterSumber] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'PENDING' | 'MASUK' | 'KELUAR'
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterJenis, setFilterJenis] = useState("");
+  const [filterSumber, setFilterSumber] = useState("");
+  const [activeTab, setActiveTab] = useState("ALL"); // 'ALL' | 'PENDING' | 'MASUK' | 'KELUAR'
   const [selectedItemShow, setSelectedItemShow] = useState(null);
   const [modalMode, setModalMode] = useState(null); // 'create'
-  const [modalInitialJenis, setModalInitialJenis] = useState('MASUK');
+  const [modalInitialJenis, setModalInitialJenis] = useState("MASUK");
 
   // Helper user login aktif (default Admin Produksi)
   const currentUser = (() => {
     try {
-      return localStorage.getItem('currentUser') || 'Admin Produksi';
+      return localStorage.getItem("currentUser") || "Admin Produksi";
     } catch (_) {
-      return 'Admin Produksi';
+      return "Admin Produksi";
     }
   })();
 
@@ -72,8 +72,8 @@ export default function MutasiGudangJadi({
   const [approveForm, setApproveForm] = useState({
     tglDiterima: new Date().toISOString().slice(0, 10),
     petugasTerima: currentUser,
-    lokasiRak: 'Gudang Utama - Rak A1 (Kaos)',
-    catatan: ''
+    lokasiRak: "Gudang Utama - Rak A1 (Kaos)",
+    catatan: "",
   });
 
   const handleOpenApproveModal = (item) => {
@@ -81,8 +81,8 @@ export default function MutasiGudangJadi({
     setApproveForm({
       tglDiterima: new Date().toISOString().slice(0, 10),
       petugasTerima: currentUser,
-      lokasiRak: item.lokasiRak || 'Gudang Utama - Rak A1 (Kaos)',
-      catatan: ''
+      lokasiRak: item.lokasiRak || "Gudang Utama - Rak A1 (Kaos)",
+      catatan: "",
     });
     setIsApproveModalOpen(true);
   };
@@ -98,48 +98,59 @@ export default function MutasiGudangJadi({
           tglDiterima: approveForm.tglDiterima,
           petugasTerima: approveForm.petugasTerima,
           lokasiRak: approveForm.lokasiRak,
-          catatan: approveForm.catatan
+          catatan: approveForm.catatan,
         });
         const fresh = await api.getMutasiGudangJadi();
         if (Array.isArray(fresh)) setMutasiList(fresh);
       } catch (apiErr) {
-        console.warn('API approve offline/error, updating local state:', apiErr);
-        setMutasiList(prev => prev.map(m => m.id === approveTargetItem.id ? {
-          ...m,
-          statusPenerimaan: 'Diterima',
-          tglDiterima: approveForm.tglDiterima,
-          petugasTerima: approveForm.petugasTerima,
-          petugas: approveForm.petugasTerima,
-          lokasiRak: approveForm.lokasiRak,
-          catatan: approveForm.catatan ? `${m.catatan || ''} | ${approveForm.catatan}` : m.catatan
-        } : m));
+        console.warn(
+          "API approve offline/error, updating local state:",
+          apiErr,
+        );
+        setMutasiList((prev) =>
+          prev.map((m) =>
+            m.id === approveTargetItem.id
+              ? {
+                  ...m,
+                  statusPenerimaan: "Diterima",
+                  tglDiterima: approveForm.tglDiterima,
+                  petugasTerima: approveForm.petugasTerima,
+                  petugas: approveForm.petugasTerima,
+                  lokasiRak: approveForm.lokasiRak,
+                  catatan: approveForm.catatan
+                    ? `${m.catatan || ""} | ${approveForm.catatan}`
+                    : m.catatan,
+                }
+              : m,
+          ),
+        );
       }
 
       setIsApproveModalOpen(false);
       setApproveTargetItem(null);
 
       await Swal.fire({
-        icon: 'success',
-        title: 'Barang Jadi Resmi Diterima & Disimpan!',
+        icon: "success",
+        title: "Barang Jadi Resmi Diterima & Disimpan!",
         html: `
           <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
             <p>Penerimaan barang dari Finishing telah berhasil di-approve:</p>
             <div style="margin-top:8px; padding:10px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; color:#166534;">
-              <div>📦 <b>${approveTargetItem.namaProduk}</b> (+${Number(approveTargetItem.qty).toLocaleString('id-ID')} Pcs)</div>
+              <div>📦 <b>${approveTargetItem.namaProduk}</b> (+${Number(approveTargetItem.qty).toLocaleString("id-ID")} Pcs)</div>
               <div>📍 Lokasi Rak: <b>${approveForm.lokasiRak}</b></div>
               <div>📅 Tgl Diterima: <b>${approveForm.tglDiterima}</b> (Oleh ${approveForm.petugasTerima})</div>
-              ${approveTargetItem.tglDiserahkan ? `<div style="font-size:11px; color:#15803d; margin-top:4px;">📤 Tgl Diserahkan: ${approveTargetItem.tglDiserahkan} (${approveTargetItem.petugasSerah || 'Tim Finishing'})</div>` : ''}
+              ${approveTargetItem.tglDiserahkan ? `<div style="font-size:11px; color:#15803d; margin-top:4px;">📤 Tgl Diserahkan: ${approveTargetItem.tglDiserahkan} (${approveTargetItem.petugasSerah || "Tim Finishing"})</div>` : ""}
             </div>
           </div>
         `,
-        confirmButtonText: 'OK',
-        confirmButtonColor: '#059669'
+        confirmButtonText: "OK",
+        confirmButtonColor: "#059669",
       });
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal Approve Penerimaan',
-        text: err.message || 'Terjadi kesalahan sistem'
+        icon: "error",
+        title: "Gagal Approve Penerimaan",
+        text: err.message || "Terjadi kesalahan sistem",
       });
     }
   };
@@ -152,12 +163,12 @@ export default function MutasiGudangJadi({
     let countKeluar = 0;
     let countPending = 0;
 
-    (mutasiList || []).forEach(item => {
+    (mutasiList || []).forEach((item) => {
       const q = Number(item.qty) || 0;
-      if (item.statusPenerimaan === 'Menunggu Penerimaan') {
+      if (item.statusPenerimaan === "Menunggu Penerimaan") {
         countPending++;
       }
-      if (item.jenisMutasi === 'MASUK') {
+      if (item.jenisMutasi === "MASUK") {
         masukPcs += q;
         countMasuk++;
       } else {
@@ -175,17 +186,21 @@ export default function MutasiGudangJadi({
       countMasuk,
       countKeluar,
       countPending,
-      totalStokSaatIni
+      totalStokSaatIni,
     };
   }, [mutasiList]);
 
   // Filter Data
   const filteredList = useMemo(() => {
-    return (mutasiList || []).filter(item => {
+    return (mutasiList || []).filter((item) => {
       // Tab filter
-      if (activeTab === 'PENDING' && item.statusPenerimaan !== 'Menunggu Penerimaan') return false;
-      if (activeTab === 'MASUK' && item.jenisMutasi !== 'MASUK') return false;
-      if (activeTab === 'KELUAR' && item.jenisMutasi !== 'KELUAR') return false;
+      if (
+        activeTab === "PENDING" &&
+        item.statusPenerimaan !== "Menunggu Penerimaan"
+      )
+        return false;
+      if (activeTab === "MASUK" && item.jenisMutasi !== "MASUK") return false;
+      if (activeTab === "KELUAR" && item.jenisMutasi !== "KELUAR") return false;
 
       // Select filters
       if (filterJenis && item.jenisMutasi !== filterJenis) return false;
@@ -194,14 +209,14 @@ export default function MutasiGudangJadi({
       // Search
       if (!searchTerm.trim()) return true;
       const q = searchTerm.toLowerCase();
-      const noMut = (item.noMutasi || '').toLowerCase();
-      const noAnt = (item.noAntrian || '').toLowerCase();
-      const noRef = (item.noReff || '').toLowerCase();
-      const sku = (item.sku || '').toLowerCase();
-      const nama = (item.namaProduk || '').toLowerCase();
-      const rak = (item.lokasiRak || '').toLowerCase();
-      const pet = (item.petugas || '').toLowerCase();
-      const cat = (item.catatan || '').toLowerCase();
+      const noMut = (item.noMutasi || "").toLowerCase();
+      const noAnt = (item.noAntrian || "").toLowerCase();
+      const noRef = (item.noReff || "").toLowerCase();
+      const sku = (item.sku || "").toLowerCase();
+      const nama = (item.namaProduk || "").toLowerCase();
+      const rak = (item.lokasiRak || "").toLowerCase();
+      const pet = (item.petugas || "").toLowerCase();
+      const cat = (item.catatan || "").toLowerCase();
 
       return (
         noMut.includes(q) ||
@@ -219,48 +234,53 @@ export default function MutasiGudangJadi({
   // Hapus Data Mutasi
   const handleDelete = async (item) => {
     const res = await Swal.fire({
-      icon: 'warning',
-      title: 'Hapus Bukti Mutasi?',
+      icon: "warning",
+      title: "Hapus Bukti Mutasi?",
       text: `Mutasi "${item.noMutasi}" (${item.namaProduk} - ${item.qty} Pcs) akan dihapus permanen dari histori gudang jadi.`,
       showCancelButton: true,
-      confirmButtonText: 'Ya, Hapus',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#e11d48'
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#e11d48",
     });
 
     if (!res.isConfirmed) return;
 
     // Selalu hapus dari state lokal terlebih dahulu (optimistic UI)
-    setMutasiList((prev) => prev.filter((m) => m.id !== item.id && m.noMutasi !== item.noMutasi));
+    setMutasiList((prev) =>
+      prev.filter((m) => m.id !== item.id && m.noMutasi !== item.noMutasi),
+    );
 
     try {
       if (item.id) {
         await api.deleteMutasiGudangJadi(item.id);
       }
       Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Dihapus',
+        icon: "success",
+        title: "Berhasil Dihapus",
         text: `Data mutasi ${item.noMutasi} telah dihapus.`,
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     } catch (err) {
-      console.warn('Gagal hapus di backend API (state lokal tetap dihapus):', err);
+      console.warn(
+        "Gagal hapus di backend API (state lokal tetap dihapus):",
+        err,
+      );
       // Notifikasi sukses tetap diberikan karena data di tampilan & localStorage/session telah terhapus
       Swal.fire({
-        icon: 'success',
-        title: 'Berhasil Dihapus',
+        icon: "success",
+        title: "Berhasil Dihapus",
         text: `Data mutasi ${item.noMutasi} telah dihapus.`,
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     }
   };
 
   // Open Create Modal
-  const handleOpenCreate = (jenis = 'MASUK') => {
+  const handleOpenCreate = (jenis = "MASUK") => {
     setModalInitialJenis(jenis);
-    setModalMode('create');
+    setModalMode("create");
   };
 
   // Save Mutasi Manual
@@ -271,17 +291,17 @@ export default function MutasiGudangJadi({
       if (Array.isArray(fresh)) setMutasiList(fresh);
       setModalMode(null);
       Swal.fire({
-        icon: 'success',
-        title: 'Mutasi Tersimpan!',
-        text: `Nomor bukti ${created.no_mutasi || created.noMutasi || 'baru'} berhasil dicatat ke Gudang Jadi.`,
+        icon: "success",
+        title: "Mutasi Tersimpan!",
+        text: `Nomor bukti ${created.no_mutasi || created.noMutasi || "baru"} berhasil dicatat ke Gudang Jadi.`,
         timer: 1600,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal Menyimpan',
-        text: err.message || 'Terjadi kesalahan saat simpan'
+        icon: "error",
+        title: "Gagal Menyimpan",
+        text: err.message || "Terjadi kesalahan saat simpan",
       });
     }
   };
@@ -304,7 +324,8 @@ export default function MutasiGudangJadi({
               </span>
             </div>
             <p className="text-[10.5px] text-white/85 mt-0.5 leading-tight">
-              Penerimaan barang dari finishing, penyimpanan rak gudang, dan pengeluaran order siap kirim
+              Penerimaan barang dari finishing, penyimpanan rak gudang, dan
+              pengeluaran order siap kirim
             </p>
           </div>
         </div>
@@ -315,7 +336,12 @@ export default function MutasiGudangJadi({
               try {
                 const fresh = await api.getMutasiGudangJadi();
                 if (Array.isArray(fresh)) setMutasiList(fresh);
-                Swal.fire({ icon: 'success', title: 'Data Diperbarui', timer: 1000, showConfirmButton: false });
+                Swal.fire({
+                  icon: "success",
+                  title: "Data Diperbarui",
+                  timer: 1000,
+                  showConfirmButton: false,
+                });
               } catch (_) {}
             }}
             className="flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-md text-[11px] font-bold shadow-xs transition-all cursor-pointer border border-white/20"
@@ -325,7 +351,7 @@ export default function MutasiGudangJadi({
           </button>
 
           <button
-            onClick={() => handleOpenCreate('MASUK')}
+            onClick={() => handleOpenCreate("MASUK")}
             className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-[11px] font-bold shadow-xs transition-all cursor-pointer"
           >
             <ArrowDownLeft className="w-3.5 h-3.5" />
@@ -333,7 +359,7 @@ export default function MutasiGudangJadi({
           </button>
 
           <button
-            onClick={() => handleOpenCreate('KELUAR')}
+            onClick={() => handleOpenCreate("KELUAR")}
             className="flex items-center gap-1 px-2.5 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-md text-[11px] font-bold shadow-xs transition-all cursor-pointer"
           >
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -350,7 +376,10 @@ export default function MutasiGudangJadi({
               Total No Bukti
             </div>
             <div className="text-base font-extrabold text-[#0f172a] mt-0.5 leading-none">
-              {stats.totalTransaksi} <span className="text-[11px] font-medium text-slate-400">Bukti</span>
+              {stats.totalTransaksi}{" "}
+              <span className="text-[11px] font-medium text-slate-400">
+                Bukti
+              </span>
             </div>
           </div>
           <div className="w-7 h-7 rounded-md bg-sky-50 text-[#0284c7] flex items-center justify-center shrink-0">
@@ -364,7 +393,10 @@ export default function MutasiGudangJadi({
               Barang Masuk (In)
             </div>
             <div className="text-base font-extrabold text-[#059669] mt-0.5 leading-none">
-              +{stats.masukPcs.toLocaleString('id-ID')} <span className="text-[11px] font-medium text-slate-500">Pcs ({stats.countMasuk})</span>
+              +{stats.masukPcs.toLocaleString("id-ID")}{" "}
+              <span className="text-[11px] font-medium text-slate-500">
+                Pcs ({stats.countMasuk})
+              </span>
             </div>
           </div>
           <div className="w-7 h-7 rounded-md bg-[#ecfdf5] text-[#047857] flex items-center justify-center shrink-0">
@@ -378,7 +410,10 @@ export default function MutasiGudangJadi({
               Barang Keluar (Out)
             </div>
             <div className="text-base font-extrabold text-[#ef4444] mt-0.5 leading-none">
-              -{stats.keluarPcs.toLocaleString('id-ID')} <span className="text-[11px] font-medium text-slate-500">Pcs ({stats.countKeluar})</span>
+              -{stats.keluarPcs.toLocaleString("id-ID")}{" "}
+              <span className="text-[11px] font-medium text-slate-500">
+                Pcs ({stats.countKeluar})
+              </span>
             </div>
           </div>
           <div className="w-7 h-7 rounded-md bg-[#fef2f2] text-[#b91c1c] flex items-center justify-center shrink-0">
@@ -392,7 +427,10 @@ export default function MutasiGudangJadi({
               Stok Siap Kirim
             </div>
             <div className="text-base font-extrabold text-[#0284c7] mt-0.5 leading-none">
-              {stats.totalStokSaatIni.toLocaleString('id-ID')} <span className="text-[11px] font-medium text-slate-400">Pcs di Rak</span>
+              {stats.totalStokSaatIni.toLocaleString("id-ID")}{" "}
+              <span className="text-[11px] font-medium text-slate-400">
+                Pcs di Rak
+              </span>
             </div>
           </div>
           <div className="w-7 h-7 rounded-md bg-blue-50 text-[#0284c7] flex items-center justify-center shrink-0">
@@ -404,11 +442,11 @@ export default function MutasiGudangJadi({
       {/* 3. FILTER TABS (PM TAB STYLES PERSIS MUTASI BAHAN) */}
       <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none">
         <button
-          onClick={() => setActiveTab('ALL')}
+          onClick={() => setActiveTab("ALL")}
           className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
-            activeTab === 'ALL'
-              ? 'bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]'
-              : 'bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe] hover:bg-blue-100/60'
+            activeTab === "ALL"
+              ? "bg-[#0284c7] text-white border border-[#0284c7] shadow-[0_1px_4px_rgba(2,132,199,0.25)]"
+              : "bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe] hover:bg-blue-100/60"
           }`}
         >
           <ReceiptText className="w-3 h-3" />
@@ -416,11 +454,11 @@ export default function MutasiGudangJadi({
         </button>
 
         <button
-          onClick={() => setActiveTab('PENDING')}
+          onClick={() => setActiveTab("PENDING")}
           className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
-            activeTab === 'PENDING'
-              ? 'bg-[#d97706] text-white border border-[#d97706] shadow-[0_1px_4px_rgba(217,119,6,0.25)]'
-              : 'bg-[#fffbeb] text-[#b45309] border border-[#fde68a] hover:bg-amber-100/60'
+            activeTab === "PENDING"
+              ? "bg-[#d97706] text-white border border-[#d97706] shadow-[0_1px_4px_rgba(217,119,6,0.25)]"
+              : "bg-[#fffbeb] text-[#b45309] border border-[#fde68a] hover:bg-amber-100/60"
           }`}
         >
           <Clock className="w-3 h-3" />
@@ -428,11 +466,11 @@ export default function MutasiGudangJadi({
         </button>
 
         <button
-          onClick={() => setActiveTab('MASUK')}
+          onClick={() => setActiveTab("MASUK")}
           className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
-            activeTab === 'MASUK'
-              ? 'bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]'
-              : 'bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60'
+            activeTab === "MASUK"
+              ? "bg-[#059669] text-white border border-[#059669] shadow-[0_1px_4px_rgba(5,150,105,0.25)]"
+              : "bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] hover:bg-emerald-100/60"
           }`}
         >
           <ArrowDownLeft className="w-3 h-3" />
@@ -440,11 +478,11 @@ export default function MutasiGudangJadi({
         </button>
 
         <button
-          onClick={() => setActiveTab('KELUAR')}
+          onClick={() => setActiveTab("KELUAR")}
           className={`h-6.5 inline-flex items-center gap-1 px-2.5 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
-            activeTab === 'KELUAR'
-              ? 'bg-[#ef4444] text-white border border-[#ef4444] shadow-[0_1px_4px_rgba(239,68,68,0.25)]'
-              : 'bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca] hover:bg-red-100/60'
+            activeTab === "KELUAR"
+              ? "bg-[#ef4444] text-white border border-[#ef4444] shadow-[0_1px_4px_rgba(239,68,68,0.25)]"
+              : "bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca] hover:bg-red-100/60"
           }`}
         >
           <ArrowUpRight className="w-3 h-3" />
@@ -485,102 +523,141 @@ export default function MutasiGudangJadi({
           >
             <option value="">Semua Sumber Mutasi</option>
             <option value="Produksi Finishing">Produksi Finishing</option>
-            <option value="Manual Masuk (Restock)">Manual Masuk (Restock)</option>
+            <option value="Manual Masuk (Restock)">
+              Manual Masuk (Restock)
+            </option>
             <option value="Order Pelanggan">Order Pelanggan</option>
-            <option value="Pengiriman Toko / Marketplace">Pengiriman Toko / Marketplace</option>
+            <option value="Pengiriman Toko / Marketplace">
+              Pengiriman Toko / Marketplace
+            </option>
           </select>
         </div>
       </div>
 
-      {/* 5. TABEL INDEX MUTASI GUDANG JADI (DESAIN PREMIUM & HIGH CONTRAST) */}
-      <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_8px_rgba(15,23,42,0.06)] overflow-hidden">
+      {/* 5. TABEL INDEX MUTASI GUDANG JADI (DESAIN SPREADSHEET ELEGAN & HIGH CONTRAST) */}
+      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
+          <table className="w-full text-left text-xs border-collapse border border-slate-800">
             <thead>
-              <tr className="bg-[#f1f5f9] text-[#1e293b] font-bold text-[10px] tracking-wide uppercase border-b border-[#cbd5e1]">
-                <th className="py-2.5 px-1 text-center w-10 min-w-[36px] border border-[#cbd5e1]">NO</th>
-                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[150px] border border-[#cbd5e1]">NO. BUKTI & TANGGAL</th>
-                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[140px] border border-[#cbd5e1]">SUMBER / NO. ANTREAN</th>
-                <th className="py-2.5 px-1.5 text-center whitespace-nowrap min-w-[90px] border border-[#cbd5e1]">JENIS</th>
-                <th className="py-2.5 px-3 min-w-[200px] border border-[#cbd5e1]">MODEL PRODUK (SKU & VARIAN)</th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[100px] border border-[#cbd5e1]">KUANTITI</th>
-                <th className="py-2.5 px-2.5 min-w-[150px] border border-[#cbd5e1]">LOKASI RAK & STATUS</th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">AKSI</th>
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border border-slate-800">
+                <th className="py-2.5 px-1 text-center w-10 min-w-[36px] border border-slate-800 text-white font-bold">
+                  NO
+                </th>
+                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">
+                  NO. BUKTI & TANGGAL
+                </th>
+                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[140px] border border-slate-800 text-white font-bold">
+                  SUMBER / NO. ANTREAN
+                </th>
+                <th className="py-2.5 px-1.5 text-center whitespace-nowrap min-w-[90px] border border-slate-800 text-white font-bold">
+                  JENIS
+                </th>
+                <th className="py-2.5 px-3 min-w-[200px] border border-slate-800 text-white font-bold">
+                  MODEL PRODUK (SKU & VARIAN)
+                </th>
+                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[100px] border border-slate-800 text-white font-bold">
+                  KUANTITI
+                </th>
+                <th className="py-2.5 px-2.5 min-w-[150px] border border-slate-800 text-white font-bold">
+                  LOKASI RAK & STATUS
+                </th>
+                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[110px] border border-slate-800 text-white font-bold">
+                  AKSI
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#cbd5e1]">
+            <tbody className="divide-y divide-slate-800">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-14 text-center text-slate-400 border border-[#cbd5e1] bg-slate-50/30">
+                  <td
+                    colSpan="8"
+                    className="py-14 text-center text-slate-400 border border-slate-800 bg-slate-50/30"
+                  >
                     <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400">
                       <Warehouse className="w-6 h-6 stroke-[1.8]" />
                     </div>
-                    <p className="text-xs font-bold text-slate-700">Belum ada data mutasi barang jadi</p>
+                    <p className="text-xs font-bold text-slate-700">
+                      Belum ada data mutasi barang jadi
+                    </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      Selesaikan antrean di tahap finishing atau klik "+ Barang Masuk" untuk menambah mutasi baru
+                      Selesaikan antrean di tahap finishing atau klik "+ Barang
+                      Masuk" untuk menambah mutasi baru
                     </p>
                   </td>
                 </tr>
               ) : (
                 filteredList.map((item, idx) => {
-                  const isMasuk = item.jenisMutasi === 'MASUK';
-                  const isPending = item.statusPenerimaan === 'Menunggu Penerimaan';
+                  const isMasuk = item.jenisMutasi === "MASUK";
+                  const isPending =
+                    item.statusPenerimaan === "Menunggu Penerimaan";
 
                   return (
                     <tr
                       key={item.id}
                       className={`transition-colors ${
-                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'
+                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
                       } hover:bg-sky-50/70`}
                     >
                       {/* 1. NO */}
-                      <td className="py-[2px] px-1 text-center text-slate-400 font-mono font-bold text-[11px] border border-[#cbd5e1]">
+                      <td className="py-[2px] px-1 text-center text-slate-600 font-mono font-bold text-[11px] border border-slate-800">
                         {idx + 1}
                       </td>
 
                       {/* 2. NO BUKTI & TANGGAL */}
-                      <td className="py-[2px] px-2 border border-[#cbd5e1]">
+                      <td className="py-[2px] px-2 border border-slate-800">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span className="font-mono font-black text-[11px] text-[#0284c7] bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 inline-block w-fit">
                             {item.noMutasi}
                           </span>
                           <div className="flex items-center gap-1 text-[10px] text-slate-600 font-mono mt-0.5">
                             <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span>{item.tglDiserahkan || item.tglMutasi?.slice(0, 10) || '-'}</span>
+                            <span>
+                              {item.tglDiserahkan ||
+                                item.tglMutasi?.slice(0, 10) ||
+                                "-"}
+                            </span>
                           </div>
                         </div>
                       </td>
 
                       {/* 3. SUMBER / NO ANTREAN */}
-                      <td className="py-[2px] px-2 border border-[#cbd5e1]">
+                      <td className="py-[2px] px-2 border border-slate-800">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span
                             className="font-bold text-[11px] text-slate-800 truncate leading-tight"
                             title={item.sumber}
                           >
-                            {item.sumber || 'Produksi'}
+                            {item.sumber || "Produksi"}
                           </span>
                           {item.noAntrian ? (
-                            <span className="font-mono font-semibold text-[9.5px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 w-fit truncate" title={item.noAntrian}>
+                            <span
+                              className="font-mono font-semibold text-[9.5px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 w-fit truncate"
+                              title={item.noAntrian}
+                            >
                               {item.noAntrian}
                             </span>
-                          ) : item.noReff && item.noReff !== '-' ? (
-                            <span className="font-mono text-[9.5px] text-slate-500 truncate" title={item.noReff}>
+                          ) : item.noReff && item.noReff !== "-" ? (
+                            <span
+                              className="font-mono text-[9.5px] text-slate-500 truncate"
+                              title={item.noReff}
+                            >
                               Reff: {item.noReff}
                             </span>
                           ) : (
-                            <span className="text-[9.5px] text-slate-400 italic">Non-Antrean</span>
+                            <span className="text-[9.5px] text-slate-400 italic">
+                              Non-Antrean
+                            </span>
                           )}
                         </div>
                       </td>
 
                       {/* 4. JENIS MUTASI */}
-                      <td className="py-[2px] px-1 text-center border border-[#cbd5e1]">
+                      <td className="py-[2px] px-1 text-center border border-slate-800">
                         <span
                           className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold border shadow-2xs ${
                             isMasuk
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                              : 'bg-rose-50 text-rose-700 border-rose-300'
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                              : "bg-rose-50 text-rose-700 border-rose-300"
                           }`}
                         >
                           {isMasuk ? (
@@ -598,7 +675,7 @@ export default function MutasiGudangJadi({
                       </td>
 
                       {/* 5. MODEL PRODUK (SKU, NAMA, VARIAN, UKURAN) */}
-                      <td className="py-[2px] px-3 border border-[#cbd5e1]">
+                      <td className="py-[2px] px-3 border border-slate-800">
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-mono font-extrabold text-[9.5px] text-sky-800 bg-sky-100/70 px-1.5 py-0.2 rounded border border-sky-300 shrink-0">
@@ -613,59 +690,88 @@ export default function MutasiGudangJadi({
                           </div>
                           <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1 flex-wrap">
                             <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-bold border border-slate-200 text-[9.5px]">
-                              {item.varian || 'Polos'}
+                              {item.varian || "Polos"}
                             </span>
                             <span className="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-extrabold border border-blue-200 text-[9.5px]">
-                              Size {item.ukuran || 'All Size'}
+                              Size {item.ukuran || "All Size"}
                             </span>
                           </div>
                         </div>
                       </td>
 
                       {/* 6. KUANTITI MUTASI (DEDICATED CONTRAST BADGE) */}
-                      <td className="py-[2px] px-1 text-center border border-[#cbd5e1]">
+                      <td className="py-[2px] px-1 text-center border border-slate-800">
                         <div className="flex flex-col items-center">
                           <span
                             className={`font-mono font-black text-xs px-2 py-0.5 rounded-md border shadow-2xs whitespace-nowrap ${
                               isMasuk
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                : 'bg-rose-50 text-rose-800 border-rose-300'
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                : "bg-rose-50 text-rose-800 border-rose-300"
                             }`}
                           >
-                            {isMasuk ? `+${Number(item.qty).toLocaleString('id-ID')}` : `-${Number(item.qty).toLocaleString('id-ID')}`}
-                            <span className="text-[9.5px] font-semibold ml-0.5">Pcs</span>
+                            {isMasuk
+                              ? `+${Number(item.qty).toLocaleString("id-ID")}`
+                              : `-${Number(item.qty).toLocaleString("id-ID")}`}
+                            <span className="text-[9.5px] font-semibold ml-0.5">
+                              Pcs
+                            </span>
                           </span>
                         </div>
                       </td>
 
                       {/* 7. LOKASI RAK & STATUS PENERIMAAN */}
-                      <td className="py-[2px] px-2 text-xs border border-[#cbd5e1]">
+                      <td className="py-[2px] px-2 text-xs border border-slate-800">
                         {isPending ? (
                           <div className="space-y-0.5">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9.5px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                               <span>Menunggu Penerimaan</span>
                             </span>
-                            <div className="text-[9.5px] text-slate-600 truncate" title={item.petugasSerah || item.petugas}>
-                              Serah: <strong className="text-slate-800">{item.petugasSerah || item.petugas || 'Finishing'}</strong>
+                            <div
+                              className="text-[9.5px] text-slate-600 truncate"
+                              title={item.petugasSerah || item.petugas}
+                            >
+                              Serah:{" "}
+                              <strong className="text-slate-800">
+                                {item.petugasSerah ||
+                                  item.petugas ||
+                                  "Finishing"}
+                              </strong>
                             </div>
                           </div>
                         ) : (
                           <div className="space-y-0.5">
-                            <div className="flex items-center gap-1 font-extrabold text-[10.5px] text-emerald-800 truncate" title={item.lokasiRak || 'Gudang Utama'}>
+                            <div
+                              className="flex items-center gap-1 font-extrabold text-[10.5px] text-emerald-800 truncate"
+                              title={item.lokasiRak || "Gudang Utama"}
+                            >
                               <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
-                              <span className="truncate">{item.lokasiRak || 'Gudang Utama'}</span>
+                              <span className="truncate">
+                                {item.lokasiRak || "Gudang Utama"}
+                              </span>
                             </div>
-                            <div className="text-[9.5px] text-slate-500 truncate" title={item.petugasTerima || item.petugas}>
-                              Petugas: <strong className="text-slate-700">{item.petugasTerima || item.petugas || 'Staff Gudang'}</strong>
-                              {item.tglDiterima && <span className="font-mono ml-1">({item.tglDiterima})</span>}
+                            <div
+                              className="text-[9.5px] text-slate-500 truncate"
+                              title={item.petugasTerima || item.petugas}
+                            >
+                              Petugas:{" "}
+                              <strong className="text-slate-700">
+                                {item.petugasTerima ||
+                                  item.petugas ||
+                                  "Staff Gudang"}
+                              </strong>
+                              {item.tglDiterima && (
+                                <span className="font-mono ml-1">
+                                  ({item.tglDiterima})
+                                </span>
+                              )}
                             </div>
                           </div>
                         )}
                       </td>
 
                       {/* 8. AKSI (TIDAK KETUTUP / TERPOTONG) */}
-                      <td className="py-[2px] px-2 text-center border border-[#cbd5e1]">
+                      <td className="py-[2px] px-2 text-center border border-slate-800">
                         <div className="inline-flex items-center justify-center gap-1.5">
                           {isPending && (
                             <button
@@ -705,19 +811,23 @@ export default function MutasiGudangJadi({
         {/* FOOTER TABEL PERSIS MUTASI BAHAN */}
         <div className="px-3.5 py-2 bg-[#f8fafc] border-t border-[#cbd5e1] text-[11.5px] text-[#64748b] flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            Menampilkan <span className="font-bold text-[#0f172a]">{filteredList.length}</span> bukti transaksi mutasi barang jadi
+            Menampilkan{" "}
+            <span className="font-bold text-[#0f172a]">
+              {filteredList.length}
+            </span>{" "}
+            bukti transaksi mutasi barang jadi
           </div>
           <div className="flex items-center gap-3 text-xs font-semibold">
             <span className="text-[#059669]">
-              Total Masuk: +{stats.masukPcs.toLocaleString('id-ID')} Pcs
+              Total Masuk: +{stats.masukPcs.toLocaleString("id-ID")} Pcs
             </span>
             <span className="text-slate-300">|</span>
             <span className="text-[#ef4444]">
-              Total Keluar: -{stats.keluarPcs.toLocaleString('id-ID')} Pcs
+              Total Keluar: -{stats.keluarPcs.toLocaleString("id-ID")} Pcs
             </span>
             <span className="text-slate-300">|</span>
             <span className="text-[#0284c7]">
-              Stok Rak: {stats.totalStokSaatIni.toLocaleString('id-ID')} Pcs
+              Stok Rak: {stats.totalStokSaatIni.toLocaleString("id-ID")} Pcs
             </span>
           </div>
         </div>
@@ -732,7 +842,7 @@ export default function MutasiGudangJadi({
       )}
 
       {/* 7. MODAL FORM TAMBAH MUTASI (PERSIS MUTASI BAHAN) */}
-      {modalMode === 'create' && (
+      {modalMode === "create" && (
         <FormModalMutasiGudangJadi
           isOpen={true}
           initialJenis={modalInitialJenis}
@@ -766,37 +876,57 @@ export default function MutasiGudangJadi({
               <div className="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/60 space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="font-extrabold text-xs text-slate-900">{approveTargetItem.namaProduk}</div>
+                    <div className="font-extrabold text-xs text-slate-900">
+                      {approveTargetItem.namaProduk}
+                    </div>
                     <div className="text-[10px] text-slate-600 font-mono mt-0.5">
-                      SKU: <strong>{approveTargetItem.sku}</strong> • {approveTargetItem.varian} ({approveTargetItem.ukuran})
+                      SKU: <strong>{approveTargetItem.sku}</strong> •{" "}
+                      {approveTargetItem.varian} ({approveTargetItem.ukuran})
                     </div>
                   </div>
                   <div className="text-right">
                     <span className="font-mono font-black text-sm text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-300 inline-block">
-                      +{Number(approveTargetItem.qty).toLocaleString('id-ID')} Pcs
+                      +{Number(approveTargetItem.qty).toLocaleString("id-ID")}{" "}
+                      Pcs
                     </span>
                   </div>
                 </div>
                 <div className="text-[10px] text-slate-500 pt-1 border-t border-emerald-200/80 flex items-center justify-between">
-                  <span>Diserahkan: <strong>{approveTargetItem.petugasSerah || 'Finishing'}</strong></span>
-                  <span className="font-mono">{approveTargetItem.tglDiserahkan || '-'}</span>
+                  <span>
+                    Diserahkan:{" "}
+                    <strong>
+                      {approveTargetItem.petugasSerah || "Finishing"}
+                    </strong>
+                  </span>
+                  <span className="font-mono">
+                    {approveTargetItem.tglDiserahkan || "-"}
+                  </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10.5px] font-bold text-slate-700 mb-1">Tgl Diterima *</label>
+                  <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                    Tgl Diterima *
+                  </label>
                   <input
                     type="date"
                     required
                     value={approveForm.tglDiterima}
-                    onChange={e => setApproveForm(prev => ({ ...prev, tglDiterima: e.target.value }))}
+                    onChange={(e) =>
+                      setApproveForm((prev) => ({
+                        ...prev,
+                        tglDiterima: e.target.value,
+                      }))
+                    }
                     className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300 font-mono"
                   />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[10.5px] font-bold text-slate-700">Petugas Penerima</label>
+                    <label className="block text-[10.5px] font-bold text-slate-700">
+                      Petugas Penerima
+                    </label>
                     <span className="text-[9.5px] text-emerald-600 font-semibold bg-emerald-50 px-1 rounded border border-emerald-200">
                       Auto: User Login
                     </span>
@@ -812,11 +942,18 @@ export default function MutasiGudangJadi({
               </div>
 
               <div>
-                <label className="block text-[10.5px] font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+                <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                  Catatan Tambahan
+                </label>
                 <input
                   type="text"
                   value={approveForm.catatan}
-                  onChange={e => setApproveForm(prev => ({ ...prev, catatan: e.target.value }))}
+                  onChange={(e) =>
+                    setApproveForm((prev) => ({
+                      ...prev,
+                      catatan: e.target.value,
+                    }))
+                  }
                   placeholder="mis: Diterima kondisi rapi siap packing..."
                   className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300"
                 />
@@ -852,7 +989,7 @@ export default function MutasiGudangJadi({
 // ==========================================================================
 function ModalShowRincianGudangJadi({ mutasi, onClose }) {
   if (!mutasi) return null;
-  const isMasuk = mutasi.jenisMutasi === 'MASUK';
+  const isMasuk = mutasi.jenisMutasi === "MASUK";
 
   return (
     <div className="fixed inset-0 z-50 bg-[#edf1f7] flex flex-col overflow-hidden animate-fade-in font-sans">
@@ -906,114 +1043,157 @@ function ModalShowRincianGudangJadi({ mutasi, onClose }) {
         <div className="bg-white border border-[#cbd5e1] rounded-lg p-3 shadow-sm shrink-0 space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Nomor Bukti</div>
-              <div className="font-mono font-bold text-xs text-[#0284c7] mt-0.5">{mutasi.noMutasi}</div>
-            </div>
-
-            <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Tanggal Diserahkan</div>
-              <div className="font-mono text-slate-800 font-semibold mt-0.5 flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                <span>{mutasi.tglDiserahkan || mutasi.tglMutasi?.slice(0, 10) || '-'}</span>
+              <div className="text-[10px] uppercase font-bold text-slate-400">
+                Nomor Bukti
+              </div>
+              <div className="font-mono font-bold text-xs text-[#0284c7] mt-0.5">
+                {mutasi.noMutasi}
               </div>
             </div>
 
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">No. Antrean / Reff</div>
-              <div className="font-mono font-bold text-slate-800 mt-0.5">{mutasi.noAntrian || mutasi.noReff || '-'}</div>
+              <div className="text-[10px] uppercase font-bold text-slate-400">
+                Tanggal Diserahkan
+              </div>
+              <div className="font-mono text-slate-800 font-semibold mt-0.5 flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                <span>
+                  {mutasi.tglDiserahkan ||
+                    mutasi.tglMutasi?.slice(0, 10) ||
+                    "-"}
+                </span>
+              </div>
             </div>
 
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Jenis Mutasi</div>
+              <div className="text-[10px] uppercase font-bold text-slate-400">
+                No. Antrean / Reff
+              </div>
+              <div className="font-mono font-bold text-slate-800 mt-0.5">
+                {mutasi.noAntrian || mutasi.noReff || "-"}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase font-bold text-slate-400">
+                Jenis Mutasi
+              </div>
               <div className="mt-0.5">
                 <span
                   className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold border ${
                     isMasuk
-                      ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
-                      : 'bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]'
+                      ? "bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]"
+                      : "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]"
                   }`}
                 >
-                  {isMasuk ? 'BARANG MASUK' : 'BARANG KELUAR'}
+                  {isMasuk ? "BARANG MASUK" : "BARANG KELUAR"}
                 </span>
               </div>
             </div>
 
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Status Penerimaan</div>
+              <div className="text-[10px] uppercase font-bold text-slate-400">
+                Status Penerimaan
+              </div>
               <div className="mt-0.5">
                 <span
                   className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold border ${
-                    mutasi.statusPenerimaan === 'Menunggu Penerimaan'
-                      ? 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]'
-                      : 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
+                    mutasi.statusPenerimaan === "Menunggu Penerimaan"
+                      ? "bg-[#fffbeb] text-[#b45309] border-[#fde68a]"
+                      : "bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]"
                   }`}
                 >
-                  {mutasi.statusPenerimaan || 'Diterima di Rak'}
+                  {mutasi.statusPenerimaan || "Diterima di Rak"}
                 </span>
               </div>
             </div>
 
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Lokasi Rak</div>
-              <div className="font-bold text-slate-800 mt-0.5 truncate">{mutasi.lokasiRak || '(Belum Dialokasi)'}</div>
+              <div className="text-[10px] uppercase font-bold text-slate-400">
+                Lokasi Rak
+              </div>
+              <div className="font-bold text-slate-800 mt-0.5 truncate">
+                {mutasi.lokasiRak || "(Belum Dialokasi)"}
+              </div>
             </div>
           </div>
 
           {mutasi.catatan && (
             <div className="pt-2 border-t border-slate-100 text-xs text-slate-600">
-              <strong className="text-slate-700">Catatan Mutasi:</strong> {mutasi.catatan}
+              <strong className="text-slate-700">Catatan Mutasi:</strong>{" "}
+              {mutasi.catatan}
             </div>
           )}
         </div>
 
         {/* TABEL RINCIAN PRODUK & QTY */}
-        <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="p-2.5 bg-[#f8fafc] border-b border-[#cbd5e1] flex items-center justify-between">
+        <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="p-2.5 bg-slate-100 border-b-2 border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Shirt className="w-4 h-4 text-[#0284c7]" />
-              <h4 className="font-bold text-xs text-slate-800">
+              <Shirt className="w-4 h-4 text-slate-800" />
+              <h4 className="font-bold text-xs text-slate-900 uppercase tracking-wider">
                 Rincian Barang Jadi (Finished Goods)
               </h4>
             </div>
-            <div className="text-[11px] text-slate-500 font-medium">
-              Sumber: <strong className="text-slate-800">{mutasi.sumber || 'Produksi Finishing'}</strong>
+            <div className="text-[11px] text-slate-600 font-medium">
+              Sumber:{" "}
+              <strong className="text-slate-900">
+                {mutasi.sumber || "Produksi Finishing"}
+              </strong>
             </div>
           </div>
 
           <div className="flex-1 overflow-auto">
-            <table className="w-full text-left text-xs border-collapse border-b border-[#cbd5e1]">
+            <table className="w-full text-left text-xs border-collapse border border-slate-800">
               <thead>
-                <tr className="bg-[#f8fafc] text-slate-500 text-[10px] font-extrabold uppercase border-b border-[#cbd5e1]">
-                  <th className="py-2.5 px-3 text-center w-12 border-b border-r border-[#cbd5e1]">NO</th>
-                  <th className="py-2.5 px-3 border-b border-r border-[#cbd5e1]">KODE SKU</th>
-                  <th className="py-2.5 px-3 border-b border-r border-[#cbd5e1]">NAMA MODEL PRODUK</th>
-                  <th className="py-2.5 px-3 border-b border-r border-[#cbd5e1]">VARIAN & UKURAN</th>
-                  <th className="py-2.5 px-3 border-b border-r border-[#cbd5e1]">LOKASI RAK</th>
-                  <th className="py-2.5 px-3 text-right border-b border-[#cbd5e1]">KUANTITI MUTASI</th>
+                <tr className="bg-[#2b3a4a] text-white text-xs font-bold uppercase border border-slate-800">
+                  <th className="py-2.5 px-3 text-center w-12 border border-slate-800 text-white font-bold">
+                    NO
+                  </th>
+                  <th className="py-2.5 px-3 border border-slate-800 text-white font-bold">
+                    KODE SKU
+                  </th>
+                  <th className="py-2.5 px-3 border border-slate-800 text-white font-bold">
+                    NAMA MODEL PRODUK
+                  </th>
+                  <th className="py-2.5 px-3 border border-slate-800 text-white font-bold">
+                    VARIAN & UKURAN
+                  </th>
+                  <th className="py-2.5 px-3 border border-slate-800 text-white font-bold">
+                    LOKASI RAK
+                  </th>
+                  <th className="py-2.5 px-3 text-right border border-slate-800 text-white font-bold">
+                    KUANTITI MUTASI
+                  </th>
                 </tr>
               </thead>
-              <tbody className="font-medium text-slate-700">
-                <tr className="hover:bg-slate-50 border-b border-[#cbd5e1]">
-                  <td className="py-2.5 px-3 text-center text-slate-400 font-semibold text-[11px] border-b border-r border-[#cbd5e1]">
+              <tbody className="font-medium text-slate-800">
+                <tr className="hover:bg-slate-50 border border-slate-800">
+                  <td className="py-2.5 px-3 text-center text-slate-700 font-bold text-[11px] border border-slate-800">
                     1
                   </td>
-                  <td className="py-2.5 px-3 border-b border-r border-[#cbd5e1]">
+                  <td className="py-2.5 px-3 border border-slate-800">
                     <span className="font-mono font-bold text-xs text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 inline-block">
                       {mutasi.sku}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 font-bold text-[#0f172a] text-xs border-b border-r border-[#cbd5e1]">
+                  <td className="py-2.5 px-3 font-bold text-[#0f172a] text-xs border border-slate-800">
                     {mutasi.namaProduk}
                   </td>
-                  <td className="py-2.5 px-3 text-slate-700 border-b border-r border-[#cbd5e1]">
-                    {mutasi.varian || 'Polos'} • {mutasi.ukuran || 'All Size'}
+                  <td className="py-2.5 px-3 text-slate-800 font-semibold border border-slate-800">
+                    {mutasi.varian || "Polos"} • {mutasi.ukuran || "All Size"}
                   </td>
-                  <td className="py-2.5 px-3 font-mono text-slate-800 border-b border-r border-[#cbd5e1]">
-                    {mutasi.lokasiRak || '-'}
+                  <td className="py-2.5 px-3 font-mono font-bold text-slate-900 border border-slate-800">
+                    {mutasi.lokasiRak || "-"}
                   </td>
-                  <td className="py-2.5 px-3 text-right font-mono font-extrabold text-sm border-b border-[#cbd5e1]">
-                    <span className={isMasuk ? 'text-[#059669]' : 'text-[#ef4444]'}>
-                      {isMasuk ? `+${Number(mutasi.qty).toLocaleString('id-ID')}` : `-${Number(mutasi.qty).toLocaleString('id-ID')}`} {mutasi.satuan || 'Pcs'}
+                  <td className="py-2.5 px-3 text-right font-mono font-extrabold text-sm border border-slate-800">
+                    <span
+                      className={isMasuk ? "text-[#059669]" : "text-[#ef4444]"}
+                    >
+                      {isMasuk
+                        ? `+${Number(mutasi.qty).toLocaleString("id-ID")}`
+                        : `-${Number(mutasi.qty).toLocaleString("id-ID")}`}{" "}
+                      {mutasi.satuan || "Pcs"}
                     </span>
                   </td>
                 </tr>
@@ -1027,15 +1207,27 @@ function ModalShowRincianGudangJadi({ mutasi, onClose }) {
       <div className="bg-white border-t border-[#cbd5e1] px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md shrink-0">
         <div className="flex items-center gap-3 text-xs">
           <div className="text-slate-500 font-medium">
-            Petugas Serah: <strong className="text-slate-800">{mutasi.petugasSerah || mutasi.petugas || '-'}</strong>
+            Petugas Serah:{" "}
+            <strong className="text-slate-800">
+              {mutasi.petugasSerah || mutasi.petugas || "-"}
+            </strong>
           </div>
           <span className="text-slate-300 hidden sm:inline">•</span>
           <div className="text-slate-500 font-medium">
-            Petugas Terima: <strong className="text-slate-800">{mutasi.petugasTerima || '-'}</strong>
+            Petugas Terima:{" "}
+            <strong className="text-slate-800">
+              {mutasi.petugasTerima || "-"}
+            </strong>
           </div>
           <span className="text-slate-300 hidden sm:inline">•</span>
           <div className="font-semibold text-slate-700">
-            Total Qty Mutasi: <strong className={isMasuk ? 'text-[#059669]' : 'text-[#ef4444]'}>{isMasuk ? `+${Number(mutasi.qty).toLocaleString('id-ID')}` : `-${Number(mutasi.qty).toLocaleString('id-ID')}`} {mutasi.satuan || 'Pcs'}</strong>
+            Total Qty Mutasi:{" "}
+            <strong className={isMasuk ? "text-[#059669]" : "text-[#ef4444]"}>
+              {isMasuk
+                ? `+${Number(mutasi.qty).toLocaleString("id-ID")}`
+                : `-${Number(mutasi.qty).toLocaleString("id-ID")}`}{" "}
+              {mutasi.satuan || "Pcs"}
+            </strong>
           </div>
         </div>
 
@@ -1054,31 +1246,43 @@ function ModalShowRincianGudangJadi({ mutasi, onClose }) {
 // ==========================================================================
 // SUB-KOMPONEN: MODAL FORM TAMBAH MUTASI MANUAL (FULL SCREEN VIEW)
 // ==========================================================================
-function FormModalMutasiGudangJadi({ isOpen, initialJenis, products = [], onClose, onSave }) {
+function FormModalMutasiGudangJadi({
+  isOpen,
+  initialJenis,
+  products = [],
+  onClose,
+  onSave,
+}) {
   if (!isOpen) return null;
 
-  const [jenisMutasi, setJenisMutasi] = useState(initialJenis || 'MASUK');
-  const [sumber, setSumber] = useState(initialJenis === 'MASUK' ? 'Manual Masuk (Restock)' : 'Order Pelanggan');
-  const [noReff, setNoReff] = useState('');
-  const [sku, setSku] = useState(products[0]?.sku || '');
+  const [jenisMutasi, setJenisMutasi] = useState(initialJenis || "MASUK");
+  const [sumber, setSumber] = useState(
+    initialJenis === "MASUK" ? "Manual Masuk (Restock)" : "Order Pelanggan",
+  );
+  const [noReff, setNoReff] = useState("");
+  const [sku, setSku] = useState(products[0]?.sku || "");
   const [qty, setQty] = useState(50);
-  const [lokasiRak, setLokasiRak] = useState('Gudang Utama - Rak A1 (Kaos)');
+  const [lokasiRak, setLokasiRak] = useState("Gudang Utama - Rak A1 (Kaos)");
   const currentUser = (() => {
     try {
-      return localStorage.getItem('currentUser') || 'Admin Produksi';
+      return localStorage.getItem("currentUser") || "Admin Produksi";
     } catch (_) {
-      return 'Admin Produksi';
+      return "Admin Produksi";
     }
   })();
   const [petugas, setPetugas] = useState(currentUser);
-  const [catatan, setCatatan] = useState('');
+  const [catatan, setCatatan] = useState("");
 
-  const selProd = products.find(p => p.sku === sku);
+  const selProd = products.find((p) => p.sku === sku);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!sku) {
-      Swal.fire({ icon: 'warning', title: 'Pilih Produk', text: 'Produk barang jadi wajib dipilih.' });
+      Swal.fire({
+        icon: "warning",
+        title: "Pilih Produk",
+        text: "Produk barang jadi wajib dipilih.",
+      });
       return;
     }
 
@@ -1088,13 +1292,13 @@ function FormModalMutasiGudangJadi({ isOpen, initialJenis, products = [], onClos
       noReff,
       sku,
       namaProduk: selProd?.nama || selProd?.namaProduk || sku,
-      varian: selProd?.varian || 'Polos',
-      ukuran: selProd?.ukuran || 'All Size',
+      varian: selProd?.varian || "Polos",
+      ukuran: selProd?.ukuran || "All Size",
       qty: Number(qty) || 1,
-      satuan: 'Pcs',
+      satuan: "Pcs",
       lokasiRak,
       petugas,
-      catatan
+      catatan,
     });
   };
 
@@ -1130,7 +1334,11 @@ function FormModalMutasiGudangJadi({ isOpen, initialJenis, products = [], onClos
 
       {/* Body Form */}
       <div className="flex-1 p-3 md:p-4 overflow-y-auto">
-        <form id="form-mutasi-gj" onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-3">
+        <form
+          id="form-mutasi-gj"
+          onSubmit={handleSubmit}
+          className="max-w-3xl mx-auto space-y-3"
+        >
           <div className="bg-white border border-[#cbd5e1] rounded-lg p-3.5 shadow-sm space-y-3">
             <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
               <ReceiptText className="w-4 h-4 text-[#0284c7]" />
@@ -1139,18 +1347,20 @@ function FormModalMutasiGudangJadi({ isOpen, initialJenis, products = [], onClos
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Jenis Mutasi *</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Jenis Mutasi *
+                </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
-                      setJenisMutasi('MASUK');
-                      setSumber('Manual Masuk (Restock)');
+                      setJenisMutasi("MASUK");
+                      setSumber("Manual Masuk (Restock)");
                     }}
                     className={`h-7.5 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all ${
-                      jenisMutasi === 'MASUK'
-                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      jenisMutasi === "MASUK"
+                        ? "bg-emerald-600 text-white border-emerald-700 shadow-2xs"
+                        : "bg-emerald-50 text-emerald-800 border-emerald-200"
                     }`}
                   >
                     <ArrowDownLeft className="w-3.5 h-3.5" />
@@ -1159,13 +1369,13 @@ function FormModalMutasiGudangJadi({ isOpen, initialJenis, products = [], onClos
                   <button
                     type="button"
                     onClick={() => {
-                      setJenisMutasi('KELUAR');
-                      setSumber('Order Pelanggan');
+                      setJenisMutasi("KELUAR");
+                      setSumber("Order Pelanggan");
                     }}
                     className={`h-7.5 rounded-lg border font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all ${
-                      jenisMutasi === 'KELUAR'
-                        ? 'bg-rose-600 text-white border-rose-700 shadow-2xs'
-                        : 'bg-rose-50 text-rose-800 border-rose-200'
+                      jenisMutasi === "KELUAR"
+                        ? "bg-rose-600 text-white border-rose-700 shadow-2xs"
+                        : "bg-rose-50 text-rose-800 border-rose-200"
                     }`}
                   >
                     <ArrowUpRight className="w-3.5 h-3.5" />
@@ -1175,87 +1385,110 @@ function FormModalMutasiGudangJadi({ isOpen, initialJenis, products = [], onClos
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Sumber / Tujuan Mutasi *</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Sumber / Tujuan Mutasi *
+                </label>
                 <select
                   value={sumber}
-                  onChange={e => setSumber(e.target.value)}
+                  onChange={(e) => setSumber(e.target.value)}
                   className="w-full h-7.5 px-2.5 rounded-lg border border-slate-300 text-xs bg-white"
                 >
-                  <option value="Manual Masuk (Restock)">Manual Masuk (Restock)</option>
+                  <option value="Manual Masuk (Restock)">
+                    Manual Masuk (Restock)
+                  </option>
                   <option value="Order Pelanggan">Order Pelanggan</option>
-                  <option value="Pengiriman Toko / Marketplace">Pengiriman Toko / Marketplace</option>
-                  <option value="Penyesuaian Stok (Opname)">Penyesuaian Stok (Opname)</option>
+                  <option value="Pengiriman Toko / Marketplace">
+                    Pengiriman Toko / Marketplace
+                  </option>
+                  <option value="Penyesuaian Stok (Opname)">
+                    Penyesuaian Stok (Opname)
+                  </option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Pilih Produk (SKU) *</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Pilih Produk (SKU) *
+                </label>
                 <select
                   required
                   value={sku}
-                  onChange={e => setSku(e.target.value)}
+                  onChange={(e) => setSku(e.target.value)}
                   className="w-full h-7.5 px-2.5 rounded-lg border border-slate-300 text-xs bg-white"
                 >
                   <option value="">-- Pilih Produk --</option>
-                  {products.map(p => (
+                  {products.map((p) => (
                     <option key={p.id} value={p.sku}>
-                      {p.sku} - {p.nama || p.namaProduk} ({p.varian || 'Polos'} - {p.ukuran || 'All Size'})
+                      {p.sku} - {p.nama || p.namaProduk} ({p.varian || "Polos"}{" "}
+                      - {p.ukuran || "All Size"})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Target Qty (Pcs) *</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Target Qty (Pcs) *
+                </label>
                 <input
                   type="number"
                   min="1"
                   required
                   value={qty}
-                  onChange={e => setQty(Math.max(1, Number(e.target.value) || 1))}
+                  onChange={(e) =>
+                    setQty(Math.max(1, Number(e.target.value) || 1))
+                  }
                   className="w-full h-7.5 px-2.5 rounded-lg border border-slate-300 text-right font-mono font-bold text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Alokasi Lokasi Rak *</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Alokasi Lokasi Rak *
+                </label>
                 <input
                   type="text"
                   required
                   value={lokasiRak}
-                  onChange={e => setLokasiRak(e.target.value)}
+                  onChange={(e) => setLokasiRak(e.target.value)}
                   placeholder="mis: Gudang Utama - Rak A1"
                   className="w-full h-7.5 px-2.5 rounded-lg border border-slate-300 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Petugas Gudang</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Petugas Gudang
+                </label>
                 <input
                   type="text"
                   value={petugas}
-                  onChange={e => setPetugas(e.target.value)}
+                  onChange={(e) => setPetugas(e.target.value)}
                   className="w-full h-7.5 px-2.5 rounded-lg border border-slate-300 text-xs"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">No. Referensi / PO (Opsional)</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  No. Referensi / PO (Opsional)
+                </label>
                 <input
                   type="text"
                   value={noReff}
-                  onChange={e => setNoReff(e.target.value)}
+                  onChange={(e) => setNoReff(e.target.value)}
                   placeholder="mis: PO-202611-098, DO-012..."
                   className="w-full h-7.5 px-2.5 rounded-lg border border-slate-300 text-xs"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Catatan Tambahan
+                </label>
                 <input
                   type="text"
                   value={catatan}
-                  onChange={e => setCatatan(e.target.value)}
+                  onChange={(e) => setCatatan(e.target.value)}
                   placeholder="Keterangan pengiriman, packing plastik opp satuan, dll..."
                   className="w-full h-7.5 px-2.5 rounded-lg border border-slate-300 text-xs"
                 />
@@ -1268,7 +1501,10 @@ function FormModalMutasiGudangJadi({ isOpen, initialJenis, products = [], onClos
       {/* Bottom Bar */}
       <div className="bg-white border-t border-[#cbd5e1] px-4 py-2 flex items-center justify-between shadow-md shrink-0">
         <div className="text-xs text-slate-500 font-medium">
-          Produk Terpilih: <strong className="text-slate-800">{selProd?.nama || selProd?.namaProduk || sku || '-'}</strong>
+          Produk Terpilih:{" "}
+          <strong className="text-slate-800">
+            {selProd?.nama || selProd?.namaProduk || sku || "-"}
+          </strong>
         </div>
         <div className="flex items-center gap-2">
           <button

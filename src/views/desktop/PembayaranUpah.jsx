@@ -136,6 +136,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
   // Slip Modal Karyawan / Tim Mingguan (Format Emra Production)
   const [isSlipKaryawanModalOpen, setIsSlipKaryawanModalOpen] = useState(false);
   const [selectedKaryawanName, setSelectedKaryawanName] = useState('');
+  const [slipCustomData, setSlipCustomData] = useState(null);
 
   // Kasbon State saat Modal Bayar
   const [kasbonInfo, setKasbonInfo] = useState(null);
@@ -574,16 +575,24 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
   // Data Karyawan yang sedang dibuka slipnya
   const currentSlipKaryawan = useMemo(() => {
+    if (slipCustomData) return slipCustomData;
     if (!selectedKaryawanName) return null;
     for (const g of groupedByTahap) {
       const match = g.teams.find((k) => k.namaPetugas === selectedKaryawanName);
       if (match) return match;
     }
     return rekapKaryawanList.find((k) => k.namaPetugas === selectedKaryawanName) || null;
-  }, [selectedKaryawanName, groupedByTahap, rekapKaryawanList]);
+  }, [slipCustomData, selectedKaryawanName, groupedByTahap, rekapKaryawanList]);
 
   const handleOpenSlipKaryawan = (namaPetugas) => {
+    setSlipCustomData(null);
     setSelectedKaryawanName(namaPetugas);
+    setIsSlipKaryawanModalOpen(true);
+  };
+
+  const handleOpenSlipHistori = (historiGroup) => {
+    setSlipCustomData(historiGroup);
+    setSelectedKaryawanName(historiGroup.namaPetugas);
     setIsSlipKaryawanModalOpen(true);
   };
 
@@ -937,17 +946,6 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                   Semua
                 </button>
               </div>
-
-              {activeSheetTeamData && (
-                <button
-                  type="button"
-                  onClick={() => handleOpenSlipKaryawan(activeSheetTeamData.namaPetugas)}
-                  className="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all"
-                >
-                  <Printer className="w-3.5 h-3.5 text-[#0284c7]" />
-                  <span>Cetak Slip</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -1233,32 +1231,21 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
             </div>
 
             {/* 8. FOOTER ACTION BUTTONS */}
-            {activeSheetTeamData && (
-              <div className="mt-5 pt-3 border-t border-slate-300 flex flex-wrap items-center justify-between gap-3 print:hidden">
+            {activeSheetTeamData && activeSheetTeamData.pendingCount > 0 && (
+              <div className="mt-5 pt-3 border-t border-slate-300 flex items-center justify-end print:hidden">
                 <button
                   type="button"
-                  onClick={() => handleOpenSlipKaryawan(activeSheetTeamData.namaPetugas)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer transition-all"
+                  onClick={() => {
+                    const pendingItems = activeSheetTeamData.items.filter((i) => i.statusBayar !== 'Lunas');
+                    handleOpenPay(pendingItems, sheetTahap === 'Jahit' ? currentManualPotongan : 0);
+                  }}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all"
                 >
-                  <Printer className="w-4 h-4 text-amber-300" />
-                  <span>Cetak Slip ({activeSheetTeamData.namaPetugas})</span>
+                  <CreditCard className="w-4 h-4 stroke-[2.5]" />
+                  <span>
+                    Bayar Gaji {sheetTahap === 'Jahit' ? 'Penjahit' : 'Tim'} Ini (Rp {displayTotalBersih.toLocaleString('id-ID')})
+                  </span>
                 </button>
-
-                {activeSheetTeamData.pendingCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const pendingItems = activeSheetTeamData.items.filter((i) => i.statusBayar !== 'Lunas');
-                      handleOpenPay(pendingItems, sheetTahap === 'Jahit' ? currentManualPotongan : 0);
-                    }}
-                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all"
-                  >
-                    <CreditCard className="w-4 h-4 stroke-[2.5]" />
-                    <span>
-                      Bayar Gaji {sheetTahap === 'Jahit' ? 'Penjahit' : 'Tim'} Ini (Rp {displayTotalBersih.toLocaleString('id-ID')})
-                    </span>
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -1286,26 +1273,26 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
           </div>
 
           {/* Tabel Histori Pembayaran */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+          <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-xs border-collapse border border-slate-800">
                 <thead>
-                  <tr className="bg-[#f8fafc] text-slate-700 font-extrabold text-[11px] tracking-wide uppercase border-b border-slate-200">
-                    <th className="py-3 px-3 text-center w-12 border-r border-slate-200">NO</th>
-                    <th className="py-3 px-4 border-r border-slate-200 whitespace-nowrap">TANGGAL PEMBAYARAN</th>
-                    <th className="py-3 px-4 border-r border-slate-200 whitespace-nowrap">PERIODE</th>
-                    <th className="py-3 px-4 border-r border-slate-200">TIM / PENJAHIT</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center whitespace-nowrap">VOLUME & ORDER</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-right whitespace-nowrap bg-emerald-50/50 text-emerald-950">
+                  <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
+                    <th className="py-2.5 px-3 text-center w-12 border border-slate-800 text-white font-bold">NO</th>
+                    <th className="py-2.5 px-4 border border-slate-800 whitespace-nowrap text-white font-bold">TANGGAL PEMBAYARAN</th>
+                    <th className="py-2.5 px-4 border border-slate-800 whitespace-nowrap text-white font-bold">PERIODE</th>
+                    <th className="py-2.5 px-4 border border-slate-800 text-white font-bold">TIM / PENJAHIT</th>
+                    <th className="py-2.5 px-4 border border-slate-800 text-center whitespace-nowrap text-white font-bold">VOLUME & ORDER</th>
+                    <th className="py-2.5 px-4 border border-slate-800 text-right whitespace-nowrap text-white font-bold">
                       JUMLAH BAYAR
                     </th>
-                    <th className="py-3 px-4 text-center w-40 whitespace-nowrap">AKSI</th>
+                    <th className="py-2.5 px-4 text-center w-40 whitespace-nowrap border border-slate-800 text-white font-bold">AKSI</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
+                <tbody className="divide-y divide-slate-800 font-medium text-slate-800">
                   {historiBayarList.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="py-12 text-center text-slate-400">
+                      <td colSpan="7" className="py-12 text-center text-slate-400 border border-slate-800">
                         <Receipt className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                         <p className="text-sm font-semibold text-slate-600">Belum ada histori pembayaran</p>
                         <p className="text-xs text-slate-400 mt-1">
@@ -1326,53 +1313,64 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                         );
                       })
                       .map((h, idx) => (
-                        <tr key={h.key || idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-3 text-center text-slate-400 font-bold font-mono border-r border-slate-200">
+                        <tr key={h.key || idx} className="hover:bg-slate-50 transition-colors border-b border-slate-800">
+                          <td className="py-2.5 px-3 text-center text-slate-700 font-bold font-mono border border-slate-800">
                             {idx + 1}
                           </td>
 
                           {/* Tanggal Pembayaran */}
-                          <td className="py-3 px-4 border-r border-slate-200 whitespace-nowrap">
+                          <td className="py-2.5 px-4 border border-slate-800 whitespace-nowrap">
                             <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900">
                               <Calendar className="w-3.5 h-3.5 text-emerald-600" />
                               <span>{h.tglBayar}</span>
                             </div>
-                            <span className="text-[10.5px] text-slate-400 block mt-0.5 font-sans">
+                            <span className="text-[10.5px] text-slate-500 block mt-0.5 font-sans">
                               Metode: {h.metodeBayar || 'Tunai'}
                             </span>
                           </td>
 
                           {/* Periode */}
-                          <td className="py-3 px-4 border-r border-slate-200 whitespace-nowrap font-mono text-slate-700 text-xs">
+                          <td className="py-2.5 px-4 border border-slate-800 whitespace-nowrap font-mono text-slate-800 text-xs">
                             {h.periode}
                           </td>
 
                           {/* Tim / Penjahit */}
-                          <td className="py-3 px-4 border-r border-slate-200">
-                            <div className="font-black text-slate-900 text-sm">{h.namaPetugas}</div>
+                          <td className="py-2.5 px-4 border border-slate-800">
+                            <div className="font-bold text-slate-900 text-sm">{h.namaPetugas}</div>
                             <div className="mt-0.5">{getTahapanBadge(h.tahapan)}</div>
                           </td>
 
                           {/* Jumlah Order & Pcs */}
-                          <td className="py-3 px-4 border-r border-slate-200 text-center whitespace-nowrap">
-                            <div className="font-mono font-black text-rose-700 text-xs">
+                          <td className="py-2.5 px-4 border border-slate-800 text-center whitespace-nowrap">
+                            <div className="font-mono font-bold text-rose-800 text-xs">
                               {h.totalQty.toLocaleString('id-ID')} Pcs
                             </div>
-                            <div className="text-[10.5px] text-slate-400 mt-0.5">
+                            <div className="text-[10.5px] text-slate-500 mt-0.5">
                               {h.items.length} Order Pekerjaan
                             </div>
                           </td>
 
                           {/* Jumlah Bayar */}
-                          <td className="py-3 px-4 border-r border-slate-200 text-right bg-emerald-50/30 whitespace-nowrap">
-                            <span className="font-mono font-black text-sm text-[#064e3b] bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs inline-block">
+                          <td className="py-2.5 px-4 border border-slate-800 text-right whitespace-nowrap">
+                            <span className="font-mono font-black text-sm text-[#064e3b]">
                               Rp {h.totalBersih.toLocaleString('id-ID')}
                             </span>
                           </td>
 
-                          {/* Aksi: Show dan Batal */}
-                          <td className="py-3 px-4 text-center whitespace-nowrap">
+                          {/* Aksi: Cetak Slip, Show, dan Batal */}
+                          <td className="py-2.5 px-4 text-center whitespace-nowrap border border-slate-800">
                             <div className="flex items-center justify-center gap-1.5">
+                              {/* Tombol Cetak Slip (Khusus Sudah Bayar / Histori) */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenSlipHistori(h)}
+                                className="px-2.5 py-1.5 bg-[#2b3a4a] hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs active:scale-95"
+                                title="Cetak slip bukti pembayaran upah resmi"
+                              >
+                                <Printer className="w-3.5 h-3.5 text-amber-300" />
+                                <span>Cetak Slip</span>
+                              </button>
+
                               {/* Tombol Show (Rincian) */}
                               <button
                                 type="button"
@@ -1545,13 +1543,23 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                 <span>Batalkan Pembayaran Ini</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setIsHistoriDetailOpen(false)}
-                className="px-4 py-1.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer transition-all"
-              >
-                Tutup
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenSlipHistori(historiDetailItem)}
+                  className="px-3.5 py-1.5 bg-[#2b3a4a] hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-95"
+                >
+                  <Printer className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Cetak Slip</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsHistoriDetailOpen(false)}
+                  className="px-4 py-1.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs cursor-pointer transition-all"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1926,7 +1934,10 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsSlipKaryawanModalOpen(false)}
+                  onClick={() => {
+                    setIsSlipKaryawanModalOpen(false);
+                    setSlipCustomData(null);
+                  }}
                   className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -1951,7 +1962,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                       <div className="flex items-center gap-2">
                         <span className="w-28 text-slate-500 font-medium">Tanggal Periode</span>
                         <span className="font-bold text-slate-800">
-                          : {startDate || '-'} s.d {endDate || '-'}
+                          : {currentSlipKaryawan.periode || (startDate ? `${startDate} s.d ${endDate}` : '-')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1960,17 +1971,23 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                         </span>
                         <div className="flex items-center gap-1 font-bold text-slate-900">
                           <span>:</span>
-                          <select
-                            value={selectedKaryawanName}
-                            onChange={(e) => setSelectedKaryawanName(e.target.value)}
-                            className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-extrabold text-[#0369a1] cursor-pointer focus:outline-none print:appearance-none print:border-none print:p-0"
-                          >
-                            {rekapKaryawanList.map((k) => (
-                              <option key={k.namaPetugas} value={k.namaPetugas}>
-                                {k.namaPetugas}
-                              </option>
-                            ))}
-                          </select>
+                          {slipCustomData ? (
+                            <span className="font-black text-slate-900 text-xs">
+                              {currentSlipKaryawan.namaPetugas}
+                            </span>
+                          ) : (
+                            <select
+                              value={selectedKaryawanName}
+                              onChange={(e) => setSelectedKaryawanName(e.target.value)}
+                              className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-extrabold text-[#0369a1] cursor-pointer focus:outline-none print:appearance-none print:border-none print:p-0"
+                            >
+                              {rekapKaryawanList.map((k) => (
+                                <option key={k.namaPetugas} value={k.namaPetugas}>
+                                  {k.namaPetugas}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2009,10 +2026,11 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
                 {/* KHUSUS PENJAHIT: POTONGAN & SISA PINJAMAN DITAMPILKAN */}
                 {(currentSlipKaryawan.tahapan === 'Jahit' || (currentSlipKaryawan.tahapan || '').toLowerCase().includes('jahit')) && (() => {
-                  const manualVal = manualPotonganMap[currentSlipKaryawan.namaPetugas];
-                  const potongVal = (manualVal !== undefined && manualVal !== '')
-                    ? (Number(manualVal) || 0)
-                    : currentSlipKaryawan.totalPotonganKasbon;
+                  const potongVal = slipCustomData
+                    ? currentSlipKaryawan.totalPotonganKasbon
+                    : ((manualPotonganMap[currentSlipKaryawan.namaPetugas] !== undefined && manualPotonganMap[currentSlipKaryawan.namaPetugas] !== '')
+                        ? (Number(manualPotonganMap[currentSlipKaryawan.namaPetugas]) || 0)
+                        : currentSlipKaryawan.totalPotonganKasbon);
                   return (
                     <div className="flex items-center justify-between py-0.5">
                       <span className="text-slate-600 font-medium">Potongan Pinjaman (Kasbon)</span>
@@ -2025,11 +2043,16 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
 
                 {(() => {
                   const isJahit = currentSlipKaryawan.tahapan === 'Jahit' || (currentSlipKaryawan.tahapan || '').toLowerCase().includes('jahit');
-                  const manualVal = manualPotonganMap[currentSlipKaryawan.namaPetugas];
-                  const potongVal = isJahit
-                    ? ((manualVal !== undefined && manualVal !== '') ? (Number(manualVal) || 0) : currentSlipKaryawan.totalPotonganKasbon)
-                    : 0;
-                  const modalBersih = Math.max(0, currentSlipKaryawan.totalKotor - potongVal);
+                  const potongVal = slipCustomData
+                    ? (isJahit ? currentSlipKaryawan.totalPotonganKasbon : 0)
+                    : (isJahit
+                        ? ((manualPotonganMap[currentSlipKaryawan.namaPetugas] !== undefined && manualPotonganMap[currentSlipKaryawan.namaPetugas] !== '')
+                            ? (Number(manualPotonganMap[currentSlipKaryawan.namaPetugas]) || 0)
+                            : currentSlipKaryawan.totalPotonganKasbon)
+                        : 0);
+                  const modalBersih = slipCustomData
+                    ? currentSlipKaryawan.totalBersih
+                    : Math.max(0, currentSlipKaryawan.totalKotor - potongVal);
                   return (
                     <>
                       <div className="pt-2 border-t border-slate-300 flex items-center justify-between">
@@ -2091,7 +2114,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
                     </thead>
                     <tbody className="divide-y divide-slate-200 font-medium">
                       {currentSlipKaryawan.items.map((item, idx) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                        <tr key={item.id || idx} className="hover:bg-slate-50 transition-colors">
                           <td className="py-1.5 px-3 text-center text-slate-400 font-mono text-[11px] border-r border-slate-200">
                             {idx + 1}
                           </td>

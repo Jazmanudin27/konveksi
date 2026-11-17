@@ -458,52 +458,52 @@ export default function Kasbon() {
       </div>
 
       {/* 5. TABEL KASBON */}
-      <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-2xs overflow-hidden">
+      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
+          <table className="w-full text-left text-xs border-collapse border border-slate-800">
             <thead>
-              <tr className="bg-[#f8fafc] text-[#334155] font-extrabold text-xs tracking-wider uppercase">
-                <th className="py-2 px-2 text-center w-10 border border-[#cbd5e1]">
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
+                <th className="py-2.5 px-2 text-center w-10 border border-slate-800 text-white font-bold">
                   NO
                 </th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px] border border-slate-800 text-white font-bold">
                   NO KASBON
                 </th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[100px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[100px] border border-slate-800 text-white font-bold">
                   TGL KASBON
                 </th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[160px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px] border border-slate-800 text-white font-bold">
                   NAMA PETUGAS
                 </th>
-                <th className="py-2 px-3 whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[110px] border border-slate-800 text-white font-bold">
                   DIVISI
                 </th>
-                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[120px] border border-slate-800 text-white font-bold">
                   NOMINAL
                 </th>
-                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[120px] border border-slate-800 text-white font-bold">
                   TERPOTONG
                 </th>
-                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[130px] border border-slate-800 text-white font-bold">
                   SISA KASBON
                 </th>
-                <th className="py-2 px-3 text-center whitespace-nowrap min-w-[95px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[95px] border border-slate-800 text-white font-bold">
                   STATUS
                 </th>
-                <th className="py-2 px-3 min-w-[180px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-3 min-w-[180px] border border-slate-800 text-white font-bold">
                   KEPERLUAN
                 </th>
-                <th className="py-2 px-2.5 text-center whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[110px] border border-slate-800 text-white font-bold">
                   AKSI
                 </th>
               </tr>
             </thead>
-            <tbody className="font-medium text-slate-700 divide-y divide-[#cbd5e1]">
+            <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
               {filteredList.length === 0 ? (
                 <tr>
                   <td
                     colSpan="11"
-                    className="py-8 text-center text-slate-400 border border-[#cbd5e1]"
+                    className="py-8 text-center text-slate-400 border border-slate-800"
                   >
                     {loading
                       ? "Memuat data kasbon..."
@@ -518,55 +518,55 @@ export default function Kasbon() {
                   return (
                     <tr
                       key={item.id}
-                      className="hover:bg-slate-50 transition-colors"
+                      className="hover:bg-slate-50 transition-colors border-b border-slate-800"
                     >
-                      <td className="py-2 px-2 text-center font-bold text-slate-500 border border-[#cbd5e1]">
+                      <td className="py-2 px-2 text-center font-bold text-slate-700 border border-slate-800">
                         {idx + 1}
                       </td>
-                      <td className="py-2 px-3 font-mono font-bold text-amber-800 bg-amber-50/50 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 font-mono font-bold text-amber-900 bg-amber-50/60 border border-slate-800">
                         {item.noKasbon}
                       </td>
-                      <td className="py-2 px-3 font-mono text-slate-600 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 font-mono text-slate-700 border border-slate-800">
                         {item.tglKasbon}
                       </td>
-                      <td className="py-2 px-3 font-bold text-slate-900 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 font-bold text-slate-900 border border-slate-800">
                         {item.namaPetugas}
                       </td>
-                      <td className="py-2 px-3 border border-[#cbd5e1]">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                      <td className="py-2 px-3 border border-slate-800">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
                           {item.kategoriPetugas}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 border border-[#cbd5e1]">
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 border border-slate-800">
                         Rp {Number(item.nominal).toLocaleString("id-ID")}
                       </td>
-                      <td className="py-2 px-3 text-right font-mono text-emerald-700 font-bold border border-[#cbd5e1]">
+                      <td className="py-2 px-3 text-right font-mono text-emerald-800 font-bold border border-slate-800">
                         Rp {Number(item.terbayar).toLocaleString("id-ID")}
                       </td>
-                      <td className="py-2 px-3 text-right font-mono font-black border border-[#cbd5e1]">
+                      <td className="py-2 px-3 text-right font-mono font-black border border-slate-800">
                         <span
                           className={
-                            sisa > 0 ? "text-amber-700" : "text-slate-400"
+                            sisa > 0 ? "text-amber-900" : "text-slate-400"
                           }
                         >
                           Rp {sisa.toLocaleString("id-ID")}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-3 text-center border border-slate-800">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                          className={`px-2 py-0.5 rounded text-[10.5px] font-bold border ${
                             isLunas
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
+                              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : "bg-amber-100 text-amber-900 border-amber-300"
                           }`}
                         >
                           {item.status}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-slate-600 text-[11px] border border-[#cbd5e1]">
+                      <td className="py-2 px-3 text-slate-700 text-[11px] border border-slate-800">
                         {item.keperluan || "-"}
                       </td>
-                      <td className="py-2 px-2.5 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-center border border-slate-800">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleViewHistory(item)}

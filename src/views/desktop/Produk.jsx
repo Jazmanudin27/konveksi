@@ -654,50 +654,50 @@ export default function Produk({
       {/* ================= KONTEN SESUAI VIEW MODE ================= */}
       {viewMode === "master" ? (
         /* MODE 0: TABEL MASTER GROUP BY SKU INDUK (DATA MASTER KATEGORI PRODUK STYLE) */
-        <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_6px_rgba(15,23,42,0.05)] overflow-hidden">
+        <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
+            <table className="w-full text-left text-xs border-collapse border border-slate-800">
               <thead>
-                <tr className="bg-[#f8fafc] text-[#475569] font-bold text-[10px] tracking-wide uppercase">
-                  <th className="py-2 px-2.5 text-center w-12 border border-[#cbd5e1]">NO</th>
-                  <th className="py-2 px-2.5 min-w-[130px] border border-[#cbd5e1]">KODE / SKU INDUK</th>
-                  <th className="py-2 px-2.5 min-w-[180px] border border-[#cbd5e1]">NAMA PRODUK</th>
-                  <th className="py-2 px-2.5 min-w-[120px] border border-[#cbd5e1]">KATEGORI</th>
-                  <th className="py-2 px-2.5 min-w-[140px] border border-[#cbd5e1]">BAHAN KAIN</th>
-                  <th className="py-2 px-2.5 text-right w-28 border border-[#cbd5e1]">ONGKOS POTONG</th>
-                  <th className="py-2 px-2.5 text-center w-28 border border-[#cbd5e1]">TOTAL VARIAN</th>
-                  <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">TOTAL STOK</th>
-                  <th className="py-2 px-2.5 text-center w-20 border border-[#cbd5e1]">STATUS</th>
-                  <th className="py-2 px-2.5 text-center w-28 border border-[#cbd5e1]">AKSI</th>
+                <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
+                  <th className="py-2.5 px-2.5 text-center w-12 border border-slate-800 text-white font-bold">NO</th>
+                  <th className="py-2.5 px-2.5 min-w-[130px] border border-slate-800 text-white font-bold">KODE / SKU INDUK</th>
+                  <th className="py-2.5 px-2.5 min-w-[180px] border border-slate-800 text-white font-bold">NAMA PRODUK</th>
+                  <th className="py-2.5 px-2.5 min-w-[120px] border border-slate-800 text-white font-bold">KATEGORI</th>
+                  <th className="py-2.5 px-2.5 min-w-[140px] border border-slate-800 text-white font-bold">BAHAN KAIN</th>
+                  <th className="py-2.5 px-2.5 text-right w-28 border border-slate-800 text-white font-bold">ONGKOS POTONG</th>
+                  <th className="py-2.5 px-2.5 text-center w-28 border border-slate-800 text-white font-bold">TOTAL VARIAN</th>
+                  <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">TOTAL STOK</th>
+                  <th className="py-2.5 px-2.5 text-center w-20 border border-slate-800 text-white font-bold">STATUS</th>
+                  <th className="py-2.5 px-2.5 text-center w-28 border border-slate-800 text-white font-bold">AKSI</th>
                 </tr>
               </thead>
-              <tbody className="font-medium text-slate-700">
+              <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
                 {groupedSkuIndukList.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="py-10 text-center text-slate-400 border border-[#cbd5e1]">
+                    <td colSpan="10" className="py-10 text-center text-slate-400 border border-slate-800">
                       <PackageOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                       <p className="text-xs font-semibold">Tidak ada SKU Induk ditemukan</p>
                     </td>
                   </tr>
                 ) : (
                   groupedSkuIndukList.map((group, idx) => (
-                    <tr key={group.skuInduk} className="hover:bg-[#f1f5f9] transition-colors">
+                    <tr key={group.skuInduk} className="hover:bg-slate-50 transition-colors border-b border-slate-800">
                       {/* NO */}
-                      <td className="py-[2px] px-2 text-center text-slate-500 font-semibold text-[11px] border border-[#cbd5e1]">
+                      <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs border border-slate-800">
                         {idx + 1}
                       </td>
 
                       {/* KODE / SKU INDUK */}
-                      <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
-                        <span className="font-mono font-bold text-[11px] text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 inline-block">
+                      <td className="py-2 px-2.5 border border-slate-800">
+                        <span className="font-mono font-bold text-xs text-[#0284c7]">
                           {group.skuInduk}
                         </span>
                       </td>
 
                       {/* NAMA PRODUK */}
-                      <td className="py-[2px] px-2.5 font-bold text-[#0f172a] text-xs border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 font-bold text-slate-900 text-xs border border-slate-800">
                         <div className="flex items-center gap-1.5">
-                          <Shirt className="w-3.5 h-3.5 text-[#0284c7] shrink-0" />
+                          <Shirt className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           <span className="truncate max-w-xs" title={group.namaProduk}>
                             {group.namaProduk}
                           </span>
@@ -705,38 +705,38 @@ export default function Produk({
                       </td>
 
                       {/* KATEGORI */}
-                      <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
-                        <span className="text-[10.5px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      <td className="py-2 px-2.5 border border-slate-800">
+                        <span className="text-[11px] font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
                           {group.kategori}
                         </span>
                       </td>
 
                       {/* BAHAN KAIN */}
-                      <td className="py-[2px] px-2.5 text-slate-600 font-mono text-[11px] border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-slate-700 font-mono text-xs border border-slate-800">
                         {group.skuBahan || '-'}
                       </td>
 
                       {/* ONGKOS POTONG */}
-                      <td className="py-[2px] px-2.5 text-right font-mono font-bold text-[#0369a1] text-[11.5px] border border-[#cbd5e1] bg-sky-50/30">
+                      <td className="py-2 px-2.5 text-right font-mono font-bold text-slate-900 text-xs border border-slate-800">
                         Rp {group.minPotong.toLocaleString('id-ID')}
                       </td>
 
                       {/* TOTAL VARIAN */}
-                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-[#cbd5e1] text-[10.5px] font-bold">
+                      <td className="py-2 px-2.5 text-center border border-slate-800">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 text-[11px] font-bold">
                           {group.variants.length} Varian
                         </span>
                       </td>
 
                       {/* TOTAL STOK */}
-                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-center border border-slate-800">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full font-mono text-[10.5px] font-bold border ${
+                          className={`inline-block px-2 py-0.5 rounded font-mono text-[11px] font-bold border ${
                             group.totalStok > 10
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                               : group.totalStok > 0
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-rose-50 text-rose-700 border-rose-200'
+                              ? 'bg-amber-100 text-amber-800 border-amber-300'
+                              : 'bg-rose-100 text-rose-800 border-rose-300'
                           }`}
                         >
                           {group.totalStok.toLocaleString('id-ID')} Pcs
@@ -744,14 +744,14 @@ export default function Produk({
                       </td>
 
                       {/* STATUS */}
-                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
-                        <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                      <td className="py-2 px-2.5 text-center border border-slate-800">
+                        <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold border bg-emerald-100 text-emerald-800 border-emerald-300">
                           Aktif
                         </span>
                       </td>
 
                       {/* AKSI */}
-                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                      <td className="py-2 px-2.5 text-center border border-slate-800">
                         <div className="flex items-center justify-center gap-1.5">
                           {/* Tombol Detail / Show */}
                           <button
@@ -1369,39 +1369,39 @@ export default function Produk({
         </div>
       ) : (
         /* 4. TABEL PRODUK CARD (HIGH CONTRAST) */
-        <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_2px_6px_rgba(15,23,42,0.05)] overflow-hidden">
+        <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
         <div className="w-full overflow-hidden">
-          <table className="w-full table-fixed text-left text-xs border-collapse">
+          <table className="w-full table-fixed text-left text-xs border-collapse border border-slate-800">
             <thead>
-              <tr className="bg-[#f8fafc] text-[#475569] font-bold text-[10px] tracking-wide uppercase border-b border-[#cbd5e1] divide-x divide-[#cbd5e1]">
-                <th className="py-2 px-2 text-center w-10 border-r border-[#cbd5e1]">
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
+                <th className="py-2.5 px-2 text-center w-10 border border-slate-800 text-white font-bold">
                   NO
                 </th>
-                <th className="py-2 px-2.5 w-36 border-r border-[#cbd5e1]">
+                <th className="py-2.5 px-2.5 w-36 border border-slate-800 text-white font-bold">
                   SKU & BAHAN
                 </th>
-                <th className="py-2 px-2.5 border-r border-[#cbd5e1]">
+                <th className="py-2.5 px-2.5 border border-slate-800 text-white font-bold">
                   NAMA PRODUK
                 </th>
-                <th className="py-2 px-2.5 w-36 border-r border-[#cbd5e1]">
+                <th className="py-2.5 px-2.5 w-36 border border-slate-800 text-white font-bold">
                   VARIAN & UKURAN
                 </th>
-                <th className="py-2 px-2.5 text-center w-32 border-r border-[#cbd5e1]">
+                <th className="py-2.5 px-2.5 text-center w-32 border border-slate-800 text-white font-bold">
                   HARGA
                 </th>
-                <th className="py-2 px-2 text-center w-28 border-r border-[#cbd5e1] bg-sky-50/60 text-[#0369a1]">
+                <th className="py-2.5 px-2 text-center w-28 border border-slate-800 text-white font-bold">
                   POTONG
                 </th>
-                <th className="py-2 px-2 text-center w-20 border-r border-[#cbd5e1] bg-slate-50">
+                <th className="py-2.5 px-2 text-center w-20 border border-slate-800 text-white font-bold">
                   STOK
                 </th>
-                <th className="py-2 px-2 text-center w-20 border-r border-[#cbd5e1]">
+                <th className="py-2.5 px-2 text-center w-20 border border-slate-800 text-white font-bold">
                   STATUS
                 </th>
-                <th className="py-2 px-2 text-center w-24">AKSI</th>
+                <th className="py-2.5 px-2 text-center w-24 border border-slate-800 text-white font-bold">AKSI</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#cbd5e1] font-medium text-slate-700">
+            <tbody className="divide-y divide-slate-800 font-medium text-slate-800">
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="py-12 text-center text-slate-400">
@@ -1831,25 +1831,25 @@ function DetailModalSkuInduk({
 
         {/* Body Modal - High Contrast Table matching Kategori.jsx */}
         <div className="p-3 overflow-y-auto space-y-3">
-          <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-2xs overflow-hidden">
+          <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
+              <table className="w-full text-left text-xs border-collapse border border-slate-800">
                 <thead>
-                  <tr className="bg-[#f8fafc] text-[#475569] font-bold text-[10px] tracking-wide uppercase border-b border-[#cbd5e1]">
-                    <th className="py-2 px-2.5 text-center w-12 border border-[#cbd5e1]">NO</th>
-                    <th className="py-2 px-2.5 w-48 border border-[#cbd5e1]">KODE SKU VARIAN</th>
-                    <th className="py-2 px-2.5 border border-[#cbd5e1]">VARIAN & WARNA</th>
-                    <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">UKURAN</th>
-                    <th className="py-2 px-2.5 text-right w-32 border border-[#cbd5e1]">HARGA JUAL</th>
-                    <th className="py-2 px-2.5 text-right w-28 border border-[#cbd5e1] bg-sky-50/50 text-[#0369a1]">
+                  <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
+                    <th className="py-2.5 px-2.5 text-center w-12 border border-slate-800 text-white font-bold">NO</th>
+                    <th className="py-2.5 px-2.5 w-48 border border-slate-800 text-white font-bold">KODE SKU VARIAN</th>
+                    <th className="py-2.5 px-2.5 border border-slate-800 text-white font-bold">VARIAN & WARNA</th>
+                    <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">UKURAN</th>
+                    <th className="py-2.5 px-2.5 text-right w-32 border border-slate-800 text-white font-bold">HARGA JUAL</th>
+                    <th className="py-2.5 px-2.5 text-right w-28 border border-slate-800 text-white font-bold">
                       ONGKOS POTONG
                     </th>
-                    <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">STOK</th>
-                    <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">STATUS</th>
-                    <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">AKSI</th>
+                    <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">STOK</th>
+                    <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">STATUS</th>
+                    <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">AKSI</th>
                   </tr>
                 </thead>
-                <tbody className="font-medium text-slate-700">
+                <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
                   {group.variants.map((v, idx) => {
                     const smartColor = getSmartColorHex(v.varian, v.warnaHex);
                     const catMatch = categories.find((c) => c.nama === v.kategori);
@@ -1861,52 +1861,52 @@ function DetailModalSkuInduk({
                         : HARGA_POTONG_MAP[v.kategori?.toUpperCase()] || 0
                     );
                     return (
-                      <tr key={v.id} className="hover:bg-[#f1f5f9] transition-colors">
-                        <td className="py-[2px] px-2 text-center text-slate-500 font-semibold text-[11px] border border-[#cbd5e1]">
+                      <tr key={v.id} className="hover:bg-slate-50 transition-colors border-b border-slate-800">
+                        <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs border border-slate-800">
                           {idx + 1}
                         </td>
-                        <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
-                          <span className="font-mono font-bold text-[11px] text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 inline-block">
+                        <td className="py-2 px-2.5 border border-slate-800">
+                          <span className="font-mono font-bold text-xs text-[#0284c7]">
                             {v.sku}
                           </span>
                         </td>
-                        <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
+                        <td className="py-2 px-2.5 border border-slate-800">
                           <div className="flex items-center gap-2">
                             <span
                               className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0 ring-1 ring-white"
                               style={{ backgroundColor: smartColor }}
                               title={v.varian}
                             />
-                            <span className="font-bold text-[#0f172a] text-xs">
+                            <span className="font-bold text-slate-900 text-xs">
                               {v.varian || "Polos"}
                             </span>
                           </div>
                         </td>
-                        <td className="py-[2px] px-2.5 text-center font-mono font-bold text-xs border border-[#cbd5e1]">
-                          <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono text-[10.5px]">
+                        <td className="py-2 px-2.5 text-center font-mono font-bold text-xs border border-slate-800">
+                          <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono text-xs">
                             {v.ukuran || "-"}
                           </span>
                         </td>
-                        <td className="py-[2px] px-2.5 text-right font-mono font-bold text-slate-800 text-xs border border-[#cbd5e1]">
+                        <td className="py-2 px-2.5 text-right font-mono font-bold text-slate-900 text-xs border border-slate-800">
                           Rp {Number(v.harga || 0).toLocaleString("id-ID")}
                         </td>
-                        <td className="py-[2px] px-2.5 text-right font-mono font-bold text-[#0369a1] text-[11.5px] border border-[#cbd5e1] bg-sky-50/30">
+                        <td className="py-2 px-2.5 text-right font-mono font-bold text-slate-900 text-xs border border-slate-800">
                           Rp {hargaPotongVal.toLocaleString("id-ID")}
                         </td>
-                        <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                        <td className="py-2 px-2.5 text-center border border-slate-800">
                           <span
-                            className={`px-2 py-0.5 rounded-full font-mono text-[10.5px] font-bold border ${
+                            className={`px-2 py-0.5 rounded font-mono text-xs font-bold border ${
                               Number(v.stok || 0) > 10
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-300"
                                 : Number(v.stok || 0) > 0
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-rose-50 text-rose-700 border-rose-200"
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : "bg-rose-100 text-rose-800 border-rose-300"
                             }`}
                           >
                             {Number(v.stok || 0)} Pcs
                           </span>
                         </td>
-                        <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                        <td className="py-2 px-2.5 text-center border border-slate-800">
                           <span
                             className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-bold border ${getBadgeClass(
                               v.status
@@ -1915,7 +1915,7 @@ function DetailModalSkuInduk({
                             {v.status || "Aktif"}
                           </span>
                         </td>
-                        <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                        <td className="py-2 px-2.5 text-center border border-slate-800">
                           <div className="flex items-center justify-center gap-1">
                             <button
                               type="button"

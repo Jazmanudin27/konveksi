@@ -304,12 +304,12 @@ export default function DashboardWelcome({
             </div>
           </div>
 
-          {/* Box 2: Tabel Pantau Antrean Aktif */}
-          <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-[0_1px_3px_rgba(15,23,42,0.04)] overflow-hidden">
-            <div className="p-1.5 px-2 bg-[#f8fafc] border-b border-[#cbd5e1] flex items-center justify-between">
+          {/* Box 2: Tabel Pantau Antrean Aktif (Spreadsheet Grid Style) */}
+          <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
+            <div className="p-1.5 px-2 bg-slate-100 border-b-2 border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Scissors className="w-3.5 h-3.5 text-[#0284c7]" />
-                <span className="text-[11px] font-bold text-slate-700 uppercase">
+                <Scissors className="w-3.5 h-3.5 text-slate-800" />
+                <span className="text-[11px] font-bold text-slate-900 uppercase">
                   Daftar Antrean Produksi Terkini
                 </span>
               </div>
@@ -322,20 +322,20 @@ export default function DashboardWelcome({
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-xs border-collapse border border-slate-800">
                 <thead>
-                  <tr className="bg-[#f8fafc] text-slate-500 font-bold text-[9.5px] uppercase border-b border-[#cbd5e1]">
-                    <th className="py-1 px-1.5 text-center w-7">No</th>
-                    <th className="py-1 px-2">No. Antrean</th>
-                    <th className="py-1 px-2">Model Produk</th>
-                    <th className="py-1 px-1.5 text-center">Target</th>
-                    <th className="py-1 px-2 text-center">Status Tahapan</th>
+                  <tr className="bg-[#2b3a4a] text-white font-bold text-[9.5px] uppercase border border-slate-800">
+                    <th className="py-1 px-1.5 text-center w-7 border border-slate-800 text-white font-bold">No</th>
+                    <th className="py-1 px-2 border border-slate-800 text-white font-bold">No. Antrean</th>
+                    <th className="py-1 px-2 border border-slate-800 text-white font-bold">Model Produk</th>
+                    <th className="py-1 px-1.5 text-center border border-slate-800 text-white font-bold">Target</th>
+                    <th className="py-1 px-2 text-center border border-slate-800 text-white font-bold">Status Tahapan</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#cbd5e1] text-[11px]">
+                <tbody className="divide-y divide-slate-800 text-[11px]">
                   {recentAntrean.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="py-4 text-center text-slate-400 text-xs">
+                      <td colSpan="5" className="py-4 text-center text-slate-400 text-xs border border-slate-800">
                         Belum ada antrean produksi aktif.
                       </td>
                     </tr>
@@ -346,17 +346,17 @@ export default function DashboardWelcome({
                         onClick={() => onNavigate('antrean')}
                         className="hover:bg-blue-50/50 cursor-pointer transition-colors"
                       >
-                        <td className="py-1 px-1.5 text-center text-slate-400 font-semibold">{idx + 1}</td>
-                        <td className="py-1 px-2 font-mono font-bold text-[#0284c7] whitespace-nowrap">
+                        <td className="py-1 px-1.5 text-center text-slate-700 font-bold border border-slate-800">{idx + 1}</td>
+                        <td className="py-1 px-2 font-mono font-bold text-[#0284c7] whitespace-nowrap border border-slate-800">
                           {item.noAntrian}
                         </td>
-                        <td className="py-1 px-2 font-medium text-slate-800 truncate max-w-[150px]">
+                        <td className="py-1 px-2 font-bold text-slate-900 truncate max-w-[150px] border border-slate-800">
                           {item.namaProduk || item.sku}
                         </td>
-                        <td className="py-1 px-1.5 text-center font-bold text-slate-700">
+                        <td className="py-1 px-1.5 text-center font-bold text-slate-800 border border-slate-800">
                           {item.qty} Pcs
                         </td>
-                        <td className="py-1 px-2 text-center">
+                        <td className="py-1 px-2 text-center border border-slate-800">
                           <span className="inline-block px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                             {item.status || 'Menunggu Cutting'}
                           </span>

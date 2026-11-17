@@ -25,6 +25,47 @@ body {
   box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
 }
 
+/* Spreadsheet Grid Table Style (Elegan, Simple, Dark Navy Header, Crisp Dark Borders) */
+.table-spreadsheet {
+  width: 100%;
+  text-align: left;
+  font-size: 0.75rem;
+  border-collapse: collapse;
+  border: 2px solid #1e293b;
+}
+
+.table-spreadsheet thead tr {
+  background-color: #2b3a4a;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 2px solid #1e293b;
+}
+
+.table-spreadsheet th {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #1e293b;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.table-spreadsheet td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #1e293b;
+  color: #0f172a;
+}
+
+.table-spreadsheet tbody tr {
+  background-color: #ffffff;
+  border-bottom: 1px solid #1e293b;
+  transition: background-color 0.15s ease;
+}
+
+.table-spreadsheet tbody tr:hover {
+  background-color: #f8fafc;
+}
+
 /* Sembunyikan scrollbar tapi tetap bisa di-scroll */
 .no-scrollbar::-webkit-scrollbar,
 .scrollbar-none::-webkit-scrollbar {

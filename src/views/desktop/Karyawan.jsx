@@ -60,9 +60,9 @@ export default function Karyawan({
     return {
       all: employees.length,
       aktif: employees.filter((e) => e.status === 'Aktif').length,
-      cutting: employees.filter((e) => e.bagian.includes('Cutting')).length,
-      jahit: employees.filter((e) => e.bagian.includes('Jahit')).length,
-      finishing: employees.filter((e) => e.bagian.includes('Finishing') || e.bagian.includes('QC')).length,
+      cutting: employees.filter((e) => (e.bagian || '').toLowerCase().includes('cut') || (e.bagian || '').toLowerCase().includes('pola')).length,
+      jahit: employees.filter((e) => (e.bagian || '').toLowerCase().includes('jahit') || (e.bagian || '').toLowerCase().includes('penjahit')).length,
+      finishing: employees.filter((e) => (e.bagian || '').toLowerCase().includes('finishing') || (e.bagian || '').toLowerCase().includes('qc')).length,
       nonAktif: employees.filter((e) => e.status !== 'Aktif').length,
     };
   }, [employees]);
@@ -70,10 +70,11 @@ export default function Karyawan({
   // Filter Logic
   const filteredEmployees = useMemo(() => {
     return employees.filter((item) => {
+      const b = (item.bagian || '').toLowerCase();
       if (activeTab === 'AKTIF' && item.status !== 'Aktif') return false;
-      if (activeTab === 'CUTTING' && !item.bagian.includes('Cutting')) return false;
-      if (activeTab === 'JAHIT' && !item.bagian.includes('Jahit')) return false;
-      if (activeTab === 'FINISHING' && !item.bagian.includes('Finishing') && !item.bagian.includes('QC')) return false;
+      if (activeTab === 'CUTTING' && !b.includes('cut') && !b.includes('pola')) return false;
+      if (activeTab === 'JAHIT' && !b.includes('jahit') && !b.includes('penjahit')) return false;
+      if (activeTab === 'FINISHING' && !b.includes('finishing') && !b.includes('qc')) return false;
       if (activeTab === 'NONAKTIF' && item.status === 'Aktif') return false;
 
       if (searchTerm.trim()) {

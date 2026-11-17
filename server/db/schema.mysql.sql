@@ -193,19 +193,6 @@ CREATE TABLE IF NOT EXISTS pembayaran_upah (
   INDEX idx_upah_status (status_bayar)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS penjahit (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nik VARCHAR(50) NOT NULL UNIQUE,
-  nama VARCHAR(150) NOT NULL,
-  kategori VARCHAR(50) DEFAULT 'Borongan',
-  spesialisasi VARCHAR(100) DEFAULT 'Jahit Kaos & Busana',
-  tarif_per_pcs DECIMAL(12,2) DEFAULT 3500,
-  telepon VARCHAR(50),
-  status VARCHAR(30) DEFAULT 'Aktif',
-  catatan TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS tim_finishing (
   id INT AUTO_INCREMENT PRIMARY KEY,
   kode_tim VARCHAR(50) NOT NULL UNIQUE,

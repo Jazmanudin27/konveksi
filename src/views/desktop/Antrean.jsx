@@ -261,34 +261,14 @@ export default function Antrean({
     return list.length > 0 ? list : employees;
   }, [employees]);
 
-  // State Tabel Terpisah Khusus Penjahit & Tim Finishing
-  const [penjahitList, setPenjahitList] = useState([]);
-  const [timFinishingList, setTimFinishingList] = useState([]);
-
-  useEffect(() => {
-    api.getPenjahit().then(data => {
-      if (Array.isArray(data)) setPenjahitList(data);
-    }).catch(() => {});
-    api.getTimFinishing().then(data => {
-      if (Array.isArray(data)) setTimFinishingList(data);
-    }).catch(() => {});
-  }, []);
-
-  // List Tim Jahit: Khusus dari Data Penjahit (Terpisah dari Finishing)
+  // List Tim Jahit: Diambil langsung dari Data Karyawan (bagian Penjahit / Jahit)
   const jahitEmployees = useMemo(() => {
-    if (penjahitList.length > 0) {
-      return penjahitList.map(p => ({
-        id: p.id,
-        nama: p.nama,
-        bagian: 'Penjahit',
-        tarif: p.tarifPerPcs
-      }));
-    }
-    return employees.filter(e => {
+    const list = employees.filter(e => {
       const b = (e.bagian || '').toLowerCase();
-      return b.includes('jahit') || b.includes('sew');
+      return b.includes('jahit') || b.includes('penjahit') || b.includes('sew');
     });
-  }, [penjahitList, employees]);
+    return list.length > 0 ? list : employees;
+  }, [employees]);
 
   // List Tim QC dari Master Karyawan
   const qcEmployees = useMemo(() => {

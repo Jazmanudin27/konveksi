@@ -20,8 +20,11 @@ import {
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
 
-export default function Penjahit() {
-  const [penjahitList, setPenjahitList] = useState([]);
+export default function Penjahit({ employees: propEmployees = [], setEmployees: propSetEmployees }) {
+  const [localEmployees, setLocalEmployees] = useState([]);
+  const employees = propEmployees && propEmployees.length > 0 ? propEmployees : localEmployees;
+  const setEmployees = propSetEmployees || setLocalEmployees;
+
   const [loading, setLoading] = useState(false);
 
   // Filter States
@@ -36,31 +39,44 @@ export default function Penjahit() {
     nik: '',
     nama: '',
     kategori: 'Borongan',
-    spesialisasi: 'Jahit Kaos & Busana',
-    tarifPerPcs: 3500,
+    bagian: 'Penjahit',
     telepon: '',
     status: 'Aktif',
-    catatan: '',
+    tanggalMasuk: new Date().toISOString().slice(0, 10),
   });
   const [editingId, setEditingId] = useState(null);
 
-  // Fetch Data
+  // Ambil list penjahit langsung dari Data Karyawan (employees)
+  const penjahitList = useMemo(() => {
+    return (employees || []).filter((item) => {
+      const b = (item.bagian || '').toLowerCase();
+      return b.includes('jahit') || b.includes('penjahit');
+    });
+  }, [employees]);
+
+  // Fetch Data Karyawan dari Server
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await api.getPenjahit();
+      const data = await api.getEmployees();
       if (Array.isArray(data)) {
-        setPenjahitList(data);
+        if (setEmployees) {
+          setEmployees(data);
+        } else {
+          setLocalEmployees(data);
+        }
       }
     } catch (err) {
-      console.warn('Gagal memuat data penjahit:', err);
+      console.warn('Gagal memuat data karyawan:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    if (!employees || employees.length === 0) {
+      fetchData();
+    }
   }, []);
 
   // Filtered List
@@ -76,7 +92,7 @@ export default function Penjahit() {
         const match =
           (item.nik || '').toLowerCase().includes(q) ||
           (item.nama || '').toLowerCase().includes(q) ||
-          (item.spesialisasi || '').toLowerCase().includes(q) ||
+          (item.bagian || '').toLowerCase().includes(q) ||
           (item.telepon || '').toLowerCase().includes(q);
         if (!match) return false;
       }
@@ -94,11 +110,10 @@ export default function Penjahit() {
       nik: `JHT-${Date.now().toString().slice(-4)}`,
       nama: '',
       kategori: 'Borongan',
-      spesialisasi: 'Jahit Kaos & Busana',
-      tarifPerPcs: 3500,
+      bagian: 'Penjahit',
       telepon: '',
       status: 'Aktif',
-      catatan: '',
+      tanggalMasuk: new Date().toISOString().slice(0, 10),
     });
     setEditingId(null);
     setModalMode('create');
@@ -109,11 +124,10 @@ export default function Penjahit() {
       nik: item.nik || '',
       nama: item.nama || '',
       kategori: item.kategori || 'Borongan',
-      spesialisasi: item.spesialisasi || 'Jahit Kaos & Busana',
-      tarifPerPcs: Number(item.tarifPerPcs) || 3500,
+      bagian: item.bagian || 'Penjahit',
       telepon: item.telepon || '',
       status: item.status || 'Aktif',
-      catatan: item.catatan || '',
+      tanggalMasuk: item.tanggalMasuk || new Date().toISOString().slice(0, 10),
     });
     setEditingId(item.id);
     setModalMode('edit');
@@ -122,21 +136,26 @@ export default function Penjahit() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        bagian: 'Penjahit',
+      };
+
       if (modalMode === 'create') {
-        await api.createPenjahit(formData);
+        await api.createEmployee(payload);
         Swal.fire({
           icon: 'success',
           title: 'Berhasil Ditambahkan',
-          text: `Penjahit ${formData.nama} berhasil didaftarkan.`,
+          text: `Penjahit ${formData.nama} berhasil didaftarkan ke Data Karyawan.`,
           timer: 1500,
           showConfirmButton: false,
         });
       } else {
-        await api.updatePenjahit(editingId, formData);
+        await api.updateEmployee(editingId, payload);
         Swal.fire({
           icon: 'success',
           title: 'Berhasil Diperbarui',
-          text: `Data ${formData.nama} telah diupdate.`,
+          text: `Data ${formData.nama} telah diupdate di Data Karyawan.`,
           timer: 1500,
           showConfirmButton: false,
         });
@@ -151,7 +170,7 @@ export default function Penjahit() {
   const handleDelete = async (item) => {
     const res = await Swal.fire({
       title: 'Hapus Penjahit?',
-      text: `Apakah Anda yakin ingin menghapus "${item.nama}" dari data penjahit?`,
+      text: `Apakah Anda yakin ingin menghapus "${item.nama}" dari Data Karyawan?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#e11d48',
@@ -162,12 +181,12 @@ export default function Penjahit() {
 
     if (res.isConfirmed) {
       try {
-        await api.deletePenjahit(item.id);
+        await api.deleteEmployee(item.id);
         await fetchData();
         Swal.fire({
           icon: 'success',
           title: 'Dihapus',
-          text: 'Data penjahit berhasil dihapus.',
+          text: 'Data penjahit berhasil dihapus dari Data Karyawan.',
           timer: 1400,
           showConfirmButton: false,
         });
@@ -205,7 +224,7 @@ export default function Penjahit() {
               </span>
             </div>
             <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
-              Kelola daftar penjahit borongan & tetap, tarif standar per pcs, dan spesialisasi perakitan
+              Data terintegrasi langsung dengan Data Master Karyawan (Bagian Penjahit)
             </p>
           </div>
         </div>
@@ -348,9 +367,9 @@ export default function Penjahit() {
                 <th className="py-2 px-3 whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">KODE / NIK</th>
                 <th className="py-2 px-3 whitespace-nowrap min-w-[160px] border border-[#cbd5e1]">NAMA PENJAHIT</th>
                 <th className="py-2 px-3 whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">KATEGORI</th>
-                <th className="py-2 px-3 min-w-[200px] border border-[#cbd5e1]">SPESIALISASI JAHIT</th>
-                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[120px] border border-[#cbd5e1]">TARIF PER PCS</th>
+                <th className="py-2 px-3 min-w-[140px] border border-[#cbd5e1]">BAGIAN / DIVISI</th>
                 <th className="py-2 px-3 whitespace-nowrap min-w-[130px] border border-[#cbd5e1]">KONTAK / HP</th>
+                <th className="py-2 px-3 whitespace-nowrap min-w-[110px] border border-[#cbd5e1]">TGL MASUK</th>
                 <th className="py-2 px-3 text-center whitespace-nowrap min-w-[90px] border border-[#cbd5e1]">STATUS</th>
                 <th className="py-2 px-2.5 text-center whitespace-nowrap min-w-[100px] border border-[#cbd5e1]">AKSI</th>
               </tr>
@@ -359,7 +378,7 @@ export default function Penjahit() {
               {filteredList.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="py-8 text-center text-slate-400 border border-[#cbd5e1]">
-                    {loading ? 'Memuat data penjahit...' : 'Tidak ada data penjahit yang sesuai.'}
+                    {loading ? 'Memuat data penjahit dari Data Karyawan...' : 'Tidak ada data penjahit di Data Karyawan.'}
                   </td>
                 </tr>
               ) : (
@@ -380,13 +399,15 @@ export default function Penjahit() {
                       </span>
                     </td>
                     <td className="py-2 px-3 text-slate-600 border border-[#cbd5e1]">
-                      {item.spesialisasi}
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono font-bold text-emerald-700 border border-[#cbd5e1]">
-                      Rp {Number(item.tarifPerPcs).toLocaleString('id-ID')}
+                      <span className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-slate-100 text-slate-700">
+                        {item.bagian || 'Penjahit'}
+                      </span>
                     </td>
                     <td className="py-2 px-3 font-mono text-slate-600 border border-[#cbd5e1]">
                       {item.telepon || '-'}
+                    </td>
+                    <td className="py-2 px-3 text-slate-600 border border-[#cbd5e1]">
+                      {item.tanggalMasuk ? String(item.tanggalMasuk).slice(0, 10) : '-'}
                     </td>
                     <td className="py-2 px-3 text-center border border-[#cbd5e1]">
                       <span
@@ -500,20 +521,6 @@ export default function Penjahit() {
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tarif Upah Jahit (per Pcs)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={formData.tarifPerPcs}
-                    onChange={(e) => setFormData({ ...formData, tarifPerPcs: Number(e.target.value) })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-mono font-bold focus:outline-none focus:border-purple-600 text-right"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Status
                   </label>
                   <select
@@ -525,19 +532,18 @@ export default function Penjahit() {
                     <option value="Non-Aktif">Non-Aktif</option>
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Spesialisasi Jahitan
-                </label>
-                <input
-                  type="text"
-                  placeholder="Cth: Kaos Oblong, Gamis Syar'i, Kemeja Pria, Obras, Stik Balik"
-                  value={formData.spesialisasi}
-                  onChange={(e) => setFormData({ ...formData, spesialisasi: e.target.value })}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-purple-600"
-                />
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Tanggal Masuk
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.tanggalMasuk}
+                    onChange={(e) => setFormData({ ...formData, tanggalMasuk: e.target.value })}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-purple-600"
+                  />
+                </div>
               </div>
 
               <div>
@@ -549,19 +555,6 @@ export default function Penjahit() {
                   placeholder="0812-xxxx-xxxx"
                   value={formData.telepon}
                   onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-purple-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Catatan (Opsional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Cth: Mesin sendiri, bisa lembur malam"
-                  value={formData.catatan}
-                  onChange={(e) => setFormData({ ...formData, catatan: e.target.value })}
                   className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-purple-600"
                 />
               </div>

@@ -365,7 +365,12 @@ export default function App() {
               onDeleteCategory={handleDeleteCategory}
             />
           )}
-          {activeMenu === 'penjahit' && <Penjahit />}
+          {activeMenu === 'penjahit' && (
+            <Penjahit
+              employees={employees}
+              setEmployees={setEmployees}
+            />
+          )}
           {activeMenu === 'tim-finishing' && <TimFinishing />}
           {activeMenu === 'employees' && (
             <Karyawan

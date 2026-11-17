@@ -168,15 +168,32 @@ async function initMysql() {
       `);
     } catch (_) {}
 
-    // Pastikan data awal tabel penjahit tersedia
+    // Migrasi data penjahit ke employees & hapus tabel terpisah penjahit
     try {
-      const [penjahitRows] = await connection.query("SELECT COUNT(*) as cnt FROM penjahit");
-      if (penjahitRows[0].cnt === 0) {
+      const [tableCheck] = await connection.query(
+        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'penjahit' AND TABLE_SCHEMA = DATABASE()"
+      );
+      if (tableCheck && tableCheck.length > 0) {
         await connection.query(`
-          INSERT IGNORE INTO penjahit (nik, nama, kategori, spesialisasi, tarif_per_pcs, telepon) VALUES
-          ('JHT-001', 'CEPI', 'Borongan', 'Jahit Kaos & Busana', 3500, '0812-1111-2222'),
-          ('JHT-002', 'Siti Aminah', 'Tetap', 'Jahit Gamis & Obras', 3500, '0813-2222-3333'),
-          ('JHT-003', 'Budi Santoso', 'Borongan', 'Perakitan & Stik Balik', 3500, '0815-3333-4444')
+          INSERT IGNORE INTO employees (nik, nama, kategori, bagian, status, telepon, tanggal_masuk)
+          SELECT nik, nama, kategori, 'Penjahit', status, telepon, CURRENT_DATE FROM penjahit
+        `);
+        await connection.query("DROP TABLE IF EXISTS penjahit");
+        console.log("✅ Data penjahit berhasil digabungkan ke tabel employees dan tabel penjahit lama telah dibersihkan");
+      }
+    } catch (_) {}
+
+    // Pastikan karyawan dengan bagian Penjahit tersedia di tabel employees
+    try {
+      const [jahitEmpRows] = await connection.query(
+        "SELECT COUNT(*) as cnt FROM employees WHERE LOWER(bagian) LIKE '%jahit%' OR LOWER(bagian) LIKE '%penjahit%'"
+      );
+      if (jahitEmpRows[0].cnt === 0) {
+        await connection.query(`
+          INSERT IGNORE INTO employees (nik, nama, kategori, bagian, status, telepon, tanggal_masuk) VALUES
+          ('JHT-001', 'CEPI', 'Borongan', 'Penjahit', 'Aktif', '0812-1111-2222', CURRENT_DATE),
+          ('JHT-002', 'Siti Aminah', 'Tetap', 'Penjahit', 'Aktif', '0813-2222-3333', CURRENT_DATE),
+          ('JHT-003', 'Budi Santoso', 'Borongan', 'Penjahit', 'Aktif', '0815-3333-4444', CURRENT_DATE)
         `);
       }
     } catch (_) {}

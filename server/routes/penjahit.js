@@ -3,50 +3,51 @@ import db from '../db/database.js';
 
 const router = Router();
 
-// GET all penjahit
+// GET all penjahit (diambil langsung dari data karyawan / employees)
 router.get('/', async (req, res) => {
   try {
-    const rows = await db.all('SELECT * FROM penjahit ORDER BY id ASC');
+    const rows = await db.all("SELECT * FROM employees WHERE LOWER(bagian) LIKE '%jahit%' OR LOWER(bagian) LIKE '%penjahit%' ORDER BY id ASC");
     res.json(rows.map(r => ({
       id: r.id,
       nik: r.nik,
       nama: r.nama,
       kategori: r.kategori || 'Borongan',
-      spesialisasi: r.spesialisasi || 'Jahit Kaos & Busana',
-      tarifPerPcs: Number(r.tarif_per_pcs) || 3500,
+      bagian: r.bagian || 'Penjahit',
+      spesialisasi: r.bagian || 'Penjahit',
+      tarifPerPcs: 3500,
       telepon: r.telepon || '',
       status: r.status || 'Aktif',
-      catatan: r.catatan || '',
-      createdAt: r.created_at
+      tanggalMasuk: r.tanggal_masuk,
+      catatan: ''
     })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST create penjahit
+// POST create penjahit (disimpan langsung ke tabel employees dengan bagian 'Penjahit')
 router.post('/', async (req, res) => {
-  const { nik, nama, kategori, spesialisasi, tarifPerPcs, telepon, status, catatan } = req.body;
+  const { nik, nama, kategori, status, telepon, tanggalMasuk } = req.body;
   try {
     const autoNik = nik || `JHT-${Date.now().toString().slice(-4)}`;
     const info = await db.run(
-      'INSERT INTO penjahit (nik, nama, kategori, spesialisasi, tarif_per_pcs, telepon, status, catatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [autoNik, nama, kategori || 'Borongan', spesialisasi || 'Jahit', Number(tarifPerPcs) || 3500, telepon || null, status || 'Aktif', catatan || null]
+      'INSERT INTO employees (nik, nama, kategori, bagian, status, telepon, tanggal_masuk) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [autoNik, nama, kategori || 'Borongan', 'Penjahit', status || 'Aktif', telepon || null, tanggalMasuk || null]
     );
-    res.status(201).json({ id: Number(info.insertId), ...req.body, nik: autoNik });
+    res.status(201).json({ id: Number(info.insertId), ...req.body, nik: autoNik, bagian: 'Penjahit' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// PUT update penjahit
+// PUT update penjahit (update data ke tabel employees)
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { nik, nama, kategori, spesialisasi, tarifPerPcs, telepon, status, catatan } = req.body;
+  const { nik, nama, kategori, status, telepon, tanggalMasuk } = req.body;
   try {
     await db.run(
-      'UPDATE penjahit SET nik = ?, nama = ?, kategori = ?, spesialisasi = ?, tarif_per_pcs = ?, telepon = ?, status = ?, catatan = ? WHERE id = ?',
-      [nik, nama, kategori, spesialisasi, Number(tarifPerPcs) || 3500, telepon || null, status || 'Aktif', catatan || null, id]
+      "UPDATE employees SET nik = ?, nama = ?, kategori = ?, bagian = 'Penjahit', status = ?, telepon = ?, tanggal_masuk = ? WHERE id = ?",
+      [nik, nama, kategori, status || 'Aktif', telepon || null, tanggalMasuk || null, id]
     );
     res.json({ success: true, id: Number(id) });
   } catch (err) {
@@ -54,10 +55,10 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE penjahit
+// DELETE penjahit (hapus dari tabel employees)
 router.delete('/:id', async (req, res) => {
   try {
-    await db.run('DELETE FROM penjahit WHERE id = ?', [req.params.id]);
+    await db.run('DELETE FROM employees WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });

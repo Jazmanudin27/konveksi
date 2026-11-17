@@ -79,7 +79,8 @@ export default function Antrean({
   const [shareTrackingItem, setShareTrackingItem] = useState(null);
 
   // State Manajemen List Tim Finishing
-  const [timFinishingList, setTimFinishingList] = useState(propTimFinishingList);
+  const [timFinishingList, setTimFinishingList] =
+    useState(propTimFinishingList);
 
   useEffect(() => {
     if (propTimFinishingList && propTimFinishingList.length > 0) {

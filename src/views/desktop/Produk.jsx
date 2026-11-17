@@ -86,11 +86,27 @@ export default function Produk({
   products: propProducts,
   setProducts: propSetProducts,
   categories: propCategories = [],
+  bahan: propBahan = [],
 }) {
   const [localProducts, setLocalProducts] = useState([]);
   const products = propProducts || localProducts;
   const setProducts = propSetProducts || setLocalProducts;
   const categories = propCategories;
+
+  // Bahan Baku State & Loader
+  const [bahanList, setBahanList] = useState(propBahan || []);
+
+  useEffect(() => {
+    if (propBahan && propBahan.length > 0) {
+      setBahanList(propBahan);
+    } else {
+      api.getBahan()
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) setBahanList(data);
+        })
+        .catch(() => {});
+    }
+  }, [propBahan]);
 
   // Filter States
   const [activeTab, setActiveTab] = useState("ALL");
@@ -520,11 +536,17 @@ export default function Produk({
               className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#cbd5e1] rounded-md focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
             >
               <option value="">Semua Bahan Kain</option>
-              {BAHAN_OPTIONS.map((b) => (
-                <option key={b.code} value={b.code}>
-                  {b.name}
-                </option>
-              ))}
+              {bahanList && bahanList.length > 0
+                ? bahanList.map((b) => (
+                    <option key={b.id || b.kodeBahan} value={b.kodeBahan}>
+                      {b.kodeBahan} - {b.namaBahan}
+                    </option>
+                  ))
+                : BAHAN_OPTIONS.map((b) => (
+                    <option key={b.code} value={b.code}>
+                      {b.name}
+                    </option>
+                  ))}
             </select>
           </div>
         </div>
@@ -604,27 +626,29 @@ export default function Produk({
           </button>
         </div>
 
-        {(viewMode === "master" || viewMode === "etalase") && (
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <span className="text-[11px] text-slate-500 font-medium mr-1 hidden md:inline">
-              {filteredProducts.length} varian dalam {groupedSkuIndukList.length} SKU Induk
-            </span>
-            <button
-              type="button"
-              onClick={() => expandAll(true)}
-              className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
-            >
-              Buka Semua
-            </button>
-            <button
-              type="button"
-              onClick={() => expandAll(false)}
-              className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
-            >
-              Tutup Semua
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <span className="text-[11px] text-slate-500 font-medium mr-1 hidden md:inline">
+            {filteredProducts.length} varian dalam {groupedSkuIndukList.length} SKU Induk
+          </span>
+          {viewMode === "etalase" && (
+            <>
+              <button
+                type="button"
+                onClick={() => expandAll(true)}
+                className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
+              >
+                Buka Semua
+              </button>
+              <button
+                type="button"
+                onClick={() => expandAll(false)}
+                className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer shadow-2xs"
+              >
+                Tutup Semua
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ================= KONTEN SESUAI VIEW MODE ================= */}
@@ -644,7 +668,7 @@ export default function Produk({
                   <th className="py-2 px-2.5 text-center w-28 border border-[#cbd5e1]">TOTAL VARIAN</th>
                   <th className="py-2 px-2.5 text-center w-24 border border-[#cbd5e1]">TOTAL STOK</th>
                   <th className="py-2 px-2.5 text-center w-20 border border-[#cbd5e1]">STATUS</th>
-                  <th className="py-2 px-2.5 text-center w-36 border border-[#cbd5e1]">AKSI</th>
+                  <th className="py-2 px-2.5 text-center w-28 border border-[#cbd5e1]">AKSI</th>
                 </tr>
               </thead>
               <tbody className="font-medium text-slate-700">
@@ -656,261 +680,110 @@ export default function Produk({
                     </td>
                   </tr>
                 ) : (
-                  groupedSkuIndukList.map((group, idx) => {
-                    const expanded = isExpanded(group.skuInduk);
+                  groupedSkuIndukList.map((group, idx) => (
+                    <tr key={group.skuInduk} className="hover:bg-[#f1f5f9] transition-colors">
+                      {/* NO */}
+                      <td className="py-[2px] px-2 text-center text-slate-500 font-semibold text-[11px] border border-[#cbd5e1]">
+                        {idx + 1}
+                      </td>
 
-                    return (
-                      <React.Fragment key={group.skuInduk}>
-                        <tr className="hover:bg-[#f1f5f9] transition-colors">
-                          {/* NO */}
-                          <td className="py-[2px] px-2 text-center text-slate-500 font-semibold text-[11px] border border-[#cbd5e1]">
-                            {idx + 1}
-                          </td>
+                      {/* KODE / SKU INDUK */}
+                      <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
+                        <span className="font-mono font-bold text-[11px] text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 inline-block">
+                          {group.skuInduk}
+                        </span>
+                      </td>
 
-                          {/* KODE / SKU INDUK */}
-                          <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
-                            <span className="font-mono font-bold text-[11px] text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200 inline-block">
-                              {group.skuInduk}
-                            </span>
-                          </td>
+                      {/* NAMA PRODUK */}
+                      <td className="py-[2px] px-2.5 font-bold text-[#0f172a] text-xs border border-[#cbd5e1]">
+                        <div className="flex items-center gap-1.5">
+                          <Shirt className="w-3.5 h-3.5 text-[#0284c7] shrink-0" />
+                          <span className="truncate max-w-xs" title={group.namaProduk}>
+                            {group.namaProduk}
+                          </span>
+                        </div>
+                      </td>
 
-                          {/* NAMA PRODUK */}
-                          <td className="py-[2px] px-2.5 font-bold text-[#0f172a] text-xs border border-[#cbd5e1]">
-                            <div className="flex items-center gap-1.5">
-                              <Shirt className="w-3.5 h-3.5 text-[#0284c7] shrink-0" />
-                              <span className="truncate max-w-xs" title={group.namaProduk}>
-                                {group.namaProduk}
-                              </span>
-                            </div>
-                          </td>
+                      {/* KATEGORI */}
+                      <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
+                        <span className="text-[10.5px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                          {group.kategori}
+                        </span>
+                      </td>
 
-                          {/* KATEGORI */}
-                          <td className="py-[2px] px-2.5 border border-[#cbd5e1]">
-                            <span className="text-[10.5px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                              {group.kategori}
-                            </span>
-                          </td>
+                      {/* BAHAN KAIN */}
+                      <td className="py-[2px] px-2.5 text-slate-600 font-mono text-[11px] border border-[#cbd5e1]">
+                        {group.skuBahan || '-'}
+                      </td>
 
-                          {/* BAHAN KAIN */}
-                          <td className="py-[2px] px-2.5 text-slate-600 font-mono text-[11px] border border-[#cbd5e1]">
-                            {group.skuBahan || '-'}
-                          </td>
+                      {/* ONGKOS POTONG */}
+                      <td className="py-[2px] px-2.5 text-right font-mono font-bold text-[#0369a1] text-[11.5px] border border-[#cbd5e1] bg-sky-50/30">
+                        Rp {group.minPotong.toLocaleString('id-ID')}
+                      </td>
 
-                          {/* ONGKOS POTONG */}
-                          <td className="py-[2px] px-2.5 text-right font-mono font-bold text-[#0369a1] text-[11.5px] border border-[#cbd5e1] bg-sky-50/30">
-                            Rp {group.minPotong.toLocaleString('id-ID')}
-                          </td>
+                      {/* TOTAL VARIAN */}
+                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-[#cbd5e1] text-[10.5px] font-bold">
+                          {group.variants.length} Varian
+                        </span>
+                      </td>
 
-                          {/* TOTAL VARIAN */}
-                          <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
-                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-[#cbd5e1] text-[10.5px] font-bold">
-                              {group.variants.length} Varian
-                            </span>
-                          </td>
+                      {/* TOTAL STOK */}
+                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full font-mono text-[10.5px] font-bold border ${
+                            group.totalStok > 10
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : group.totalStok > 0
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-rose-50 text-rose-700 border-rose-200'
+                          }`}
+                        >
+                          {group.totalStok.toLocaleString('id-ID')} Pcs
+                        </span>
+                      </td>
 
-                          {/* TOTAL STOK */}
-                          <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded-full font-mono text-[10.5px] font-bold border ${
-                                group.totalStok > 10
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : group.totalStok > 0
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : 'bg-rose-50 text-rose-700 border-rose-200'
-                              }`}
-                            >
-                              {group.totalStok.toLocaleString('id-ID')} Pcs
-                            </span>
-                          </td>
+                      {/* STATUS */}
+                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                        <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                          Aktif
+                        </span>
+                      </td>
 
-                          {/* STATUS */}
-                          <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
-                            <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
-                              Aktif
-                            </span>
-                          </td>
+                      {/* AKSI */}
+                      <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* Tombol Detail / Show */}
+                          <button
+                            type="button"
+                            onClick={() => setDetailGroup(group)}
+                            className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-[#0284c7] border border-sky-200 rounded text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
+                            title="Tampilkan rincian varian dengan SKU berbeda"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-[#0284c7]" />
+                            <span>Detail</span>
+                          </button>
 
-                          {/* AKSI */}
-                          <td className="py-[2px] px-2.5 text-center border border-[#cbd5e1]">
-                            <div className="flex items-center justify-center gap-1.5">
-                              {/* Tombol Detail / Show */}
-                              <button
-                                type="button"
-                                onClick={() => setDetailGroup(group)}
-                                className="px-2 py-1 bg-sky-50 hover:bg-sky-100 text-[#0284c7] border border-sky-200 rounded text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
-                                title="Tampilkan rincian varian dengan SKU berbeda"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-[#0284c7]" />
-                                <span>Detail</span>
-                              </button>
-
-                              {/* Tombol Toggle Accordion Inline */}
-                              <button
-                                type="button"
-                                onClick={() => toggleExpand(group.skuInduk)}
-                                className={`p-1 rounded border transition-colors cursor-pointer ${
-                                  expanded
-                                    ? 'bg-sky-100 text-sky-800 border-sky-300'
-                                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'
-                                }`}
-                                title={expanded ? 'Tutup rincian baris' : 'Buka rincian baris di bawah'}
-                              >
-                                {expanded ? (
-                                  <ChevronDown className="w-3.5 h-3.5" />
-                                ) : (
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-
-                              {/* Tambah Varian */}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleOpenCreate({
-                                    skuInduk: group.skuInduk,
-                                    namaProduk: group.namaProduk,
-                                    kategori: group.kategori,
-                                    skuBahan: group.skuBahan,
-                                  })
-                                }
-                                className="p-1 rounded bg-slate-50 hover:bg-emerald-50 text-slate-500 hover:text-emerald-700 border border-slate-200 transition-colors cursor-pointer"
-                                title="Tambah Varian Baru ke SKU Induk ini"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-
-                        {/* INLINE EXPANDED SUB-TABLE */}
-                        {expanded && (
-                          <tr className="bg-slate-50/70">
-                            <td colSpan="10" className="p-2.5 border border-[#cbd5e1]">
-                              <div className="bg-white border border-[#cbd5e1] rounded-md overflow-hidden shadow-2xs">
-                                <div className="p-2 bg-[#f8fafc] border-b border-[#cbd5e1] flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-bold text-xs text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                                      {group.skuInduk}
-                                    </span>
-                                    <span className="text-xs font-bold text-slate-800">
-                                      Rincian {group.variants.length} Varian dengan SKU Berbeda
-                                    </span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleOpenCreate({
-                                        skuInduk: group.skuInduk,
-                                        namaProduk: group.namaProduk,
-                                        kategori: group.kategori,
-                                        skuBahan: group.skuBahan,
-                                      })
-                                    }
-                                    className="flex items-center gap-1 px-2.5 py-1 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded text-xs font-bold shadow-2xs cursor-pointer"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    <span>+ Tambah Varian</span>
-                                  </button>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-left text-xs border-collapse border border-[#cbd5e1]">
-                                    <thead>
-                                      <tr className="bg-slate-100/90 text-[#475569] font-bold text-[10px] uppercase border-b border-[#cbd5e1] divide-x divide-[#cbd5e1]">
-                                        <th className="py-1.5 px-2.5 w-10 text-center border-r border-[#cbd5e1]">NO</th>
-                                        <th className="py-1.5 px-2.5 w-44 border-r border-[#cbd5e1]">SKU VARIAN</th>
-                                        <th className="py-1.5 px-2.5 border-r border-[#cbd5e1]">VARIAN & WARNA</th>
-                                        <th className="py-1.5 px-2.5 text-center w-20 border-r border-[#cbd5e1]">UKURAN</th>
-                                        <th className="py-1.5 px-2.5 text-right w-28 border-r border-[#cbd5e1]">HARGA JUAL</th>
-                                        <th className="py-1.5 px-2.5 text-right w-28 border-r border-[#cbd5e1] bg-sky-50/50 text-[#0369a1]">
-                                          ONGKOS POTONG
-                                        </th>
-                                        <th className="py-1.5 px-2.5 text-center w-24 border-r border-[#cbd5e1]">STOK</th>
-                                        <th className="py-1.5 px-2.5 text-center w-20 border-r border-[#cbd5e1]">STATUS</th>
-                                        <th className="py-1.5 px-2.5 text-center w-24">AKSI</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[#cbd5e1] font-medium text-slate-700">
-                                      {group.variants.map((v, vIdx) => {
-                                        const smartColor = getSmartColorHex(v.varian, v.warnaHex);
-                                        const catMatch = categories.find((c) => c.nama === v.kategori);
-                                        const hargaPotongVal = Number(
-                                          v.hargaPotong !== undefined && v.hargaPotong !== null && Number(v.hargaPotong) > 0
-                                            ? v.hargaPotong
-                                            : catMatch && catMatch.hargaPotong
-                                            ? catMatch.hargaPotong
-                                            : HARGA_POTONG_MAP[v.kategori?.toUpperCase()] || 0
-                                        );
-
-                                        return (
-                                          <tr key={v.id} className="hover:bg-[#f1f5f9] transition-colors divide-x divide-[#cbd5e1]">
-                                            <td className="py-1.5 px-2.5 text-center text-slate-400 font-mono text-[11px] border-r border-[#cbd5e1]">
-                                              {vIdx + 1}
-                                            </td>
-                                            <td className="py-1.5 px-2.5 font-mono font-bold text-sky-700 text-xs border-r border-[#cbd5e1]">
-                                              {v.sku}
-                                            </td>
-                                            <td className="py-1.5 px-2.5 border-r border-[#cbd5e1]">
-                                              <div className="flex items-center gap-2">
-                                                <span
-                                                  className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0 ring-1 ring-white"
-                                                  style={{ backgroundColor: smartColor }}
-                                                />
-                                                <span className="font-semibold text-slate-800 text-xs">
-                                                  {v.varian || '-'}
-                                                </span>
-                                              </div>
-                                            </td>
-                                            <td className="py-1.5 px-2.5 text-center font-mono font-bold text-xs border-r border-[#cbd5e1]">
-                                              {v.ukuran || '-'}
-                                            </td>
-                                            <td className="py-1.5 px-2.5 text-right font-mono font-bold text-slate-800 text-xs border-r border-[#cbd5e1]">
-                                              Rp {Number(v.harga || 0).toLocaleString('id-ID')}
-                                            </td>
-                                            <td className="py-1.5 px-2.5 text-right font-mono font-bold text-[#0369a1] text-xs bg-sky-50/30 border-r border-[#cbd5e1]">
-                                              Rp {hargaPotongVal.toLocaleString('id-ID')}
-                                            </td>
-                                            <td className="py-1.5 px-2.5 text-center font-mono font-bold text-xs border-r border-[#cbd5e1]">
-                                              {Number(v.stok || 0)} Pcs
-                                            </td>
-                                            <td className="py-1.5 px-2.5 text-center border-r border-[#cbd5e1]">
-                                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getBadgeClass(v.status)}`}>
-                                                {v.status || 'Aktif'}
-                                              </span>
-                                            </td>
-                                            <td className="py-1.5 px-2.5 text-center">
-                                              <div className="flex items-center justify-center gap-1">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleOpenEdit(v)}
-                                                  className="p-1 rounded text-slate-500 hover:text-amber-600 hover:bg-amber-50 cursor-pointer"
-                                                  title="Edit Varian"
-                                                >
-                                                  <Edit3 className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleDeleteProductPrompt(v)}
-                                                  className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
-                                                  title="Hapus Varian"
-                                                >
-                                                  <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                              </div>
-                                            </td>
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })
+                          {/* Tambah Varian */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleOpenCreate({
+                                skuInduk: group.skuInduk,
+                                namaProduk: group.namaProduk,
+                                kategori: group.kategori,
+                                skuBahan: group.skuBahan,
+                              })
+                            }
+                            className="p-1 rounded bg-slate-50 hover:bg-emerald-50 text-slate-500 hover:text-emerald-700 border border-slate-200 transition-colors cursor-pointer"
+                            title="Tambah Varian Baru ke SKU Induk ini"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -1829,6 +1702,7 @@ export default function Produk({
           allSkuIndukList={allSkuIndukList}
           categories={categories}
           sizes={sizes}
+          bahanList={bahanList}
           onOpenManageSizes={() => setIsManageSizesOpen(true)}
           onClose={() => {
             setModalMode(null);
@@ -2105,6 +1979,7 @@ function FormModalProduk({
   onSave,
   categories = [],
   sizes = [],
+  bahanList = [],
   onOpenManageSizes,
 }) {
   const [formData, setFormData] = useState({
@@ -2117,9 +1992,11 @@ function FormModalProduk({
       "",
     sku: editingProduct?.sku || `PRD-${Math.floor(100 + Math.random() * 900)}`,
     skuBahan:
-      editingProduct?.skuBahan ||
-      createPreset?.skuBahan ||
-      "BHN-CT30S-BLK",
+      (editingProduct?.skuBahan && editingProduct.skuBahan !== "-")
+        ? editingProduct.skuBahan
+        : (createPreset?.skuBahan && createPreset.skuBahan !== "-")
+        ? createPreset.skuBahan
+        : (bahanList[0]?.kodeBahan || "BHN-CT30S-BLK"),
     namaProduk:
       editingProduct?.namaProduk ||
       createPreset?.namaProduk ||
@@ -2306,22 +2183,46 @@ function FormModalProduk({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-0.5">
-                    SKU Bahan Kain <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[11px] font-bold text-slate-700">
+                      SKU Bahan Kain <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                      Dari Bahan Baku
+                    </span>
+                  </div>
+                  <select
                     required
                     value={formData.skuBahan}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        skuBahan: e.target.value.toUpperCase(),
+                        skuBahan: e.target.value,
                       })
                     }
-                    placeholder="misal: BHN-CT30S-BLK"
-                    className="w-full h-7 px-2 text-xs font-mono font-bold bg-white border border-slate-300 rounded text-slate-800 focus:outline-none focus:border-[#0284c7]"
-                  />
+                    className="w-full h-7 px-2 text-xs font-mono font-bold bg-white border border-slate-300 rounded text-slate-800 focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                  >
+                    <option value="">-- Pilih dari Bahan Baku --</option>
+                    {bahanList && bahanList.length > 0 ? (
+                      bahanList.map((b) => (
+                        <option key={b.id || b.kodeBahan} value={b.kodeBahan}>
+                          {b.kodeBahan} - {b.namaBahan} (Stok: {b.stok || 0} {b.satuan || ''})
+                        </option>
+                      ))
+                    ) : (
+                      BAHAN_OPTIONS.map((b) => (
+                        <option key={b.code} value={b.code}>
+                          {b.code} - {b.name}
+                        </option>
+                      ))
+                    )}
+                    {formData.skuBahan &&
+                      formData.skuBahan !== '-' &&
+                      !bahanList?.some((b) => b.kodeBahan === formData.skuBahan) &&
+                      !BAHAN_OPTIONS?.some((b) => b.code === formData.skuBahan) && (
+                        <option value={formData.skuBahan}>{formData.skuBahan} (Custom)</option>
+                      )}
+                  </select>
                 </div>
               </div>
 

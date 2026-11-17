@@ -353,6 +353,7 @@ export default function App() {
               products={products}
               setProducts={setProducts}
               categories={categories}
+              bahan={bahan}
             />
           )}
           {activeMenu === 'categories' && (

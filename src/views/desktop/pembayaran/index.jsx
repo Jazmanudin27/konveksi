@@ -638,10 +638,10 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
         <button
           type="button"
           onClick={() => setActiveMainTab("input")}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-2 ${
             activeMainTab === "input"
-              ? "bg-[#0284c7] text-white shadow-xs"
-              : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
+              ? "bg-[#0284c7] text-white border-[#0284c7] shadow-xs"
+              : "bg-white text-slate-800 hover:text-black border-slate-400 shadow-xs"
           }`}
         >
           <CreditCard className="w-3.5 h-3.5" />
@@ -651,10 +651,10 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
         <button
           type="button"
           onClick={() => setActiveMainTab("histori")}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-2 ${
             activeMainTab === "histori"
-              ? "bg-[#0284c7] text-white shadow-xs"
-              : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
+              ? "bg-[#0284c7] text-white border-[#0284c7] shadow-xs"
+              : "bg-white text-slate-800 hover:text-black border-slate-400 shadow-xs"
           }`}
         >
           <History className="w-3.5 h-3.5" />
@@ -663,7 +663,7 @@ export default function PembayaranUpah({ employees = [], antreanList = [] }) {
             className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
               activeMainTab === "histori"
                 ? "bg-white/25 text-white"
-                : "bg-slate-100 text-slate-700"
+                : "bg-slate-200 text-slate-800"
             }`}
           >
             {historiBayarList.length}

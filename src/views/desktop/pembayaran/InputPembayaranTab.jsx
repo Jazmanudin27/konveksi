@@ -35,7 +35,7 @@ export default function InputPembayaranTab({
   return (
     <div className="space-y-3">
       {/* 1. TOOLBAR FILTER & DIVISI SELECTION */}
-      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white border-2 border-slate-400 rounded-xl p-3 shadow-md flex flex-wrap items-center justify-between gap-3">
         {/* Divisi Tabs (Pemotong, Penjahit, QC, Finishing) */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {[
@@ -58,10 +58,10 @@ export default function InputPembayaranTab({
                 key={tab.key}
                 type="button"
                 onClick={() => setSheetTahap(tab.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 border ${
                   isSelected
-                    ? "bg-[#0284c7] text-white shadow-xs"
-                    : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                    ? "bg-[#0284c7] text-white border-[#0284c7] shadow-xs"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300"
                 }`}
               >
                 <IconComponent className="w-3.5 h-3.5" />
@@ -82,7 +82,7 @@ export default function InputPembayaranTab({
 
         {/* Filter Tanggal & Action Bar */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+          <div className="flex items-center gap-1.5 bg-white border border-slate-400 rounded-lg px-2 py-1 shadow-2xs">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-[11px] font-bold text-slate-500">
               Periode:
@@ -106,21 +106,21 @@ export default function InputPembayaranTab({
             <button
               type="button"
               onClick={() => handleSetPresetDate("minggu")}
-              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[11px] font-bold cursor-pointer transition-colors"
+              className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded text-[11px] font-bold cursor-pointer transition-colors shadow-2xs"
             >
               1 Minggu
             </button>
             <button
               type="button"
               onClick={() => handleSetPresetDate("bulan")}
-              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[11px] font-bold cursor-pointer transition-colors"
+              className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded text-[11px] font-bold cursor-pointer transition-colors shadow-2xs"
             >
               Bulan Ini
             </button>
             <button
               type="button"
               onClick={() => handleSetPresetDate("semua")}
-              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[11px] font-bold cursor-pointer transition-colors"
+              className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded text-[11px] font-bold cursor-pointer transition-colors shadow-2xs"
             >
               Semua
             </button>
@@ -129,7 +129,7 @@ export default function InputPembayaranTab({
       </div>
 
       {/* 2. KERTAS SLIP GAJI EMRA PRODUCTION (GOOGLE SHEETS STYLE) */}
-      <div className="w-full max-w-4xl mx-auto bg-white border-2 border-sky-400 p-6 sm:p-8 shadow-sm font-mono text-black select-none">
+      <div className="w-full max-w-4xl mx-auto bg-white border-2 border-slate-800 p-6 sm:p-8 shadow-xl font-mono text-black select-none">
         {/* Header Title & Monogram */}
         <div className="flex items-start justify-between border-b-2 border-black pb-3">
           <div className="space-y-1">

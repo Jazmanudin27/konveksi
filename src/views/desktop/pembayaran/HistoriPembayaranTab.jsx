@@ -32,7 +32,7 @@ export default function HistoriPembayaranTab({
   return (
     <div className="space-y-3">
       {/* Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white border-2 border-slate-400 rounded-xl p-3 shadow-md flex flex-wrap items-center justify-between gap-3">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input

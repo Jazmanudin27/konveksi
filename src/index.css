@@ -15,9 +15,26 @@ body {
 /* Card & Table Contrast Helpers */
 .pm-card {
   background-color: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1.5px solid #94a3b8;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+/* Pastikan semua border card dan elemen berlatar putih memiliki kontras tegas terhadap background */
+.border-slate-100,
+.border-slate-200,
+.border-slate-300,
+.border-\[\#cbd5e1\] {
+  border-color: #94a3b8 !important; /* Slate-400: garis batas jelas & tegas */
+}
+
+/* Berikan shadow dan outline tegas pada kartu-kartu putih agar jelas memisah dari background */
+.pm-card,
+div[class*="bg-white"][class*="rounded-xl"],
+div[class*="bg-white"][class*="rounded-2xl"],
+div[class*="bg-white"][class*="rounded-lg"] {
+  border-color: #94a3b8;
+  box-shadow: 0 2px 5px -1px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
 }
 
 .pm-header-gradient {

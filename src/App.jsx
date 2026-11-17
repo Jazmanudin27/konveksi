@@ -318,7 +318,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#edf1f7] font-sans text-slate-800">
+    <div className="flex h-screen overflow-hidden bg-[#e2e8f0] font-sans text-slate-800">
       {/* Sidebar Drawer Navigasi (Slide-over, Fullscreen default) */}
       <Sidebar
         isOpen={sidebarOpen}

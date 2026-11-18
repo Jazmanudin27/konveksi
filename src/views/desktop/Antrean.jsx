@@ -419,6 +419,15 @@ export default function Antrean({
     defaultSatuan = "Pcs",
     defaultHarga = 0,
   ) => {
+    if (!formData.sku) {
+      Swal.fire({
+        icon: "warning",
+        title: "Pilih Produk Dahulu",
+        text: "Silakan pilih produk (SKU) terlebih dahulu sebelum menambah kebutuhan bahan baku.",
+        confirmButtonColor: "#059669",
+      });
+      return;
+    }
     let matchedHarga = defaultHarga;
     let matchedSatuan = defaultSatuan;
     if (defaultName) {
@@ -3137,53 +3146,55 @@ export default function Antrean({
                   </div>
 
                   {/* Quick Preset Buttons */}
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <span className="text-[9px] font-bold text-slate-400">
-                      Tambah Cepat:
-                    </span>
-                    {[
-                      { label: "+ Kancing", nama: "Kancing", satuan: "Pcs" },
-                      {
-                        label: "+ Resleting",
-                        nama: "Resleting",
-                        satuan: "Pcs",
-                      },
-                      {
-                        label: "+ Karet",
-                        nama: "Karet Elastis",
-                        satuan: "Meter",
-                      },
-                      {
-                        label: "+ Benang",
-                        nama: "Benang Jahit",
-                        satuan: "Cone",
-                      },
-                      {
-                        label: "+ Hangtag",
-                        nama: "Hangtag / Label",
-                        satuan: "Pcs",
-                      },
-                    ].map((preset) => (
+                  {formData.sku && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[9px] font-bold text-slate-400">
+                        Tambah Cepat:
+                      </span>
+                      {[
+                        { label: "+ Kancing", nama: "Kancing", satuan: "Pcs" },
+                        {
+                          label: "+ Resleting",
+                          nama: "Resleting",
+                          satuan: "Pcs",
+                        },
+                        {
+                          label: "+ Karet",
+                          nama: "Karet Elastis",
+                          satuan: "Meter",
+                        },
+                        {
+                          label: "+ Benang",
+                          nama: "Benang Jahit",
+                          satuan: "Cone",
+                        },
+                        {
+                          label: "+ Hangtag",
+                          nama: "Hangtag / Label",
+                          satuan: "Pcs",
+                        },
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() =>
+                            handleAddKebutuhanBahan(preset.nama, preset.satuan)
+                          }
+                          className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-[#0284c7] border border-slate-300 transition-colors cursor-pointer"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
                       <button
-                        key={preset.label}
                         type="button"
-                        onClick={() =>
-                          handleAddKebutuhanBahan(preset.nama, preset.satuan)
-                        }
-                        className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-[#0284c7] border border-slate-300 transition-colors cursor-pointer"
+                        onClick={() => handleAddKebutuhanBahan("", "Pcs")}
+                        className="px-2 py-0.5 rounded text-[9.5px] font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                       >
-                        {preset.label}
+                        <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                        <span>Tambah Bahan</span>
                       </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => handleAddKebutuhanBahan("", "Pcs")}
-                      className="px-2 py-0.5 rounded text-[9.5px] font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-                    >
-                      <Plus className="w-2.5 h-2.5 stroke-[3]" />
-                      <span>Tambah Bahan</span>
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Datalist Master Bahan untuk rekomendasi autocomplete */}
@@ -3199,8 +3210,16 @@ export default function Antrean({
                 </datalist>
 
                 {/* Tabel Kebutuhan Bahan atau Empty Notice */}
-                {!formData.kebutuhanBahan ||
-                formData.kebutuhanBahan.length === 0 ? (
+                {!formData.sku ? (
+                  <div className="py-4 px-3 text-center bg-slate-50/80 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs space-y-1">
+                    <Boxes className="w-5 h-5 text-slate-400 mx-auto" />
+                    <p className="font-bold text-slate-700">Pilih Produk (SKU) Terlebih Dahulu</p>
+                    <p className="text-[10px] text-slate-400">
+                      Kebutuhan bahan baku baru dapat diisi setelah produk dipilih.
+                    </p>
+                  </div>
+                ) : (!formData.kebutuhanBahan ||
+                formData.kebutuhanBahan.length === 0) ? (
                   <div className="py-3 px-3 text-center bg-slate-50/80 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs">
                     <p className="font-semibold text-slate-700">
                       Belum ada rincian bahan/aksesoris khusus.

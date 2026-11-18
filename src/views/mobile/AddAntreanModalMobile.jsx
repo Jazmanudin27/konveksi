@@ -594,26 +594,24 @@ export default function AddAntreanModalMobile({
         return false;
       }
     }
+    setKebutuhanBahan([]);
     return false;
   };
 
-  // Inisialisasi awal bahan jika masterBahanList telah termuat dan belum ada SKU
+  // Reset form dan kebutuhan bahan saat modal ditutup
   useEffect(() => {
-    if (masterBahanList.length > 0 && kebutuhanBahan.length === 0 && !form.sku) {
-      const first = masterBahanList[0];
-      setKebutuhanBahan([
-        {
-          id: Date.now(),
-          kodeBahan: first.kodeBahan || '',
-          namaBahan: first.namaBahan || '',
-          satuan: first.satuan || 'Meter',
-          stokSaatIni: Number(first.stok ?? 0),
-          hargaSatuan: Number(first.harga ?? 0),
-          qtyPerPcs: 1.5,
-        },
-      ]);
+    if (!isOpen) {
+      setForm({
+        sku: '',
+        targetQty: 50,
+        prioritas: 'Normal',
+        deadline: '',
+        catatan: '',
+      });
+      setKebutuhanBahan([]);
+      setIsRecipeLoadedAuto(false);
     }
-  }, [masterBahanList]);
+  }, [isOpen]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -635,6 +633,10 @@ export default function AddAntreanModalMobile({
   };
 
   const handleAddBahanRow = (presetBahan = null) => {
+    if (!form.sku) {
+      alert('Pilih produk (SKU) terlebih dahulu sebelum menambah kebutuhan bahan baku.');
+      return;
+    }
     const item = presetBahan || masterBahanList[0];
     setKebutuhanBahan((prev) => [
       ...prev,
@@ -784,6 +786,11 @@ export default function AddAntreanModalMobile({
             selectedSku={form.sku}
             onSelectSku={(sku) => {
               setForm((prev) => ({ ...prev, sku }));
+              if (!sku) {
+                setKebutuhanBahan([]);
+                setIsRecipeLoadedAuto(false);
+                return;
+              }
               const prod = products.find((p) => p.sku === sku);
               loadResepBahanForSku(sku, prod);
             }}
@@ -854,160 +861,190 @@ export default function AddAntreanModalMobile({
           </div>
 
           {/* SECTION KHUSUS: INPUT KEBUTUHAN BAHAN BAKU PER PCS (Kain, Kancing, Benang, dll) */}
-          <div className="p-3 bg-amber-50/70 border border-amber-300/80 rounded-2xl space-y-2.5">
+          <div className={`p-3 rounded-2xl space-y-2.5 transition-all ${
+            !form.sku
+              ? 'bg-slate-50 border border-slate-200'
+              : 'bg-amber-50/70 border border-amber-300/80'
+          }`}>
             <div className="flex items-center justify-between gap-1">
               <div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <label className="text-xs font-black text-amber-950 flex items-center gap-1.5">
-                    <Boxes className="w-4 h-4 text-amber-700" />
+                  <label className={`text-xs font-black flex items-center gap-1.5 ${
+                    !form.sku ? 'text-slate-600' : 'text-amber-950'
+                  }`}>
+                    <Boxes className={`w-4 h-4 ${!form.sku ? 'text-slate-400' : 'text-amber-700'}`} />
                     <span>Kebutuhan Bahan per Pcs</span>
                   </label>
-                  {isRecipeLoadedAuto && (
+                  {form.sku && isRecipeLoadedAuto && (
                     <span className="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-black border border-emerald-300 flex items-center gap-1 shadow-2xs">
                       <Sparkles className="w-2.5 h-2.5 text-emerald-700" />
                       <span>Resep Otomatis</span>
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-amber-800/80 font-medium mt-0.5">
-                  Tersimpan otomatis — tidak perlu input ulang kedepannya
+                <p className={`text-[10px] font-medium mt-0.5 ${
+                  !form.sku ? 'text-slate-400' : 'text-amber-800/80'
+                }`}>
+                  {!form.sku
+                    ? 'Pilih produk (SKU) di atas terlebih dahulu'
+                    : 'Tersimpan otomatis — tidak perlu input ulang kedepannya'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => handleAddBahanRow()}
-                className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-[10.5px] flex items-center gap-1 shadow-2xs cursor-pointer transition-all shrink-0"
-              >
-                <Plus className="w-3 h-3 stroke-[3]" />
-                <span>+ Bahan</span>
-              </button>
-            </div>
 
-            {/* Quick Chips dari Master Bahan Baku */}
-            {masterBahanList.length > 0 && (
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[10px]">
-                <span className="text-amber-900/80 font-bold shrink-0 text-[9.5px]">Dari Master:</span>
-                {masterBahanList.slice(0, 8).map((m) => (
-                  <button
-                    key={m.id || m.kodeBahan}
-                    type="button"
-                    onClick={() => handleAddBahanRow(m)}
-                    className="px-2 py-0.5 rounded-md bg-white border border-amber-300 text-amber-900 font-bold shrink-0 hover:bg-amber-100 active:scale-95 transition-all cursor-pointer shadow-2xs"
-                  >
-                    + {m.namaBahan}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Daftar Input Bahan */}
-            <div className="space-y-2">
-              {kebutuhanBahan.map((b, idx) => {
-                const totalKebutuhan = Number(
-                  ((Number(b.qtyPerPcs) || 0) * (Number(form.targetQty) || 0)).toFixed(2)
-                );
-                return (
-                  <div
-                    key={b.id || idx}
-                    className="p-2.5 bg-white rounded-xl border border-amber-200 shadow-2xs space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-mono">
-                        #{idx + 1}
-                      </span>
-                      {/* Searchable Select Option Master Bahan Baku */}
-                      <SearchableBahanSelectMobile
-                        masterBahan={masterBahanList}
-                        selectedKode={b.kodeBahan}
-                        selectedNama={b.namaBahan}
-                        onSelect={(selected) => handleSelectMasterBahan(idx, selected)}
-                      />
-
-                      {/* Tombol Hapus Row */}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBahanRow(idx)}
-                        className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors"
-                        title="Hapus Bahan"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Qty Per Pcs & Satuan Master + Live Kalkulasi Total SPK */}
-                    <div className="grid grid-cols-12 gap-1.5 items-center">
-                      <div className="col-span-5">
-                        <label className="text-[9px] font-extrabold text-slate-500 block mb-0.5">
-                          Per Pcs
-                        </label>
-                        <div className="relative flex items-center">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0.001"
-                            placeholder="1.5"
-                            value={b.qtyPerPcs}
-                            onChange={(e) => handleUpdateQtyPerPcs(idx, e.target.value)}
-                            required
-                            className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-amber-600 focus:outline-none"
-                          />
-                          <span className="absolute right-2 text-[10px] text-slate-400 font-semibold pointer-events-none">
-                            {b.satuan || 'Pcs'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="col-span-3">
-                        <label className="text-[9px] font-extrabold text-slate-500 block mb-0.5">
-                          Satuan
-                        </label>
-                        <div className="w-full px-1.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 text-center truncate">
-                          {b.satuan || 'Pcs'}
-                        </div>
-                      </div>
-
-                      <div className="col-span-4 bg-amber-50 p-1 rounded-lg border border-amber-200 text-right">
-                        <span className="text-[8.5px] font-bold text-amber-800 block">
-                          Total SPK
-                        </span>
-                        <span className="text-[11px] font-mono font-black text-amber-950 truncate block">
-                          {totalKebutuhan} {b.satuan}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Info Kode Bahan & Stok Real-time dari Master */}
-                    <div className="flex items-center justify-between text-[9.5px] px-1 pt-0.5">
-                      <span className="text-slate-500">
-                        Kode: <span className="font-mono font-bold text-slate-700">{b.kodeBahan || '-'}</span>
-                      </span>
-                      {b.stokSaatIni !== undefined && (
-                        totalKebutuhan > b.stokSaatIni ? (
-                          <span className="text-rose-600 font-bold">
-                            ⚠️ Melebihi stok gudang (Sisa: {b.stokSaatIni} {b.satuan})
-                          </span>
-                        ) : (
-                          <span className="text-emerald-700 font-semibold">
-                            ✓ Stok gudang cukup (Tersedia: {b.stokSaatIni} {b.satuan})
-                          </span>
-                        )
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {kebutuhanBahan.length === 0 && (
-                <div className="p-3 bg-white rounded-xl border border-dashed border-amber-300 text-center text-[11px] text-amber-800">
-                  Belum ada bahan baku dipilih. Klik <b>+ Bahan</b> atau pilih cepat dari master di atas.
-                </div>
+              {form.sku && (
+                <button
+                  type="button"
+                  onClick={() => handleAddBahanRow()}
+                  className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-[10.5px] flex items-center gap-1 shadow-2xs cursor-pointer transition-all shrink-0"
+                >
+                  <Plus className="w-3 h-3 stroke-[3]" />
+                  <span>+ Bahan</span>
+                </button>
               )}
             </div>
 
-            {/* Note Simpan Otomatis */}
-            <div className="text-[9.5px] text-amber-900/70 font-semibold flex items-center gap-1 pt-1 border-t border-amber-200/60">
-              <span>💾 Resep bahan baku tersimpan otomatis — tidak perlu input ulang untuk SKU ini kedepannya.</span>
-            </div>
+            {/* Jika BELUM pilih produk: Tampilkan pesan terkunci */}
+            {!form.sku ? (
+              <div className="p-4 bg-white rounded-xl border border-dashed border-slate-300 text-center space-y-1.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                  <Boxes className="w-4 h-4" />
+                </div>
+                <p className="text-xs font-bold text-slate-700">
+                  Pilih Produk (SKU) Terlebih Dahulu
+                </p>
+                <p className="text-[10.5px] text-slate-400 leading-tight">
+                  Kebutuhan bahan baku terkunci dan baru dapat diinput setelah produk dipilih pada pilihan di atas.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Quick Chips dari Master Bahan Baku */}
+                {masterBahanList.length > 0 && (
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[10px]">
+                    <span className="text-amber-900/80 font-bold shrink-0 text-[9.5px]">Dari Master:</span>
+                    {masterBahanList.slice(0, 8).map((m) => (
+                      <button
+                        key={m.id || m.kodeBahan}
+                        type="button"
+                        onClick={() => handleAddBahanRow(m)}
+                        className="px-2 py-0.5 rounded-md bg-white border border-amber-300 text-amber-900 font-bold shrink-0 hover:bg-amber-100 active:scale-95 transition-all cursor-pointer shadow-2xs"
+                      >
+                        + {m.namaBahan}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Daftar Input Bahan */}
+                <div className="space-y-2">
+                  {kebutuhanBahan.map((b, idx) => {
+                    const totalKebutuhan = Number(
+                      ((Number(b.qtyPerPcs) || 0) * (Number(form.targetQty) || 0)).toFixed(2)
+                    );
+                    return (
+                      <div
+                        key={b.id || idx}
+                        className="p-2.5 bg-white rounded-xl border border-amber-200 shadow-2xs space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-mono">
+                            #{idx + 1}
+                          </span>
+                          {/* Searchable Select Option Master Bahan Baku */}
+                          <SearchableBahanSelectMobile
+                            masterBahan={masterBahanList}
+                            selectedKode={b.kodeBahan}
+                            selectedNama={b.namaBahan}
+                            onSelect={(selected) => handleSelectMasterBahan(idx, selected)}
+                          />
+
+                          {/* Tombol Hapus Row */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBahanRow(idx)}
+                            className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors"
+                            title="Hapus Bahan"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Qty Per Pcs & Satuan Master + Live Kalkulasi Total SPK */}
+                        <div className="grid grid-cols-12 gap-1.5 items-center">
+                          <div className="col-span-5">
+                            <label className="text-[9px] font-extrabold text-slate-500 block mb-0.5">
+                              Per Pcs
+                            </label>
+                            <div className="relative flex items-center">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0.001"
+                                placeholder="1.5"
+                                value={b.qtyPerPcs}
+                                onChange={(e) => handleUpdateQtyPerPcs(idx, e.target.value)}
+                                required
+                                className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-amber-600 focus:outline-none"
+                              />
+                              <span className="absolute right-2 text-[10px] text-slate-400 font-semibold pointer-events-none">
+                                {b.satuan || 'Pcs'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="col-span-3">
+                            <label className="text-[9px] font-extrabold text-slate-500 block mb-0.5">
+                              Satuan
+                            </label>
+                            <div className="w-full px-1.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 text-center truncate">
+                              {b.satuan || 'Pcs'}
+                            </div>
+                          </div>
+
+                          <div className="col-span-4 bg-amber-50 p-1 rounded-lg border border-amber-200 text-right">
+                            <span className="text-[8.5px] font-bold text-amber-800 block">
+                              Total SPK
+                            </span>
+                            <span className="text-[11px] font-mono font-black text-amber-950 truncate block">
+                              {totalKebutuhan} {b.satuan}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Info Kode Bahan & Stok Real-time dari Master */}
+                        <div className="flex items-center justify-between text-[9.5px] px-1 pt-0.5">
+                          <span className="text-slate-500">
+                            Kode: <span className="font-mono font-bold text-slate-700">{b.kodeBahan || '-'}</span>
+                          </span>
+                          {b.stokSaatIni !== undefined && (
+                            totalKebutuhan > b.stokSaatIni ? (
+                              <span className="text-rose-600 font-bold">
+                                ⚠️ Melebihi stok gudang (Sisa: {b.stokSaatIni} {b.satuan})
+                              </span>
+                            ) : (
+                              <span className="text-emerald-700 font-semibold">
+                                ✓ Stok gudang cukup (Tersedia: {b.stokSaatIni} {b.satuan})
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {kebutuhanBahan.length === 0 && (
+                    <div className="p-3 bg-white rounded-xl border border-dashed border-amber-300 text-center text-[11px] text-amber-800">
+                      Belum ada bahan baku dipilih. Klik <b>+ Bahan</b> atau pilih cepat dari master di atas.
+                    </div>
+                  )}
+                </div>
+
+                {/* Note Simpan Otomatis */}
+                <div className="text-[9.5px] text-amber-900/70 font-semibold flex items-center gap-1 pt-1 border-t border-amber-200/60">
+                  <span>💾 Resep bahan baku tersimpan otomatis — tidak perlu input ulang untuk SKU ini kedepannya.</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Deadline */}

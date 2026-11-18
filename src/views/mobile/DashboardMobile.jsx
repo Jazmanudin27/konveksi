@@ -616,7 +616,7 @@ export default function DashboardMobile({
                 >
                   {item.status || 'Siap Potong'}
                 </span>
-                {item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
+                {!isGudang && item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
                   <button
                     onClick={() => onNextStatus(item)}
                     className="p-1.5 rounded-xl bg-[#064e3b] text-white hover:bg-[#043e2f] active:scale-95 transition-all cursor-pointer"

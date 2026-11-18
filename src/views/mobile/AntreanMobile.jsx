@@ -6,6 +6,7 @@ export default function AntreanMobile({
   antreanList = [],
   onOpenAddAntrean,
   onNextStatus,
+  isGudang = false,
 }) {
   const [antreanSearch, setAntreanSearch] = useState('');
   const [antreanFilterStatus, setAntreanFilterStatus] = useState('SEMUA');
@@ -210,7 +211,8 @@ export default function AntreanMobile({
                     <Share2 className="w-3.5 h-3.5 text-emerald-700" />
                   </button>
 
-                  {item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
+                  {/* Admin Gudang hanya input permintaan, tidak ada tombol serah cutting */}
+                  {!isGudang && item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
                     <button
                       onClick={() => onNextStatus(item)}
                       className="text-[10.5px] font-bold text-white bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer"

@@ -88,6 +88,7 @@ export default function Antrean({
     }
   };
 
+  const isGudang = userRole === 'gudang';
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSumber, setFilterSumber] = useState("");
   const [filterPrioritas, setFilterPrioritas] = useState("");
@@ -2014,45 +2015,49 @@ export default function Antrean({
             >
               Batal Pilihan
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                const items = antreanList.filter((a) =>
-                  selectedIds.includes(a.id),
-                );
-                handleOpenCuttingModal(items);
-              }}
-              className="px-3 py-1 bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
-            >
-              <Scissors className="w-3.5 h-3.5" />
-              <span>Serahkan Cutting ({selectedIds.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const items = antreanList.filter((a) =>
-                  selectedIds.includes(a.id),
-                );
-                handleOpenJahitModal(items);
-              }}
-              className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
-            >
-              <SewingMachineIcon className="w-3.5 h-3.5" />
-              <span>Serahkan Jahit ({selectedIds.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const items = antreanList.filter((a) =>
-                  selectedIds.includes(a.id),
-                );
-                handleOpenQcModal(items);
-              }}
-              className="px-3 py-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Serahkan QC ({selectedIds.length})</span>
-            </button>
+            {!isGudang && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const items = antreanList.filter((a) =>
+                      selectedIds.includes(a.id),
+                    );
+                    handleOpenCuttingModal(items);
+                  }}
+                  className="px-3 py-1 bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
+                >
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span>Serahkan Cutting ({selectedIds.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const items = antreanList.filter((a) =>
+                      selectedIds.includes(a.id),
+                    );
+                    handleOpenJahitModal(items);
+                  }}
+                  className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
+                >
+                  <SewingMachineIcon className="w-3.5 h-3.5" />
+                  <span>Serahkan Jahit ({selectedIds.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const items = antreanList.filter((a) =>
+                      selectedIds.includes(a.id),
+                    );
+                    handleOpenQcModal(items);
+                  }}
+                  className="px-3 py-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer text-[11px]"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Serahkan QC ({selectedIds.length})</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -2360,6 +2365,13 @@ export default function Antrean({
                               title="Produksi Selesai (Di Gudang Jadi)"
                             >
                               ✓
+                            </span>
+                          ) : isGudang ? (
+                            <span
+                              className="px-2 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300 font-bold text-[10px] shrink-0 whitespace-nowrap"
+                              title="Menunggu Divisi Cutting Memproses"
+                            >
+                              Tunggu Cutting
                             </span>
                           ) : (
                             <button

@@ -183,9 +183,9 @@ export default function PermintaanProduksiGudang({
       setIsModalOpen(false);
       Swal.fire({
         icon: 'success',
-        title: 'Permintaan Berhasil Dibuat!',
-        text: `Nomor ${newEntry.noAntrian} (${newEntry.namaProduk} - ${newEntry.qty} Pcs) berhasil masuk ke antrean pabrik produksi.`,
-        timer: 2000,
+        title: 'Permintaan Berhasil Dikirim!',
+        text: `Nomor ${newEntry.noAntrian} (${newEntry.namaProduk} - ${newEntry.qty} Pcs) telah masuk ke Divisi Cutting untuk diproses.`,
+        timer: 2200,
         showConfirmButton: false,
       });
     } catch (err) {
@@ -198,7 +198,7 @@ export default function PermintaanProduksiGudang({
     if (status === 'Menunggu Cutting') {
       return (
         <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-          Menunggu Cutting
+          Menunggu Cutting (Di Divisi Cutting)
         </span>
       );
     }

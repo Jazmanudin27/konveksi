@@ -546,27 +546,27 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                       {/* AKSI */}
                       <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          {/* JIKA STATUS MENUNGGU CUTTING -> TOMBOL APPROVAL TERIMA */}
+                          {/* JIKA STATUS MENUNGGU CUTTING -> TOMBOL PROSES CUTTING */}
                           {item.status === 'Menunggu Cutting' && (
                             <button
                               onClick={() => handleOpenApproval(item)}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                              title="Setujui dan Terima Pekerjaan Cutting"
+                              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+                              title="Mulai Proses Pemotongan Pola Kain"
                             >
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>Terima (Approval)</span>
+                              <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>Proses Cutting</span>
                             </button>
                           )}
 
-                          {/* JIKA STATUS SEDANG CUTTING -> TOMBOL SELESAI & SERAH JAHIT */}
+                          {/* JIKA STATUS SEDANG CUTTING -> TOMBOL SELESAI & SERAH PENJAHIT */}
                           {item.status === 'Proses Cutting' && (
                             <button
                               onClick={() => handleOpenSerahJahit(item)}
-                              className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                              title="Selesaikan Cutting & Serahkan ke Divisi Jahit"
+                              className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+                              title="Selesaikan Cutting & Serahkan ke Penjahit"
                             >
-                              <ArrowRight className="w-3.5 h-3.5" />
-                              <span>Serahkan ke Jahit</span>
+                              <Shirt className="w-3.5 h-3.5" />
+                              <span>Serahkan ke Penjahit</span>
                             </button>
                           )}
 
@@ -605,12 +605,12 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
           <div className="w-full max-w-md bg-white rounded-2xl p-5 shadow-2xl border border-slate-200/80 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-                  <ShieldCheck className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                  <Scissors className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900 leading-tight">
-                    Approval & Terima Order Cutting
+                    Mulai Proses Cutting
                   </h3>
                   <p className="text-[10.5px] text-slate-400 font-mono">
                     {approvalModalItem.noAntrian} • Qty: {approvalModalItem.qty} Pcs
@@ -725,10 +725,10 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
                 >
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>{loading ? 'Menyimpan...' : 'Setujui & Mulai Cutting'}</span>
+                  <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>{loading ? 'Menyimpan...' : 'Mulai Proses Cutting'}</span>
                 </button>
               </div>
             </form>
@@ -743,11 +743,11 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
-                  <Scissors className="w-4 h-4" />
+                  <Shirt className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900 leading-tight">
-                    Selesaikan Cutting & Serah ke Jahit
+                    Selesaikan Cutting & Serahkan ke Penjahit
                   </h3>
                   <p className="text-[10.5px] text-slate-400 font-mono">
                     {serahJahitModalItem.noAntrian} • Qty: {serahJahitModalItem.qty} Pcs
@@ -853,10 +853,10 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
                 >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                  <span>{loading ? 'Memproses...' : 'Serahkan ke Jahit'}</span>
+                  <Shirt className="w-3.5 h-3.5" />
+                  <span>{loading ? 'Memproses...' : 'Serahkan ke Penjahit'}</span>
                 </button>
               </div>
             </form>

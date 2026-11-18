@@ -365,6 +365,7 @@ export default function MobileApp({
                   antreanList={antreanList}
                   onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
                   onNextStatus={handleOpenNextStatus}
+                  isGudang={isGudang}
                 />
               </div>
             )}

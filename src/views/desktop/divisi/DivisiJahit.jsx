@@ -566,19 +566,19 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
                             <>
                               <button
                                 onClick={() => handleOpenApproval(item)}
-                                className="w-7 h-7 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                                className="w-7.5 h-7.5 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
                                 title="Atur / Tugaskan Penjahit"
                               >
-                                <UserCheck className="w-3.5 h-3.5 text-white" />
+                                <UserCheck className="w-4 h-4 text-white stroke-[2.2]" />
                               </button>
 
                               <button
                                 onClick={() => handleOpenSerahQc(item)}
-                                className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
                                 title="Selesaikan Jahitan & Serahkan ke Divisi QC"
                               >
                                 <ArrowRight className="w-3.5 h-3.5" />
-                                <span>Serah QC</span>
+                                <span>Serah ke QC</span>
                               </button>
                             </>
                           )}
@@ -586,10 +586,10 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
                           {/* DETAIL BUTTON */}
                           <button
                             onClick={() => setSelectedItemDetail(item)}
-                            className="w-7 h-7 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                            className="w-7.5 h-7.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
                             title="Lihat Rincian Antrean"
                           >
-                            <Eye className="w-3.5 h-3.5 text-white" />
+                            <Eye className="w-4 h-4 text-white stroke-[2.2]" />
                           </button>
                         </div>
                       </td>

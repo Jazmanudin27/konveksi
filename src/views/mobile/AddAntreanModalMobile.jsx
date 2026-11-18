@@ -328,6 +328,7 @@ export default function AddAntreanModalMobile({
   onClose,
   products = [],
   onAntreanCreated,
+  isGudang = false,
 }) {
   const [form, setForm] = useState({
     sku: '',
@@ -349,11 +350,12 @@ export default function AddAntreanModalMobile({
 
     setIsSubmitting(true);
     const selectedProd = products.find((p) => p.sku === form.sku);
+    const prefix = isGudang ? 'SPK' : 'ANT';
     const payload = {
-      noAntrean: `ANT-${Date.now().toString().slice(-6)}`,
+      noAntrean: `${prefix}-${Date.now().toString().slice(-6)}`,
       tanggalAntrean: new Date().toISOString().split('T')[0],
-      sumberPermintaan: 'PO Pelanggan',
-      noReff: '-',
+      sumberPermintaan: isGudang ? 'Gudang Jadi' : 'PO Pelanggan',
+      noReff: isGudang ? 'Req-Gudang' : '-',
       sku: selectedProd?.sku || form.sku,
       modelProduk: selectedProd?.namaProduk || 'Custom Model',
       kategori: selectedProd?.kategori || 'Umum',
@@ -385,19 +387,29 @@ export default function AddAntreanModalMobile({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/70 backdrop-blur-xs select-none">
       <div className="bg-white rounded-2xl w-full max-w-sm max-h-[92vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
         {/* Header Modal */}
-        <div className="bg-[#064e3b] text-white p-3.5 flex items-center justify-between shrink-0 shadow-xs">
+        <div className={`p-3.5 text-white flex items-center justify-between shrink-0 shadow-xs ${
+          isGudang ? 'bg-amber-700' : 'bg-[#064e3b]'
+        }`}>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-emerald-800/80 flex items-center justify-center">
-              <Scissors className="w-3.5 h-3.5 text-emerald-300" />
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+              isGudang ? 'bg-amber-900/60 text-amber-200' : 'bg-emerald-800/80 text-emerald-300'
+            }`}>
+              <Scissors className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="font-bold text-xs tracking-wide">Tambah Antrean Produksi</h3>
-              <p className="text-[10px] text-emerald-200/80">Input pesanan baru ke antrean cutting</p>
+              <h3 className="font-bold text-xs tracking-wide">
+                {isGudang ? 'Buat SPK Permintaan Produksi' : 'Tambah Antrean Produksi'}
+              </h3>
+              <p className={`text-[10px] ${isGudang ? 'text-amber-100/90' : 'text-emerald-200/80'}`}>
+                {isGudang ? 'Kirim SPK restock ke bagian produksi (Cutting)' : 'Input pesanan baru ke antrean cutting'}
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg hover:bg-emerald-800 flex items-center justify-center text-emerald-200 hover:text-white cursor-pointer transition-colors"
+            className={`w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+              isGudang ? 'hover:bg-amber-800 text-amber-200 hover:text-white' : 'hover:bg-emerald-800 text-emerald-200 hover:text-white'
+            }`}
           >
             <X className="w-4 h-4" />
           </button>
@@ -517,10 +529,18 @@ export default function AddAntreanModalMobile({
             <button
               type="submit"
               disabled={isSubmitting || !form.sku}
-              className="px-5 py-2 rounded-xl bg-[#064e3b] hover:bg-[#043e2f] text-white font-black shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className={`px-5 py-2 rounded-xl text-white font-black shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 ${
+                isGudang ? 'bg-amber-600 hover:bg-amber-700' : 'bg-[#064e3b] hover:bg-[#043e2f]'
+              }`}
             >
-              <Scissors className="w-3.5 h-3.5 text-emerald-300" />
-              <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Antrean'}</span>
+              <Scissors className="w-3.5 h-3.5 text-white" />
+              <span>
+                {isSubmitting
+                  ? 'Menyimpan...'
+                  : isGudang
+                  ? 'Kirim SPK ke Produksi'
+                  : 'Simpan Antrean'}
+              </span>
             </button>
           </div>
         </form>

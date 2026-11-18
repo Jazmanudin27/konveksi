@@ -11,7 +11,6 @@ import {
   Coins,
   Wallet,
   LogOut,
-  PackageCheck,
   ClipboardList,
 } from 'lucide-react';
 import { USER_ROLES } from '../../constants/userRoles';
@@ -20,6 +19,7 @@ export default function MobileMenuSheet({
   isOpen,
   onClose,
   onSelectSubView,
+  onSelectTab,
   onSwitchToDesktop,
   employeeCount = 0,
   bahanCount = 0,
@@ -67,111 +67,144 @@ export default function MobileMenuSheet({
           </button>
         </div>
 
-        {/* Menu Pilihan Sesuai Role (Gudang Jadi vs Super Admin) */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {/* Menu Stok Gudang Jadi (Semua Role) */}
-          <button
-            onClick={() => {
-              onSelectSubView('laporan');
-              onClose();
-            }}
-            className="p-3 bg-blue-50/70 hover:bg-blue-100 rounded-2xl border border-blue-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-          >
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Warehouse className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900">Stok Gudang Jadi</div>
-              <div className="text-[10px] text-slate-500">Persediaan Fisik Siap Jual</div>
-            </div>
-          </button>
+        {/* Menu Pilihan Sesuai Role */}
+        {isGudang ? (
+          /* KHUSUS ADMIN GUDANG: CUMA ADA 2 HALAMAN (SPK & MUTASI GUDANG) */
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {/* 1. Halaman SPK Permintaan Produksi */}
+            <button
+              onClick={() => {
+                if (onSelectTab) onSelectTab('antrean');
+                onClose();
+              }}
+              className="p-3.5 bg-amber-50/80 hover:bg-amber-100 rounded-2xl border border-amber-200 flex flex-col gap-2 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                <ClipboardList className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-extrabold text-slate-900 text-xs">SPK Produksi</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Permintaan ke Bagian Produksi</div>
+              </div>
+            </button>
 
-          {/* Menu Stok Bahan Baku (Semua Role) */}
-          <button
-            onClick={() => {
-              onSelectSubView('bahan');
-              onClose();
-            }}
-            className="p-3 bg-cyan-50/70 hover:bg-cyan-100 rounded-2xl border border-cyan-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-          >
-            <div className="w-8 h-8 rounded-xl bg-cyan-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Boxes className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900">Stok Bahan Baku</div>
-              <div className="text-[10px] text-slate-500">{bahanCount} Jenis Kain & Material</div>
-            </div>
-          </button>
+            {/* 2. Halaman Mutasi Gudang Jadi */}
+            <button
+              onClick={() => {
+                if (onSelectTab) onSelectTab('mutasi');
+                onClose();
+              }}
+              className="p-3.5 bg-blue-50/80 hover:bg-blue-100 rounded-2xl border border-blue-200 flex flex-col gap-2 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                <Warehouse className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-extrabold text-slate-900 text-xs">Mutasi Gudang</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Keluar & Masuk Barang Jadi</div>
+              </div>
+            </button>
+          </div>
+        ) : (
+          /* MENU LENGKAP ROLE SUPER ADMIN */
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <button
+              onClick={() => {
+                onSelectSubView('laporan');
+                onClose();
+              }}
+              className="p-3 bg-blue-50/70 hover:bg-blue-100 rounded-2xl border border-blue-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Warehouse className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-bold text-slate-900">Stok Gudang Jadi</div>
+                <div className="text-[10px] text-slate-500">Persediaan Fisik Siap Jual</div>
+              </div>
+            </button>
 
-          {/* HANYA MUNCUL JIKA BUKAN GUDANG (SUPER ADMIN): Tim Jahit, Kategori, Upah Kerja, Kasbon */}
-          {!isGudang && (
-            <>
-              <button
-                onClick={() => {
-                  onSelectSubView('karyawan');
-                  onClose();
-                }}
-                className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-bold text-slate-800">Tim Jahit</div>
-                  <div className="text-[10px] text-slate-400">{employeeCount} Karyawan</div>
-                </div>
-              </button>
+            <button
+              onClick={() => {
+                onSelectSubView('bahan');
+                onClose();
+              }}
+              className="p-3 bg-cyan-50/70 hover:bg-cyan-100 rounded-2xl border border-cyan-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-cyan-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Boxes className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-bold text-slate-900">Stok Bahan Baku</div>
+                <div className="text-[10px] text-slate-500">{bahanCount} Jenis Kain & Material</div>
+              </div>
+            </button>
 
-              <button
-                onClick={() => {
-                  onSelectSubView('kategori');
-                  onClose();
-                }}
-                className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                  <Tag className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-bold text-slate-800">Kategori</div>
-                  <div className="text-[10px] text-slate-400">{categoryCount} Kategori</div>
-                </div>
-              </button>
+            <button
+              onClick={() => {
+                onSelectSubView('karyawan');
+                onClose();
+              }}
+              className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-bold text-slate-800">Tim Jahit</div>
+                <div className="text-[10px] text-slate-400">{employeeCount} Karyawan</div>
+              </div>
+            </button>
 
-              <button
-                onClick={() => {
-                  onSelectSubView('pembayaran-upah');
-                  onClose();
-                }}
-                className="p-3 bg-emerald-50 hover:bg-emerald-100/80 rounded-2xl border border-emerald-200/80 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Coins className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold text-slate-900">Upah Kerja</div>
-                  <div className="text-[10px] text-slate-500">Gajian Borongan</div>
-                </div>
-              </button>
+            <button
+              onClick={() => {
+                onSelectSubView('kategori');
+                onClose();
+              }}
+              className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <Tag className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-bold text-slate-800">Kategori</div>
+                <div className="text-[10px] text-slate-400">{categoryCount} Kategori</div>
+              </div>
+            </button>
 
-              <button
-                onClick={() => {
-                  onSelectSubView('kasbon');
-                  onClose();
-                }}
-                className="p-3 bg-amber-50 hover:bg-amber-100/80 rounded-2xl border border-amber-200/80 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Wallet className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold text-slate-900">Kasbon Karyawan</div>
-                  <div className="text-[10px] text-slate-500">Pinjam & Potong Upah</div>
-                </div>
-              </button>
-            </>
-          )}
-        </div>
+            <button
+              onClick={() => {
+                onSelectSubView('pembayaran-upah');
+                onClose();
+              }}
+              className="p-3 bg-emerald-50 hover:bg-emerald-100/80 rounded-2xl border border-emerald-200/80 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Coins className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-slate-900">Upah Kerja</div>
+                <div className="text-[10px] text-slate-500">Gajian Borongan</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                onSelectSubView('kasbon');
+                onClose();
+              }}
+              className="p-3 bg-amber-50 hover:bg-amber-100/80 rounded-2xl border border-amber-200/80 flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Wallet className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-slate-900">Kasbon Karyawan</div>
+                <div className="text-[10px] text-slate-500">Pinjam & Potong Upah</div>
+              </div>
+            </button>
+          </div>
+        )}
 
         {/* Action Buttons Bawah: Switch Desktop & Logout Akun */}
         <div className="pt-2 border-t border-slate-100 space-y-2">

@@ -31,11 +31,17 @@ import LanjutTahapModalMobile from './LanjutTahapModalMobile';
 import MobileNotificationModal from './MobileNotificationModal';
 
 // Helper deteksi dan resolusi route aktif dari hash URL browser
-function resolveMobileRouteFromHash() {
+function resolveMobileRouteFromHash(isGudang = false) {
   try {
     const hash = (typeof window !== 'undefined' ? window.location.hash : '')
       .replace('#', '')
       .trim();
+
+    // Khusus Admin Gudang: HANYA ada 2 rute (SPK 'antrean' dan 'mutasi')
+    if (isGudang) {
+      if (hash === 'mutasi' || hash === 'mutasi-gudang-jadi') return { tab: 'mutasi', sub: null };
+      return { tab: 'antrean', sub: null };
+    }
 
     if (hash === 'antrean') return { tab: 'antrean', sub: null };
     if (hash === 'mutasi' || hash === 'mutasi-bahan' || hash === 'mutasi-gudang-jadi')
@@ -56,10 +62,16 @@ function resolveMobileRouteFromHash() {
     const saved = localStorage.getItem('konveksi_mobile_tab');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed?.tab) return parsed;
+      if (parsed?.tab) {
+        if (isGudang) {
+          if (parsed.tab === 'mutasi') return { tab: 'mutasi', sub: null };
+          return { tab: 'antrean', sub: null };
+        }
+        return parsed;
+      }
     }
   } catch (_) {}
-  return { tab: 'home', sub: null };
+  return isGudang ? { tab: 'antrean', sub: null } : { tab: 'home', sub: null };
 }
 
 export default function MobileApp({
@@ -86,28 +98,37 @@ export default function MobileApp({
   const isGudang = userRole === 'gudang';
   // Tab Navigasi Aktif Mobile: 'home' | 'antrean' | 'mutasi' | 'produk' | 'menu'
   // Diinisialisasi langsung dari URL hash agar saat di-reload tetap di menu tersebut!
-  const [mobileRoute, setMobileRoute] = useState(resolveMobileRouteFromHash);
-  const mobileTab = mobileRoute.tab;
-  const activeSubView = mobileRoute.sub;
+  const [mobileRoute, setMobileRoute] = useState(() => resolveMobileRouteFromHash(isGudang));
+  const mobileTab = isGudang
+    ? (mobileRoute.tab === 'mutasi' ? 'mutasi' : 'antrean')
+    : mobileRoute.tab;
+  const activeSubView = isGudang ? null : mobileRoute.sub;
 
   // Fungsi navigasi mobile yang memperbarui URL hash & localStorage
   const navigateMobile = (tab, sub = null) => {
+    if (isGudang) {
+      tab = tab === 'mutasi' ? 'mutasi' : 'antrean';
+      sub = null;
+    }
+
     setMobileRoute({ tab, sub });
 
     // Petakan ke hash URL browser agar saat reload tetap berada di menu ini
-    let targetHash = 'dashboard';
-    if (sub) {
-      if (sub === 'karyawan') targetHash = 'employees';
-      else if (sub === 'bahan') targetHash = 'bahan';
-      else if (sub === 'kategori') targetHash = 'categories';
-      else if (sub === 'laporan') targetHash = 'laporan-stok-gudang';
-      else if (sub === 'pembayaran-upah') targetHash = 'pembayaran-upah';
-      else if (sub === 'kasbon') targetHash = 'kasbon';
-    } else {
-      if (tab === 'antrean') targetHash = 'antrean';
-      else if (tab === 'mutasi') targetHash = 'mutasi';
-      else if (tab === 'produk') targetHash = 'products';
-      else if (tab === 'home') targetHash = 'dashboard';
+    let targetHash = isGudang ? (tab === 'mutasi' ? 'mutasi' : 'antrean') : 'dashboard';
+    if (!isGudang) {
+      if (sub) {
+        if (sub === 'karyawan') targetHash = 'employees';
+        else if (sub === 'bahan') targetHash = 'bahan';
+        else if (sub === 'kategori') targetHash = 'categories';
+        else if (sub === 'laporan') targetHash = 'laporan-stok-gudang';
+        else if (sub === 'pembayaran-upah') targetHash = 'pembayaran-upah';
+        else if (sub === 'kasbon') targetHash = 'kasbon';
+      } else {
+        if (tab === 'antrean') targetHash = 'antrean';
+        else if (tab === 'mutasi') targetHash = 'mutasi';
+        else if (tab === 'produk') targetHash = 'products';
+        else if (tab === 'home') targetHash = 'dashboard';
+      }
     }
 
     try {
@@ -122,7 +143,7 @@ export default function MobileApp({
   // Sinkronisasi event URL Hash (tombol browser Back / Forward / Reload)
   useEffect(() => {
     const handleHash = () => {
-      const route = resolveMobileRouteFromHash();
+      const route = resolveMobileRouteFromHash(isGudang);
       setMobileRoute(route);
     };
 
@@ -130,24 +151,29 @@ export default function MobileApp({
 
     // Pastikan hash URL browser tersinkronisasi saat pertama kali dimuat
     try {
-      let targetHash = 'dashboard';
-      if (activeSubView) {
-        if (activeSubView === 'karyawan') targetHash = 'employees';
-        else if (activeSubView === 'bahan') targetHash = 'bahan';
-        else if (activeSubView === 'kategori') targetHash = 'categories';
-        else if (activeSubView === 'laporan') targetHash = 'laporan-stok-gudang';
-        else if (activeSubView === 'pembayaran-upah') targetHash = 'pembayaran-upah';
-      } else if (mobileTab === 'antrean') targetHash = 'antrean';
-      else if (mobileTab === 'mutasi') targetHash = 'mutasi';
-      else if (mobileTab === 'produk') targetHash = 'products';
+      let targetHash = isGudang
+        ? (mobileTab === 'mutasi' ? 'mutasi' : 'antrean')
+        : 'dashboard';
+      if (!isGudang) {
+        if (activeSubView) {
+          if (activeSubView === 'karyawan') targetHash = 'employees';
+          else if (activeSubView === 'bahan') targetHash = 'bahan';
+          else if (activeSubView === 'kategori') targetHash = 'categories';
+          else if (activeSubView === 'laporan') targetHash = 'laporan-stok-gudang';
+          else if (activeSubView === 'pembayaran-upah') targetHash = 'pembayaran-upah';
+          else if (activeSubView === 'kasbon') targetHash = 'kasbon';
+        } else if (mobileTab === 'antrean') targetHash = 'antrean';
+        else if (mobileTab === 'mutasi') targetHash = 'mutasi';
+        else if (mobileTab === 'produk') targetHash = 'products';
+      }
 
-      if (!window.location.hash) {
+      if (!window.location.hash || isGudang) {
         window.history.replaceState(null, '', `#${targetHash}`);
       }
     } catch (_) {}
 
     return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
+  }, [isGudang, mobileTab, activeSubView]);
 
   // State Modal Drawer, Tambah Antrean & Pusat Notifikasi
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -226,87 +252,121 @@ export default function MobileApp({
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#f1f5f9] text-slate-800 overflow-hidden font-sans select-none">
-      {/* 1. STICKY SUB-HEADER UNTUK MENU NON-BERANDA */}
-      {activeSubView ? (
-        <MobileSubHeader
-          title={
-            activeSubView === 'karyawan'
-              ? 'Tim & Penjahit'
-              : activeSubView === 'bahan'
-              ? 'Stok Bahan Baku'
-              : activeSubView === 'kategori'
-              ? 'Kategori Produk'
-              : activeSubView === 'pembayaran-upah'
-              ? 'Pembayaran Upah'
-              : activeSubView === 'kasbon'
-              ? 'Kasbon Karyawan'
-              : 'Laporan Gudang Jadi'
-          }
-          subtitle={
-            activeSubView === 'karyawan'
-              ? 'Tenaga Kerja Produksi'
-              : activeSubView === 'bahan'
-              ? 'Kain, Benang & Material'
-              : activeSubView === 'kategori'
-              ? 'Master Kelompok & Ongkos'
-              : activeSubView === 'pembayaran-upah'
-              ? 'Upah Cutting, Jahit, QC & Finishing'
-              : activeSubView === 'kasbon'
-              ? 'Pinjaman & Potong Upah'
-              : 'Stok Fisik Siap Jual'
-          }
-          badgeText={
-            activeSubView === 'karyawan'
-              ? `${employees.length} Orang`
-              : activeSubView === 'bahan'
-              ? `${bahan.length} Jenis`
-              : activeSubView === 'kategori'
-              ? `${categories.length} Kategori`
-              : activeSubView === 'pembayaran-upah'
-              ? 'Borongan'
-              : activeSubView === 'kasbon'
-              ? 'Kasbon'
-              : `${products.length} SKU`
-          }
-          onBack={() => navigateMobile('home', null)}
+      {/* 1. HEADER KHUSUS ADMIN GUDANG: TOP APP BAR DENGAN PROFIL & AKSI */}
+      {isGudang && (
+        <MobileHeader
+          dbConnected={dbConnected}
+          onSwitchToDesktop={onSwitchToDesktop}
+          activeUrgentCount={activeUrgentCount}
+          notificationCount={notificationCount}
+          onOpenNotifications={() => setIsNotificationOpen(true)}
+          userRole={userRole}
+          currentUser={currentUser}
+          onLogout={onLogout}
         />
-      ) : (
-        mobileTab !== 'home' && (
-          <>
-            {mobileTab === 'antrean' && (
-              <MobileSubHeader
-                title="Antrean Produksi"
-                subtitle={`${activeOrderCount} order aktif berjalan`}
-                badgeText={`${antreanList.length} Total`}
-                onBack={() => navigateMobile('home', null)}
-              />
-            )}
+      )}
 
-            {mobileTab === 'mutasi' && (
-              <MobileSubHeader
-                title="Mutasi Stok"
-                subtitle="Riwayat Keluar & Masuk Fisik"
-                badgeText={`${mutasiList.length + mutasiGudangJadiList.length} Mutasi`}
-                onBack={() => navigateMobile('home', null)}
-              />
-            )}
+      {/* 2. STICKY SUB-HEADER UNTUK ROLE NON-GUDANG */}
+      {!isGudang && (
+        activeSubView ? (
+          <MobileSubHeader
+            title={
+              activeSubView === 'karyawan'
+                ? 'Tim & Penjahit'
+                : activeSubView === 'bahan'
+                ? 'Stok Bahan Baku'
+                : activeSubView === 'kategori'
+                ? 'Kategori Produk'
+                : activeSubView === 'pembayaran-upah'
+                ? 'Pembayaran Upah'
+                : activeSubView === 'kasbon'
+                ? 'Kasbon Karyawan'
+                : 'Laporan Gudang Jadi'
+            }
+            subtitle={
+              activeSubView === 'karyawan'
+                ? 'Tenaga Kerja Produksi'
+                : activeSubView === 'bahan'
+                ? 'Kain, Benang & Material'
+                : activeSubView === 'kategori'
+                ? 'Master Kelompok & Ongkos'
+                : activeSubView === 'pembayaran-upah'
+                ? 'Upah Cutting, Jahit, QC & Finishing'
+                : activeSubView === 'kasbon'
+                ? 'Pinjaman & Potong Upah'
+                : 'Stok Fisik Siap Jual'
+            }
+            badgeText={
+              activeSubView === 'karyawan'
+                ? `${employees.length} Orang`
+                : activeSubView === 'bahan'
+                ? `${bahan.length} Jenis`
+                : activeSubView === 'kategori'
+                ? `${categories.length} Kategori`
+                : activeSubView === 'pembayaran-upah'
+                ? 'Borongan'
+                : activeSubView === 'kasbon'
+                ? 'Kasbon'
+                : `${products.length} SKU`
+            }
+            onBack={() => navigateMobile('home', null)}
+          />
+        ) : (
+          mobileTab !== 'home' && (
+            <>
+              {mobileTab === 'antrean' && (
+                <MobileSubHeader
+                  title="Antrean Produksi"
+                  subtitle={`${activeOrderCount} order aktif berjalan`}
+                  badgeText={`${antreanList.length} Total`}
+                  onBack={() => navigateMobile('home', null)}
+                />
+              )}
 
-            {mobileTab === 'produk' && (
-              <MobileSubHeader
-                title="Katalog Produk"
-                subtitle="Master SKU, Varian & Ukuran"
-                badgeText={`${products.length} SKU`}
-                onBack={() => navigateMobile('home', null)}
-              />
-            )}
-          </>
+              {mobileTab === 'mutasi' && (
+                <MobileSubHeader
+                  title="Mutasi Stok"
+                  subtitle="Riwayat Keluar & Masuk Fisik"
+                  badgeText={`${mutasiList.length + mutasiGudangJadiList.length} Mutasi`}
+                  onBack={() => navigateMobile('home', null)}
+                />
+              )}
+
+              {mobileTab === 'produk' && (
+                <MobileSubHeader
+                  title="Katalog Produk"
+                  subtitle="Master SKU, Varian & Ukuran"
+                  badgeText={`${products.length} SKU`}
+                  onBack={() => navigateMobile('home', null)}
+                />
+              )}
+            </>
+          )
         )
       )}
 
-      {/* 2. BODY KONTEN (SCROLL MANDIRI) */}
+      {/* 3. BODY KONTEN (SCROLL MANDIRI) */}
       <main className="flex-1 overflow-y-auto pb-24 scrollbar-thin">
-        {/* SUB VIEW JIKA DIPILIH DARI MENU SHEET / GRID */}
-        {activeSubView ? (
+        {/* KHUSUS ADMIN GUDANG: HANYA ADA 2 HALAMAN (SPK & MUTASI GUDANG) */}
+        {isGudang ? (
+          <div className="p-3.5">
+            {mobileTab === 'mutasi' ? (
+              <MutasiMobile
+                mutasiList={mutasiList}
+                mutasiGudangJadiList={mutasiGudangJadiList}
+                isGudang={true}
+              />
+            ) : (
+              <AntreanMobile
+                antreanList={antreanList}
+                onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
+                onNextStatus={handleOpenNextStatus}
+                isGudang={true}
+              />
+            )}
+          </div>
+        ) : activeSubView ? (
+          /* SUB VIEW JIKA DIPILIH DARI MENU SHEET / GRID UNTUK NON-GUDANG */
           <div className="space-y-3 p-3.5">
             {activeSubView === 'karyawan' && <KaryawanMobile employees={employees} />}
             {activeSubView === 'bahan' && <BahanMobile bahan={bahan} />}
@@ -376,6 +436,7 @@ export default function MobileApp({
                 <MutasiMobile
                   mutasiList={mutasiList}
                   mutasiGudangJadiList={mutasiGudangJadiList}
+                  isGudang={isGudang}
                 />
               </div>
             )}
@@ -390,7 +451,7 @@ export default function MobileApp({
         )}
       </main>
 
-      {/* 3. BOTTOM NAVIGATION BAR DENGAN TOMBOL FINGERPRINT BESAR */}
+      {/* 4. BOTTOM NAVIGATION BAR */}
       <MobileNavigation
         activeTab={activeSubView ? 'menu' : mobileTab}
         onSelectTab={(tab) => {
@@ -402,12 +463,16 @@ export default function MobileApp({
         isGudang={isGudang}
       />
 
-      {/* 4. MODAL BOTTOM SHEET PROFIL & MENU LENGKAP */}
+      {/* 5. MODAL BOTTOM SHEET PROFIL & MENU LENGKAP */}
       <MobileMenuSheet
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         onSelectSubView={(sub) => {
           navigateMobile('menu', sub);
+          setIsMenuOpen(false);
+        }}
+        onSelectTab={(tab) => {
+          navigateMobile(tab, null);
           setIsMenuOpen(false);
         }}
         onSwitchToDesktop={onSwitchToDesktop}
@@ -420,12 +485,13 @@ export default function MobileApp({
         isGudang={isGudang}
       />
 
-      {/* 5. MODAL FORM TAMBAH ANTREAN */}
+      {/* 6. MODAL FORM TAMBAH ANTREAN / BUAT SPK */}
       <AddAntreanModalMobile
         isOpen={isAddAntreanOpen}
         onClose={() => setIsAddAntreanOpen(false)}
         products={products}
         onAntreanCreated={handleAntreanCreated}
+        isGudang={isGudang}
       />
 
       {/* 6. MODAL SERAH TAHAPAN PRODUKSI SOP MOBILE */}

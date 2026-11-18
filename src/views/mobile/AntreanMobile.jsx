@@ -112,28 +112,60 @@ export default function AntreanMobile({
     }
   };
 
-  const filterTabs = [
-    { key: 'SEMUA', label: 'Semua', count: counts.total },
-    { key: 'AKTIF', label: 'Aktif', count: counts.aktif },
-    { key: 'Menunggu Cutting', label: 'Tunggu', count: counts.tunggu },
-    { key: 'Proses Cutting', label: 'Cutting', count: counts.cutting },
-    { key: 'Proses Jahit', label: 'Jahit', count: counts.jahit },
-    { key: 'Proses QC', label: 'QC', count: counts.qc },
-    { key: 'Proses Finishing', label: 'Finishing', count: counts.finishing },
-    { key: 'Selesai Gudang', label: 'Selesai', count: counts.selesai },
-  ];
+  const filterTabs = isGudang
+    ? [
+        { key: 'SEMUA', label: 'Semua SPK', count: counts.total },
+        { key: 'Menunggu Cutting', label: 'Menunggu Produksi', count: counts.tunggu },
+        { key: 'AKTIF', label: 'Sedang Dikerjakan', count: Math.max(0, counts.aktif - counts.tunggu) },
+        { key: 'Selesai Gudang', label: 'Siap Gudang', count: counts.selesai },
+      ]
+    : [
+        { key: 'SEMUA', label: 'Semua', count: counts.total },
+        { key: 'AKTIF', label: 'Aktif', count: counts.aktif },
+        { key: 'Menunggu Cutting', label: 'Tunggu', count: counts.tunggu },
+        { key: 'Proses Cutting', label: 'Cutting', count: counts.cutting },
+        { key: 'Proses Jahit', label: 'Jahit', count: counts.jahit },
+        { key: 'Proses QC', label: 'QC', count: counts.qc },
+        { key: 'Proses Finishing', label: 'Finishing', count: counts.finishing },
+        { key: 'Selesai Gudang', label: 'Selesai', count: counts.selesai },
+      ];
 
   return (
     <div className="space-y-3 pb-6">
+      {/* Banner Khusus SPK untuk Admin Gudang */}
+      {isGudang && (
+        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white rounded-2xl p-3 shadow-sm border border-amber-500/40">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-black tracking-tight leading-tight">
+                SPK Permintaan Produksi
+              </h2>
+              <p className="text-[10px] text-amber-100 font-medium mt-0.5">
+                Surat Perintah Kerja khusus permintaan Gudang ke Bagian Produksi
+              </p>
+            </div>
+            <button
+              onClick={onOpenAddAntrean}
+              className="px-3 py-1.5 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              <span>+ Buat SPK</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Search Bar Full Width */}
       <div className="relative">
         <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
         <input
           type="text"
-          placeholder="Cari no antrean / SKU / nama..."
+          placeholder={isGudang ? "Cari No SPK, SKU, model produk..." : "Cari no antrean / SKU / nama..."}
           value={antreanSearch}
           onChange={(e) => setAntreanSearch(e.target.value)}
-          className="w-full bg-white pl-9 pr-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#064e3b]"
+          className={`w-full bg-white pl-9 pr-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 ${
+            isGudang ? 'focus:ring-amber-500' : 'focus:ring-[#064e3b]'
+          }`}
         />
       </div>
 
@@ -234,22 +266,28 @@ export default function AntreanMobile({
 
         {filteredAntrean.length === 0 && (
           <div className="bg-white p-6 rounded-3xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
-            Tidak ada antrean yang cocok dengan filter
+            {isGudang ? 'Belum ada SPK permintaan produksi yang cocok dengan filter' : 'Tidak ada antrean yang cocok dengan filter'}
           </div>
         )}
       </div>
 
-      {/* Floating Action Button (FAB) Tambah Antrean di Kanan Bawah seperti Live Chat */}
+      {/* Floating Action Button (FAB) Tambah Antrean / SPK */}
       <button
         type="button"
         onClick={onOpenAddAntrean}
-        className="fixed bottom-20 right-4 z-40 h-12 px-4 rounded-full bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] hover:from-[#04362d] hover:to-[#032922] text-white font-extrabold text-xs shadow-2xl shadow-emerald-950/50 flex items-center gap-2 border-2 border-white/90 active:scale-95 transition-all cursor-pointer group"
-        title="Tambah Antrean Produksi Baru"
+        className={`fixed bottom-20 right-4 z-40 h-12 px-4 rounded-full text-white font-extrabold text-xs shadow-2xl flex items-center gap-2 border-2 border-white/90 active:scale-95 transition-all cursor-pointer group ${
+          isGudang
+            ? 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 shadow-amber-950/40'
+            : 'bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] shadow-emerald-950/50'
+        }`}
+        title={isGudang ? 'Buat SPK Permintaan Produksi Baru' : 'Tambah Antrean Produksi Baru'}
       >
-        <div className="w-6 h-6 rounded-full bg-emerald-500/30 flex items-center justify-center">
-          <Plus className="w-4 h-4 stroke-[3] text-emerald-200 group-hover:rotate-90 transition-transform" />
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+          isGudang ? 'bg-white/20' : 'bg-emerald-500/30'
+        }`}>
+          <Plus className="w-4 h-4 stroke-[3] text-white group-hover:rotate-90 transition-transform" />
         </div>
-        <span className="tracking-wide">Tambah</span>
+        <span className="tracking-wide">{isGudang ? '+ Buat SPK' : 'Tambah'}</span>
       </button>
 
       {/* Modal Share Tracking Link Customer */}

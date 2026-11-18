@@ -1,41 +1,61 @@
 import React, { useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Warehouse } from 'lucide-react';
 
 export default function MutasiMobile({
   mutasiList = [],
   mutasiGudangJadiList = [],
+  isGudang = false,
 }) {
-  const [mutasiTab, setMutasiTab] = useState('bahan');
+  const [mutasiTab, setMutasiTab] = useState(isGudang ? 'gudang' : 'bahan');
 
   return (
-    <div className="space-y-3">
-      {/* Switcher Tab Bahan vs Gudang */}
-      <div className="grid grid-cols-2 p-1 bg-slate-200/80 rounded-xl text-xs font-bold">
-        <button
-          onClick={() => setMutasiTab('bahan')}
-          className={`py-1.5 rounded-lg transition-all cursor-pointer ${
-            mutasiTab === 'bahan' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-          }`}
-        >
-          Bahan Baku ({mutasiList.length})
-        </button>
-        <button
-          onClick={() => setMutasiTab('gudang')}
-          className={`py-1.5 rounded-lg transition-all cursor-pointer ${
-            mutasiTab === 'gudang' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-          }`}
-        >
-          Gudang Jadi ({mutasiGudangJadiList.length})
-        </button>
-      </div>
+    <div className="space-y-3 pb-6 select-none">
+      {/* Banner Khusus Gudang Jadi jika role Gudang */}
+      {isGudang ? (
+        <div className="bg-gradient-to-r from-blue-700 via-sky-600 to-blue-800 text-white rounded-2xl p-3 shadow-sm border border-blue-500/40">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Warehouse className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black tracking-tight leading-tight">
+                Mutasi Gudang Jadi
+              </h2>
+              <p className="text-[10px] text-blue-100 font-medium mt-0.5">
+                Penerimaan stok dari Finishing & pengeluaran barang jadi siap jual
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Switcher Tab Bahan vs Gudang untuk Super Admin */
+        <div className="grid grid-cols-2 p-1 bg-slate-200/80 rounded-xl text-xs font-bold">
+          <button
+            onClick={() => setMutasiTab('bahan')}
+            className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+              mutasiTab === 'bahan' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+            }`}
+          >
+            Bahan Baku ({mutasiList.length})
+          </button>
+          <button
+            onClick={() => setMutasiTab('gudang')}
+            className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+              mutasiTab === 'gudang' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+            }`}
+          >
+            Gudang Jadi ({mutasiGudangJadiList.length})
+          </button>
+        </div>
+      )}
 
-      {/* Konten Mutasi Bahan Baku */}
-      {mutasiTab === 'bahan' && (
+      {/* Konten Mutasi Bahan Baku (Hanya jika bukan Admin Gudang) */}
+      {!isGudang && mutasiTab === 'bahan' && (
         <div className="space-y-2">
           {mutasiList.map((m) => (
             <div
               key={m.id || m.noBukti}
-              className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5"
+              className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs space-y-1.5"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono font-bold text-slate-600">
@@ -76,24 +96,24 @@ export default function MutasiMobile({
           ))}
 
           {mutasiList.length === 0 && (
-            <div className="bg-white p-6 rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
+            <div className="bg-white p-6 rounded-2xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
               Belum ada riwayat mutasi bahan
             </div>
           )}
         </div>
       )}
 
-      {/* Konten Mutasi Gudang Jadi */}
-      {mutasiTab === 'gudang' && (
+      {/* Konten Mutasi Gudang Jadi (Selalu Tampil untuk Admin Gudang) */}
+      {(isGudang || mutasiTab === 'gudang') && (
         <div className="space-y-2">
           {mutasiGudangJadiList.map((g) => (
             <div
-              key={g.id || g.noBukti}
-              className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5"
+              key={g.id || g.noBukti || g.noMutasi}
+              className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm space-y-1.5"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-slate-600">
-                  {g.noBukti}
+                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  {g.noMutasi || g.noBukti}
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -102,14 +122,25 @@ export default function MutasiMobile({
                       : 'bg-rose-50 text-rose-700 border border-rose-200'
                   }`}
                 >
-                  {g.jenisMutasi}
+                  {g.jenisMutasi === 'MASUK' ? '+ MASUK' : '- KELUAR'}
                 </span>
               </div>
-              <div className="text-xs font-bold text-slate-800">{g.keterangan || 'Stok Gudang Jadi'}</div>
-              <div className="text-[10.5px] text-slate-500">
-                Reff: {g.noReff || '-'} • {g.tgl || g.tanggal || '-'}
+              <div className="text-xs font-bold text-slate-800">
+                {g.namaProduk || g.keterangan || 'Stok Gudang Jadi'}
               </div>
-              {Array.isArray(g.items) && g.items.length > 0 && (
+              <div className="text-[10.5px] text-slate-500">
+                Sumber: {g.sumber || g.noAntrian || '-'} • {g.tglDiserahkan || g.tglMutasi?.slice(0, 10) || '-'}
+              </div>
+              {g.qty ? (
+                <div className="pt-1.5 border-t border-slate-100 text-xs flex justify-between items-center">
+                  <span className="text-slate-500 text-[11px]">
+                    {g.varian ? `${g.varian} • Size ${g.ukuran || 'All Size'}` : 'Varian Standar'}
+                  </span>
+                  <span className="font-mono font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                    {Number(g.qty).toLocaleString('id-ID')} Pcs
+                  </span>
+                </div>
+              ) : Array.isArray(g.items) && g.items.length > 0 ? (
                 <div className="pt-1.5 border-t border-slate-100 text-[10.5px] text-slate-600 space-y-0.5">
                   {g.items.map((it, idx) => (
                     <div key={idx} className="flex justify-between">
@@ -120,13 +151,13 @@ export default function MutasiMobile({
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
 
           {mutasiGudangJadiList.length === 0 && (
-            <div className="bg-white p-6 rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
-              Belum ada riwayat stok gudang jadi
+            <div className="bg-white p-6 rounded-2xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
+              Belum ada riwayat mutasi stok gudang jadi
             </div>
           )}
         </div>
@@ -134,4 +165,3 @@ export default function MutasiMobile({
     </div>
   );
 }
-

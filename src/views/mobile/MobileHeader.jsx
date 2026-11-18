@@ -34,12 +34,17 @@ export default function MobileHeader({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="font-black text-sm sm:text-base tracking-tight text-white leading-tight truncate">
-                Ruang Konveksi <span className="font-medium italic text-emerald-300">Mobile</span>
+                {isGudang ? 'Gudang Jadi' : 'Ruang Konveksi'}{' '}
+                <span className="font-medium italic text-emerald-300">Mobile</span>
               </h1>
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="px-1.5 py-0.2 rounded bg-emerald-800/80 text-emerald-200 text-[8.5px] font-black uppercase tracking-wider border border-emerald-600/40 truncate">
-                {currentUser?.nama || roleTitle}
+              <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider border truncate ${
+                isGudang
+                  ? 'bg-amber-500/25 text-amber-200 border-amber-400/40'
+                  : 'bg-emerald-800/80 text-emerald-200 border-emerald-600/40'
+              }`}>
+                {isGudang ? 'SPK & MUTASI GUDANG' : (currentUser?.nama || roleTitle)}
               </span>
             </div>
           </div>
@@ -58,20 +63,22 @@ export default function MobileHeader({
             </span>
           </div>
 
-          {/* Notifikasi Operasional */}
-          <button
-            type="button"
-            onClick={onOpenNotifications || onSwitchToDesktop}
-            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center relative cursor-pointer active:scale-95 transition-transform"
-            title={`${displayCount} Peringatan Operasional`}
-          >
-            <Bell className="w-4 h-4 text-emerald-200" />
-            {displayCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black rounded-full min-w-4 h-4 px-1 flex items-center justify-center border-2 border-[#054338] animate-pulse">
-                {displayCount > 99 ? '99+' : displayCount}
-              </span>
-            )}
-          </button>
+          {/* Notifikasi Operasional (Khusus Non-Gudang) */}
+          {!isGudang && (
+            <button
+              type="button"
+              onClick={onOpenNotifications || onSwitchToDesktop}
+              className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center relative cursor-pointer active:scale-95 transition-transform"
+              title={`${displayCount} Peringatan Operasional`}
+            >
+              <Bell className="w-4 h-4 text-emerald-200" />
+              {displayCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black rounded-full min-w-4 h-4 px-1 flex items-center justify-center border-2 border-[#054338] animate-pulse">
+                  {displayCount > 99 ? '99+' : displayCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Tombol Beralih ke Tampilan Desktop Layar Lebar */}
           <button

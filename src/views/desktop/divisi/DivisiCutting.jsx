@@ -498,6 +498,20 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                             </span>
                           )}
                         </div>
+                        {Array.isArray(item.kebutuhanBahan) && item.kebutuhanBahan.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.kebutuhanBahan.slice(0, 3).map((b, bIdx) => (
+                              <span key={bIdx} className="text-[9.5px] bg-amber-50 text-amber-900 border border-amber-200 px-1 py-0.2 rounded font-medium">
+                                {b.namaBahan}: {b.qtyPerPcs} {b.satuan}/pc
+                              </span>
+                            ))}
+                            {item.kebutuhanBahan.length > 3 && (
+                              <span className="text-[9.5px] text-amber-700 font-bold">
+                                +{item.kebutuhanBahan.length - 3} lagi
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* TARGET QTY */}
@@ -902,6 +916,28 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                 <span className="text-slate-500 block text-[10.5px]">Tarif: Rp {Number(selectedItemDetail.tarifCutting || 0).toLocaleString('id-ID')}/pc</span>
               </div>
             </div>
+
+            {/* Rincian Kebutuhan Bahan Baku dari SPK Gudang */}
+            {Array.isArray(selectedItemDetail.kebutuhanBahan) && selectedItemDetail.kebutuhanBahan.length > 0 && (
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-1.5">
+                <span className="text-[10.5px] text-amber-900 block font-black uppercase tracking-wide">
+                  📦 Kebutuhan Bahan Baku per Pcs (Target: {selectedItemDetail.qty} Pcs)
+                </span>
+                <div className="space-y-1 divide-y divide-amber-200/50">
+                  {selectedItemDetail.kebutuhanBahan.map((b, bIdx) => {
+                    const total = b.totalKebutuhan || Number(((Number(b.qtyPerPcs) || 0) * (Number(selectedItemDetail.qty) || 0)).toFixed(2));
+                    return (
+                      <div key={bIdx} className="flex justify-between items-center text-xs pt-1">
+                        <span className="font-bold text-slate-800">• {b.namaBahan}</span>
+                        <span className="font-mono text-slate-700">
+                          {b.qtyPerPcs} {b.satuan}/pc → <b className="text-amber-900 font-black">{total} {b.satuan}</b>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {selectedItemDetail.catatan && (
               <div className="p-2.5 bg-slate-50 rounded-lg">

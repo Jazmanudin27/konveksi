@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Scissors, ChevronRight, Share2 } from 'lucide-react';
+import { Search, Plus, Scissors, ChevronRight, Share2, Boxes } from 'lucide-react';
 import ShareTrackingModal from '../../components/common/ShareTrackingModal';
 
 export default function AntreanMobile({
@@ -19,6 +19,16 @@ export default function AntreanMobile({
       const noAntrian = item.noAntrian || item.noAntrean || `ANT-${item.id}`;
       const namaProduk = item.namaProduk || item.modelProduk || 'Produk Konveksi';
       const varian = item.varian || item.varianWarna || '';
+      let kebutuhanBahan = [];
+      if (item.kebutuhanBahan) {
+        if (Array.isArray(item.kebutuhanBahan)) {
+          kebutuhanBahan = item.kebutuhanBahan;
+        } else if (typeof item.kebutuhanBahan === 'string') {
+          try {
+            kebutuhanBahan = JSON.parse(item.kebutuhanBahan);
+          } catch (_) {}
+        }
+      }
       return {
         ...item,
         qty,
@@ -26,6 +36,7 @@ export default function AntreanMobile({
         noAntrian,
         namaProduk,
         varian,
+        kebutuhanBahan,
       };
     });
   }, [antreanList]);
@@ -213,6 +224,32 @@ export default function AntreanMobile({
               {item.skuBahan && (
                 <div className="text-[10px] text-slate-400 mt-0.5">
                   Bahan: {item.skuBahan}
+                </div>
+              )}
+
+              {/* Rincian Kebutuhan Bahan Baku per Pcs yang Diinput Gudang */}
+              {Array.isArray(item.kebutuhanBahan) && item.kebutuhanBahan.length > 0 && (
+                <div className="mt-2 p-2 bg-amber-50/80 rounded-xl border border-amber-200/80 text-[10px] space-y-1">
+                  <div className="font-black text-amber-950 flex items-center gap-1 text-[10px]">
+                    <Boxes className="w-3 h-3 text-amber-700" />
+                    <span>Kebutuhan Bahan (Per Pcs & Total {item.qty} Pcs):</span>
+                  </div>
+                  <div className="space-y-0.5 divide-y divide-amber-200/50">
+                    {item.kebutuhanBahan.map((b, bIdx) => {
+                      const total = b.totalKebutuhan || Number(((Number(b.qtyPerPcs) || 0) * (Number(item.qty) || 0)).toFixed(2));
+                      return (
+                        <div key={bIdx} className="flex items-center justify-between pt-0.5 text-slate-700">
+                          <span className="font-bold text-slate-800 truncate max-w-[170px]">• {b.namaBahan}</span>
+                          <span className="font-mono text-slate-600 shrink-0">
+                            {b.qtyPerPcs} {b.satuan}/pc
+                            <span className="text-amber-900 font-black ml-1.5 bg-amber-100/90 px-1 py-0.2 rounded border border-amber-300/60">
+                              {total} {b.satuan}
+                            </span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>

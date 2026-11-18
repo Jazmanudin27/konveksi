@@ -490,6 +490,7 @@ export default function MobileApp({
         isOpen={isAddAntreanOpen}
         onClose={() => setIsAddAntreanOpen(false)}
         products={products}
+        bahan={bahan}
         onAntreanCreated={handleAntreanCreated}
         isGudang={isGudang}
       />

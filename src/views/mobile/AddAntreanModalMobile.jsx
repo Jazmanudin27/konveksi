@@ -9,6 +9,9 @@ import {
   Calendar,
   Layers,
   Sparkles,
+  Plus,
+  Trash2,
+  Boxes,
 } from 'lucide-react';
 import { api } from '../../services/api';
 
@@ -327,6 +330,7 @@ export default function AddAntreanModalMobile({
   isOpen,
   onClose,
   products = [],
+  bahan = [],
   onAntreanCreated,
   isGudang = false,
 }) {
@@ -337,9 +341,50 @@ export default function AddAntreanModalMobile({
     deadline: '',
     catatan: '',
   });
+
+  // State Kebutuhan Bahan Baku per Pcs (Kain, Kancing, Benang, dll)
+  const [kebutuhanBahan, setKebutuhanBahan] = useState([
+    { id: 1, namaBahan: 'Kain Utama', qtyPerPcs: 1.5, satuan: 'Meter' },
+    { id: 2, namaBahan: 'Benang Jahit', qtyPerPcs: 0.1, satuan: 'Roll' },
+  ]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleAddBahanRow = () => {
+    setKebutuhanBahan((prev) => [
+      ...prev,
+      { id: Date.now() + Math.random(), namaBahan: '', qtyPerPcs: 1, satuan: 'Pcs' },
+    ]);
+  };
+
+  const handleAddPresetBahan = (nama, qty, satuan) => {
+    setKebutuhanBahan((prev) => [
+      ...prev,
+      { id: Date.now() + Math.random(), namaBahan: nama, qtyPerPcs: qty, satuan },
+    ]);
+  };
+
+  const handleUpdateBahanRow = (idx, field, val) => {
+    setKebutuhanBahan((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: val };
+      if (field === 'namaBahan') {
+        const matched = (bahan || []).find(
+          (b) => (b.namaBahan || '').toLowerCase() === String(val).toLowerCase()
+        );
+        if (matched && matched.satuan) {
+          next[idx].satuan = matched.satuan;
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleRemoveBahanRow = (idx) => {
+    setKebutuhanBahan((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -348,12 +393,33 @@ export default function AddAntreanModalMobile({
       return;
     }
 
+    const cleanKebutuhan = kebutuhanBahan
+      .filter((b) => b.namaBahan && b.namaBahan.trim() !== '')
+      .map((b) => {
+        const perPcs = Number(b.qtyPerPcs) || 0;
+        const total = Number((perPcs * (Number(form.targetQty) || 0)).toFixed(2));
+        return {
+          namaBahan: b.namaBahan.trim(),
+          qtyPerPcs: perPcs,
+          satuan: b.satuan || 'Pcs',
+          totalKebutuhan: total,
+          catatan: b.catatan || '',
+        };
+      });
+
+    if (isGudang && cleanKebutuhan.length === 0) {
+      alert('Mohon input minimal 1 bahan baku per pcs yang diperlukan (Kain, Kancing, Benang, dll)!');
+      return;
+    }
+
     setIsSubmitting(true);
     const selectedProd = products.find((p) => p.sku === form.sku);
     const prefix = isGudang ? 'SPK' : 'ANT';
     const payload = {
       noAntrean: `${prefix}-${Date.now().toString().slice(-6)}`,
+      noAntrian: `${prefix}-${Date.now().toString().slice(-6)}`,
       tanggalAntrean: new Date().toISOString().split('T')[0],
+      tglMasuk: new Date().toISOString().split('T')[0],
       sumberPermintaan: isGudang ? 'Gudang Jadi' : 'PO Pelanggan',
       noReff: isGudang ? 'Req-Gudang' : '-',
       sku: selectedProd?.sku || form.sku,
@@ -361,14 +427,17 @@ export default function AddAntreanModalMobile({
       kategori: selectedProd?.kategori || 'Umum',
       varianWarna: selectedProd?.varian || 'Standar',
       ukuran: Array.isArray(selectedProd?.ukuran) ? selectedProd?.ukuran[0] : (selectedProd?.ukuran || 'All Size'),
-      bahanBaku: selectedProd?.skuBahan || 'Bahan Standar',
+      bahanBaku: cleanKebutuhan[0]?.namaBahan || selectedProd?.skuBahan || 'Bahan Standar',
       targetQty: Number(form.targetQty) || 50,
+      qty: Number(form.targetQty) || 50,
       prioritas: form.prioritas || 'Normal',
       deadline:
         form.deadline ||
         new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      status: 'Menunggu Cutting',
       statusTahapan: 'Menunggu Cutting',
       catatan: form.catatan || '',
+      kebutuhanBahan: cleanKebutuhan,
     };
 
     try {
@@ -376,6 +445,10 @@ export default function AddAntreanModalMobile({
       onAntreanCreated(saved || payload);
       onClose();
       setForm({ sku: '', targetQty: 50, prioritas: 'Normal', deadline: '', catatan: '' });
+      setKebutuhanBahan([
+        { id: 1, namaBahan: 'Kain Utama', qtyPerPcs: 1.5, satuan: 'Meter' },
+        { id: 2, namaBahan: 'Benang Jahit', qtyPerPcs: 0.1, satuan: 'Roll' },
+      ]);
     } catch (err) {
       alert('Gagal simpan antrean: ' + err.message);
     } finally {
@@ -421,7 +494,23 @@ export default function AddAntreanModalMobile({
           <SearchableProductSelectMobile
             products={products}
             selectedSku={form.sku}
-            onSelectSku={(sku) => setForm((prev) => ({ ...prev, sku }))}
+            onSelectSku={(sku) => {
+              setForm((prev) => ({ ...prev, sku }));
+              const prod = products.find((p) => p.sku === sku);
+              if (prod?.skuBahan) {
+                setKebutuhanBahan((prev) => {
+                  if (prev.length === 0) {
+                    return [{ id: Date.now(), namaBahan: prod.skuBahan, qtyPerPcs: 1.5, satuan: 'Meter' }];
+                  }
+                  if (!prev[0].namaBahan || prev[0].namaBahan === 'Kain Utama') {
+                    const next = [...prev];
+                    next[0] = { ...next[0], namaBahan: prod.skuBahan };
+                    return next;
+                  }
+                  return prev;
+                });
+              }
+            }}
           />
 
           {/* Target Qty & Prioritas */}
@@ -485,6 +574,155 @@ export default function AddAntreanModalMobile({
                   );
                 })}
               </div>
+            </div>
+          </div>
+
+          {/* SECTION KHUSUS: INPUT KEBUTUHAN BAHAN BAKU PER PCS (Kain, Kancing, Benang, dll) */}
+          <div className="p-3 bg-amber-50/70 border border-amber-300/80 rounded-2xl space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-black text-amber-950 flex items-center gap-1.5">
+                  <Boxes className="w-4 h-4 text-amber-700" />
+                  <span>Kebutuhan Bahan Baku per Pcs</span>
+                </label>
+                <p className="text-[10px] text-amber-800/80 font-medium">
+                  Kain, kancing, benang dll per 1 potong baju
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddBahanRow}
+                className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-[10.5px] flex items-center gap-1 shadow-2xs cursor-pointer transition-all"
+              >
+                <Plus className="w-3 h-3 stroke-[3]" />
+                <span>+ Bahan</span>
+              </button>
+            </div>
+
+            {/* Quick Templates Buttons */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[10px]">
+              <span className="text-slate-500 font-bold shrink-0 text-[9.5px]">Cepat:</span>
+              {[
+                { nama: 'Kain Utama', qty: 1.5, satuan: 'Meter' },
+                { nama: 'Kancing', qty: 5, satuan: 'Pcs' },
+                { nama: 'Benang Jahit', qty: 0.1, satuan: 'Roll' },
+                { nama: 'Resleting', qty: 1, satuan: 'Pcs' },
+                { nama: 'Karet', qty: 0.8, satuan: 'Meter' },
+                { nama: 'Hangtag', qty: 1, satuan: 'Pcs' },
+              ].map((tmpl) => (
+                <button
+                  key={tmpl.nama}
+                  type="button"
+                  onClick={() => handleAddPresetBahan(tmpl.nama, tmpl.qty, tmpl.satuan)}
+                  className="px-2 py-0.5 rounded-md bg-white border border-amber-300 text-amber-900 font-bold shrink-0 hover:bg-amber-100 active:scale-95 transition-all cursor-pointer shadow-2xs"
+                >
+                  + {tmpl.nama}
+                </button>
+              ))}
+            </div>
+
+            {/* Daftar Input Bahan */}
+            <div className="space-y-2">
+              {kebutuhanBahan.map((b, idx) => {
+                const totalKebutuhan = Number(
+                  ((Number(b.qtyPerPcs) || 0) * (Number(form.targetQty) || 0)).toFixed(2)
+                );
+                return (
+                  <div
+                    key={b.id || idx}
+                    className="p-2.5 bg-white rounded-xl border border-amber-200 shadow-2xs space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-mono">
+                        #{idx + 1}
+                      </span>
+                      {/* Input Nama Bahan */}
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="text"
+                          placeholder="Nama Bahan (Cth: Kain Rayon, Kancing...)"
+                          value={b.namaBahan}
+                          onChange={(e) => handleUpdateBahanRow(idx, 'namaBahan', e.target.value)}
+                          list={`bahan-datalist-${idx}`}
+                          required
+                          className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:border-amber-600 focus:outline-none"
+                        />
+                        <datalist id={`bahan-datalist-${idx}`}>
+                          {bahan.map((bh) => (
+                            <option key={bh.id || bh.kodeBahan} value={bh.namaBahan}>
+                              {bh.namaBahan} ({bh.satuan || 'Pcs'})
+                            </option>
+                          ))}
+                        </datalist>
+                      </div>
+
+                      {/* Tombol Hapus Row */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBahanRow(idx)}
+                        className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors"
+                        title="Hapus Bahan"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Qty Per Pcs & Satuan + Live Kalkulasi Total SPK */}
+                    <div className="grid grid-cols-12 gap-1.5 items-center">
+                      <div className="col-span-4">
+                        <label className="text-[9px] font-extrabold text-slate-500 block mb-0.5">
+                          Per Pcs
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.001"
+                          placeholder="1.5"
+                          value={b.qtyPerPcs}
+                          onChange={(e) => handleUpdateBahanRow(idx, 'qtyPerPcs', e.target.value)}
+                          required
+                          className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-amber-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="col-span-4">
+                        <label className="text-[9px] font-extrabold text-slate-500 block mb-0.5">
+                          Satuan
+                        </label>
+                        <select
+                          value={b.satuan}
+                          onChange={(e) => handleUpdateBahanRow(idx, 'satuan', e.target.value)}
+                          className="w-full px-1.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:border-amber-600 focus:outline-none"
+                        >
+                          <option value="Meter">Meter</option>
+                          <option value="Yard">Yard</option>
+                          <option value="Pcs">Pcs</option>
+                          <option value="Roll">Roll</option>
+                          <option value="Lusin">Lusin</option>
+                          <option value="Kg">Kg</option>
+                          <option value="Gram">Gram</option>
+                          <option value="Lembar">Lembar</option>
+                        </select>
+                      </div>
+
+                      <div className="col-span-4 bg-amber-50 p-1 rounded-lg border border-amber-200 text-right">
+                        <span className="text-[8.5px] font-bold text-amber-800 block">
+                          Total SPK
+                        </span>
+                        <span className="text-[11px] font-mono font-black text-amber-950 truncate block">
+                          {totalKebutuhan} {b.satuan}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {kebutuhanBahan.length === 0 && (
+                <div className="p-3 bg-white rounded-xl border border-dashed border-amber-300 text-center text-[11px] text-amber-800">
+                  Belum ada bahan baku. Klik <b>+ Bahan</b> di atas.
+                </div>
+              )}
             </div>
           </div>
 

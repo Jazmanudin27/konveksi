@@ -132,25 +132,16 @@ export default function AntreanMobile({
 
   return (
     <div className="space-y-3 pb-6">
-      {/* Banner Khusus SPK untuk Admin Gudang */}
+      {/* Banner Khusus SPK untuk Admin Gudang (Tanpa tombol Buat SPK di header) */}
       {isGudang && (
         <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white rounded-2xl p-3 shadow-sm border border-amber-500/40">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-black tracking-tight leading-tight">
-                SPK Permintaan Produksi
-              </h2>
-              <p className="text-[10px] text-amber-100 font-medium mt-0.5">
-                Surat Perintah Kerja khusus permintaan Gudang ke Bagian Produksi
-              </p>
-            </div>
-            <button
-              onClick={onOpenAddAntrean}
-              className="px-3 py-1.5 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              <span>+ Buat SPK</span>
-            </button>
+          <div>
+            <h2 className="text-sm font-black tracking-tight leading-tight">
+              SPK Permintaan Produksi
+            </h2>
+            <p className="text-[10px] text-amber-100 font-medium mt-0.5">
+              Surat Perintah Kerja khusus permintaan Gudang ke Bagian Produksi
+            </p>
           </div>
         </div>
       )}
@@ -271,23 +262,27 @@ export default function AntreanMobile({
         )}
       </div>
 
-      {/* Floating Action Button (FAB) Tambah Antrean / SPK */}
+      {/* Floating Action Button (FAB) Tambah Antrean / SPK - Khusus SPK Gudang Cukup Icon + Saja */}
       <button
         type="button"
         onClick={onOpenAddAntrean}
-        className={`fixed bottom-20 right-4 z-40 h-12 px-4 rounded-full text-white font-extrabold text-xs shadow-2xl flex items-center gap-2 border-2 border-white/90 active:scale-95 transition-all cursor-pointer group ${
+        className={`fixed bottom-20 right-4 z-40 shadow-2xl flex items-center justify-center border-2 border-white/90 active:scale-95 transition-all cursor-pointer group ${
           isGudang
-            ? 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 shadow-amber-950/40'
-            : 'bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] shadow-emerald-950/50'
+            ? 'w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-500 shadow-amber-950/60'
+            : 'h-12 px-4 rounded-full text-white font-extrabold text-xs bg-gradient-to-r from-[#064e3b] via-[#054338] to-[#04362d] shadow-emerald-950/50 gap-2'
         }`}
         title={isGudang ? 'Buat SPK Permintaan Produksi Baru' : 'Tambah Antrean Produksi Baru'}
       >
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-          isGudang ? 'bg-white/20' : 'bg-emerald-500/30'
-        }`}>
-          <Plus className="w-4 h-4 stroke-[3] text-white group-hover:rotate-90 transition-transform" />
-        </div>
-        <span className="tracking-wide">{isGudang ? '+ Buat SPK' : 'Tambah'}</span>
+        {isGudang ? (
+          <Plus className="w-7 h-7 stroke-[3] text-white group-hover:rotate-90 transition-transform" />
+        ) : (
+          <>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center bg-emerald-500/30">
+              <Plus className="w-4 h-4 stroke-[3] text-white group-hover:rotate-90 transition-transform" />
+            </div>
+            <span className="tracking-wide">Tambah</span>
+          </>
+        )}
       </button>
 
       {/* Modal Share Tracking Link Customer */}

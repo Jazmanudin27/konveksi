@@ -13,7 +13,8 @@ import {
   RotateCcw,
   Warehouse,
   Send,
-  Share2
+  Share2,
+  Layers,
 } from 'lucide-react';
 import SewingMachineIcon from './SewingMachineIcon';
 import ShareTrackingModal from '../../../components/common/ShareTrackingModal';
@@ -34,6 +35,71 @@ export default function ModalShowAntrean({
   if (!antrean) return null;
   const isUrgent = antrean.prioritas === 'Urgent';
   const prod = products.find(p => p.sku === antrean.sku) || null;
+
+  const kebutuhanBahanList = React.useMemo(() => {
+    if (!antrean.kebutuhanBahan) return [];
+    if (Array.isArray(antrean.kebutuhanBahan)) return antrean.kebutuhanBahan;
+    if (typeof antrean.kebutuhanBahan === 'string') {
+      try {
+        const parsed = JSON.parse(antrean.kebutuhanBahan);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    }
+    return [];
+  }, [antrean.kebutuhanBahan]);
+
+  // Kalkulasi HPP Otomatis untuk tampilan detail antrean
+  const hppShowData = React.useMemo(() => {
+    const qtyTarget = Math.max(1, Number(antrean.qty) || 1);
+
+    // Total Biaya Bahan
+    const totalBahan = kebutuhanBahanList.reduce((acc, curr) => {
+      const q = Number(curr.qty) || 0;
+      const h = Number(curr.hargaSatuan) || 0;
+      return acc + q * h;
+    }, 0);
+
+    // Upah Borongan (Cutting, Jahit, Finishing)
+    const biayaCut = Number(
+      antrean.totalBiayaCutting ||
+        qtyTarget * (Number(antrean.tarifCutting) || 1500)
+    );
+    const biayaJht = Number(
+      antrean.totalBiayaJahit ||
+        qtyTarget * (Number(antrean.tarifJahit) || 3500)
+    );
+    const biayaFin = Number(
+      antrean.totalBiayaFinishing ||
+        qtyTarget * (Number(antrean.tarifFinishing) || 1000)
+    );
+    const totalUpah = biayaCut + biayaJht + biayaFin;
+
+    // Total HPP & HPP Per Pcs
+    const totalHpp = Number(antrean.totalHpp) || totalBahan + totalUpah;
+    const hppPerPcs =
+      Number(antrean.hppPerPcs) || Math.round(totalHpp / qtyTarget);
+
+    // Profit & Margin jika ada harga produk
+    const hargaJual = Number(prod?.harga || 0);
+    const profitPerPcs = hargaJual > 0 ? hargaJual - hppPerPcs : 0;
+    const marginPersen =
+      hargaJual > 0 ? Math.round((profitPerPcs / hargaJual) * 100) : 0;
+
+    return {
+      totalBahan,
+      biayaCut,
+      biayaJht,
+      biayaFin,
+      totalUpah,
+      totalHpp,
+      hppPerPcs,
+      hargaJual,
+      profitPerPcs,
+      marginPersen,
+    };
+  }, [antrean, kebutuhanBahanList, prod]);
 
   // Logika Visibilitas: Sembunyikan tahap yang belum saatnya / belum diserahkan
   const showCutting = Boolean(
@@ -265,8 +331,125 @@ export default function ModalShowAntrean({
           </div>
         </div>
 
+        {/* 1.1 KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (Kancing, Resleting, Kain, dll.) */}
+        <div className="bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] shrink-0 overflow-hidden">
+          <div className="p-2.5 bg-slate-50/80 border-b border-slate-200/60 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#0284c7]" />
+              <h4 className="font-bold text-xs text-slate-800">
+                Kebutuhan Bahan & Aksesoris Produksi (Kancing, Resleting, Benang, dll.)
+              </h4>
+            </div>
+            <div className="text-[11px] font-bold text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200/70">
+              {kebutuhanBahanList.length} Bahan Terdaftar
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            {kebutuhanBahanList.length === 0 ? (
+              <div className="p-3 text-center text-slate-400 text-xs">
+                Tidak ada rincian bahan/aksesoris khusus.
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/60 text-slate-500 text-[10px] font-extrabold uppercase border-b border-slate-200/60">
+                    <th className="py-1.5 px-2 text-center w-10 border-r border-slate-200/50">NO</th>
+                    <th className="py-1.5 px-3 border-r border-slate-200/50">NAMA BAHAN / AKSESORIS</th>
+                    <th className="py-1.5 px-3 text-center w-20 border-r border-slate-200/50">QTY</th>
+                    <th className="py-1.5 px-3 w-24 border-r border-slate-200/50">SATUAN</th>
+                    <th className="py-1.5 px-3 text-right w-28 border-r border-slate-200/50">HARGA SATUAN</th>
+                    <th className="py-1.5 px-3 text-right w-28 border-r border-slate-200/50">SUBTOTAL</th>
+                    <th className="py-1.5 px-3 text-slate-600 text-[11px]">CATATAN / SPEK</th>
+                  </tr>
+                </thead>
+                <tbody className="font-medium text-slate-700 divide-y divide-slate-100">
+                  {kebutuhanBahanList.map((item, idx) => {
+                    const q = Number(item.qty || 0);
+                    const h = Number(item.hargaSatuan || 0);
+                    const sub = q * h;
+                    return (
+                      <tr key={item.id || idx} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-1.5 px-2 text-center text-slate-400 font-semibold text-[11px] border-r border-slate-100">
+                          {idx + 1}
+                        </td>
+                        <td className="py-1.5 px-3 font-bold text-slate-900 border-r border-slate-100">
+                          {item.namaBahan || '-'}
+                        </td>
+                        <td className="py-1.5 px-3 text-center font-mono font-bold text-xs text-slate-800 border-r border-slate-100">
+                          {q.toLocaleString('id-ID')}
+                        </td>
+                        <td className="py-1.5 px-3 border-r border-slate-100">
+                          <span className="px-1.5 py-0.2 rounded bg-slate-100/80 text-slate-700 font-semibold border border-slate-200/60 text-[11px]">
+                            {item.satuan || 'Pcs'}
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-3 text-right font-mono font-semibold text-slate-700 border-r border-slate-100">
+                          Rp {h.toLocaleString('id-ID')}
+                        </td>
+                        <td className="py-1.5 px-3 text-right font-mono font-bold text-xs text-[#0284c7] border-r border-slate-100 bg-sky-50/30">
+                          Rp {sub.toLocaleString('id-ID')}
+                        </td>
+                        <td className="py-1.5 px-3 text-slate-600 text-[11px]">
+                          {item.catatan || '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* RINGKASAN HPP OTOMATIS */}
+          <div className="p-3 bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 text-white border-t border-slate-700/80">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+                <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
+                  Total Biaya Bahan
+                </span>
+                <span className="font-mono font-bold text-sm text-sky-300 block mt-0.5">
+                  Rp {hppShowData.totalBahan.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+                <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
+                  Upah Borongan (Cut+Jht+Fin)
+                </span>
+                <span className="font-mono font-bold text-sm text-amber-300 block mt-0.5">
+                  Rp {hppShowData.totalUpah.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+                <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
+                  Total HPP Batch ({antrean.qty} Pcs)
+                </span>
+                <span className="font-mono font-bold text-sm text-white block mt-0.5">
+                  Rp {hppShowData.totalHpp.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <div className="bg-emerald-500/20 rounded-lg p-2 border-2 border-emerald-400/80">
+                <span className="text-[9.5px] uppercase font-black text-emerald-300 block">
+                  ★ HPP / PCS
+                </span>
+                <span className="font-mono font-black text-base text-emerald-400 block mt-0.5">
+                  Rp {hppShowData.hppPerPcs.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+            {hppShowData.hargaJual > 0 && (
+              <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between text-xs flex-wrap gap-2 text-slate-300">
+                <span>Harga Jual: <strong className="text-white font-mono">Rp {hppShowData.hargaJual.toLocaleString('id-ID')}</strong></span>
+                <span className={`px-2 py-0.5 rounded font-mono font-bold text-xs ${hppShowData.profitPerPcs >= 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                  Margin: {hppShowData.profitPerPcs >= 0 ? '+' : ''}Rp {hppShowData.profitPerPcs.toLocaleString('id-ID')} ({hppShowData.marginPersen}%)
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* 2. INFO HEADER CARD NO ANTREAN DLL (DI BAWAHNYA) */}
-        <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs shrink-0">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] shrink-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
             <div>
               <div className="text-[9.5px] uppercase font-bold text-slate-400">No Antrian</div>
@@ -344,7 +527,7 @@ export default function ModalShowAntrean({
           <div className={`grid gap-2 ${visibleCardsCount === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
             {/* TAHAP 2: CUTTING */}
             {showCutting && (
-              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -413,7 +596,7 @@ export default function ModalShowAntrean({
 
             {/* TAHAP 3: JAHIT */}
             {showJahit && (
-              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -482,7 +665,7 @@ export default function ModalShowAntrean({
 
             {/* TAHAP 4: QC */}
             {showQc && (
-              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -563,7 +746,7 @@ export default function ModalShowAntrean({
 
             {/* TAHAP 5: FINISHING & PACKING */}
             {showFinishing && (
-              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -651,7 +834,7 @@ export default function ModalShowAntrean({
 
         {/* TAHAP 6: HISTORI PENYERAHAN GUDANG JADI (JIKA SELESAI) */}
         {showGudangJadi && (
-          <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-lg p-2.5 shadow-2xs space-y-1.5 shrink-0">
+          <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 shrink-0">
             <div className="flex items-center justify-between border-b border-emerald-200 pb-1">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
                 <Warehouse className="w-3.5 h-3.5 text-emerald-600" />
@@ -684,7 +867,7 @@ export default function ModalShowAntrean({
       </div>
 
       {/* 3. BOTTOM BAR */}
-      <div className="bg-white border-t border-[#cbd5e1] px-3 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-md shrink-0">
+      <div className="bg-white border-t border-slate-200/80 px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] shrink-0">
         <div className="flex items-center gap-3 text-xs">
           <div className="text-slate-500 font-medium">
             No Antrean: <span className="font-mono font-bold text-slate-800">{antrean.noAntrian}</span>

@@ -47,6 +47,10 @@ async function getAntreanSelect(whereClause = '', params = []) {
       a.status_bayar_jahit as statusBayarJahit,
       a.status_bayar_qc as statusBayarQc,
       a.status_bayar_finishing as statusBayarFinishing,
+      a.kebutuhan_bahan as kebutuhanBahan,
+      a.total_biaya_bahan as totalBiayaBahan,
+      a.total_hpp as totalHpp,
+      a.hpp_per_pcs as hppPerPcs,
       a.created_at as createdAt,
       p.nama_produk as namaProduk,
       p.kategori,
@@ -57,7 +61,25 @@ async function getAntreanSelect(whereClause = '', params = []) {
     LEFT JOIN products p ON a.sku = p.sku
     ${whereClause}
   `;
-  return await db.all(sql, params);
+  const rows = await db.all(sql, params);
+  return rows.map((r) => {
+    let parsedKebutuhan = [];
+    if (r.kebutuhanBahan) {
+      if (typeof r.kebutuhanBahan === 'string') {
+        try {
+          parsedKebutuhan = JSON.parse(r.kebutuhanBahan);
+        } catch (_) {
+          parsedKebutuhan = [];
+        }
+      } else if (Array.isArray(r.kebutuhanBahan)) {
+        parsedKebutuhan = r.kebutuhanBahan;
+      }
+    }
+    return {
+      ...r,
+      kebutuhanBahan: Array.isArray(parsedKebutuhan) ? parsedKebutuhan : [],
+    };
+  });
 }
 
 // Helper auto No Pembayaran
@@ -240,7 +262,11 @@ router.post('/', async (req, res) => {
     timCutting,
     tarifCutting,
     totalBiayaCutting,
-    catatanCutting
+    catatanCutting,
+    kebutuhanBahan,
+    totalBiayaBahan,
+    totalHpp,
+    hppPerPcs
   } = req.body;
 
   try {
@@ -262,11 +288,16 @@ router.post('/', async (req, res) => {
       finalNo = `${finalNo}-${seqSuffix}`;
     }
 
+    const rawKebutuhan = kebutuhanBahan
+      ? (typeof kebutuhanBahan === 'string' ? kebutuhanBahan : JSON.stringify(kebutuhanBahan))
+      : '[]';
+
     const info = await db.run(`
       INSERT INTO antrean (
         no_antrian, tgl_masuk, sumber_permintaan, no_reff, sku, qty, prioritas, deadline, status, catatan,
-        tgl_serah_cutting, tim_cutting, tarif_cutting, total_biaya_cutting, catatan_cutting
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        tgl_serah_cutting, tim_cutting, tarif_cutting, total_biaya_cutting, catatan_cutting, kebutuhan_bahan,
+        total_biaya_bahan, total_hpp, hpp_per_pcs
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       finalNo,
       tglMasuk || new Date().toISOString().slice(0, 10),
@@ -282,7 +313,11 @@ router.post('/', async (req, res) => {
       timCutting || null,
       Number(tarifCutting) || 0,
       Number(totalBiayaCutting) || 0,
-      catatanCutting || null
+      catatanCutting || null,
+      rawKebutuhan,
+      Number(totalBiayaBahan) || 0,
+      Number(totalHpp) || 0,
+      Number(hppPerPcs) || 0
     ]);
 
     res.status(201).json({
@@ -326,8 +361,16 @@ router.put('/:id', async (req, res) => {
       timJahit = existing.tim_jahit,
       tarifJahit = existing.tarif_jahit,
       totalBiayaJahit = existing.total_biaya_jahit,
-      catatanJahit = existing.catatan_jahit
+      catatanJahit = existing.catatan_jahit,
+      kebutuhanBahan = existing.kebutuhan_bahan,
+      totalBiayaBahan = existing.total_biaya_bahan,
+      totalHpp = existing.total_hpp,
+      hppPerPcs = existing.hpp_per_pcs
     } = req.body || {};
+
+    const rawKebutuhan = kebutuhanBahan !== undefined
+      ? (typeof kebutuhanBahan === 'string' ? kebutuhanBahan : JSON.stringify(kebutuhanBahan || []))
+      : existing.kebutuhan_bahan;
 
     await db.run(`
       UPDATE antrean
@@ -351,7 +394,11 @@ router.put('/:id', async (req, res) => {
         tim_jahit = ?,
         tarif_jahit = ?,
         total_biaya_jahit = ?,
-        catatan_jahit = ?
+        catatan_jahit = ?,
+        kebutuhan_bahan = ?,
+        total_biaya_bahan = ?,
+        total_hpp = ?,
+        hpp_per_pcs = ?
       WHERE id = ?
     `, [
       noAntrian,
@@ -374,6 +421,10 @@ router.put('/:id', async (req, res) => {
       tarifJahit !== undefined ? Number(tarifJahit) : null,
       totalBiayaJahit !== undefined ? Number(totalBiayaJahit) : null,
       catatanJahit,
+      rawKebutuhan,
+      Number(totalBiayaBahan) || 0,
+      Number(totalHpp) || 0,
+      Number(hppPerPcs) || 0,
       id
     ]);
 

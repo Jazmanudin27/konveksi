@@ -406,6 +406,7 @@ export default function App() {
               products={products}
               employees={employees}
               jasa={jasa}
+              bahan={bahan}
             />
           )}
           {activeMenu === 'laporan-stok-gudang' && (

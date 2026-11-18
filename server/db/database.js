@@ -110,6 +110,10 @@ async function initMysql() {
       { name: 'status_bayar_jahit', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
       { name: 'status_bayar_qc', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
       { name: 'status_bayar_finishing', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
+      { name: 'kebutuhan_bahan', def: "TEXT NULL" },
+      { name: 'total_biaya_bahan', def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: 'total_hpp', def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: 'hpp_per_pcs', def: "DECIMAL(14,2) DEFAULT 0" },
     ];
 
     for (const col of extraCols) {

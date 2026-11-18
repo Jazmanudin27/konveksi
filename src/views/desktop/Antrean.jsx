@@ -70,6 +70,7 @@ export default function Antrean({
   products = [],
   employees = [],
   jasa = [],
+  bahan = [],
   timFinishingList: propTimFinishingList = [],
 }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -386,8 +387,75 @@ export default function Antrean({
       .slice(0, 10),
     status: "Menunggu Cutting",
     catatan: "",
+    kebutuhanBahan: [],
   };
   const [formData, setFormData] = useState(initialForm);
+
+  // Helper Kelola Kebutuhan Bahan & Aksesoris (Kancing, Resleting, dll)
+  const handleAddKebutuhanBahan = (
+    defaultName = "",
+    defaultSatuan = "Pcs",
+    defaultHarga = 0
+  ) => {
+    let matchedHarga = defaultHarga;
+    let matchedSatuan = defaultSatuan;
+    if (defaultName) {
+      const match = bahan.find(
+        (b) =>
+          (b.namaBahan || "").toLowerCase() === defaultName.toLowerCase() ||
+          (b.kodeBahan || "").toLowerCase() === defaultName.toLowerCase()
+      );
+      if (match) {
+        matchedHarga = Number(match.harga || 0);
+        matchedSatuan = match.satuan || defaultSatuan;
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      kebutuhanBahan: [
+        ...(prev.kebutuhanBahan || []),
+        {
+          id: Date.now() + Math.random(),
+          namaBahan: defaultName,
+          qty: prev.qty ? Number(prev.qty) : 1,
+          satuan: matchedSatuan,
+          hargaSatuan: matchedHarga,
+          catatan: "",
+        },
+      ],
+    }));
+  };
+
+  const handleUpdateKebutuhanBahan = (index, field, value) => {
+    setFormData((prev) => {
+      const list = [...(prev.kebutuhanBahan || [])];
+      const cur = { ...list[index], [field]: value };
+      if (field === "namaBahan") {
+        const match = bahan.find(
+          (b) =>
+            (b.namaBahan || "").toLowerCase() === String(value).toLowerCase() ||
+            (b.kodeBahan || "").toLowerCase() === String(value).toLowerCase()
+        );
+        if (match) {
+          if (!cur.hargaSatuan || Number(cur.hargaSatuan) === 0) {
+            cur.hargaSatuan = Number(match.harga || 0);
+          }
+          if (!cur.satuan) cur.satuan = match.satuan || "Pcs";
+        }
+      }
+      list[index] = cur;
+      return { ...prev, kebutuhanBahan: list };
+    });
+  };
+
+  const handleDeleteKebutuhanBahan = (index) => {
+    setFormData((prev) => {
+      const list = [...(prev.kebutuhanBahan || [])];
+      list.splice(index, 1);
+      return { ...prev, kebutuhanBahan: list };
+    });
+  };
 
   // Helper get product name safely
   const getProdName = (p) => p?.nama || p?.namaProduk || p?.nama_produk || "-";
@@ -398,6 +466,62 @@ export default function Antrean({
     if (!formData.sku) return null;
     return products.find((p) => p.sku === formData.sku) || null;
   }, [formData.sku, products]);
+
+  // Kalkulasi HPP Otomatis (Biaya Bahan + Upah Borongan)
+  const hppCalculation = useMemo(() => {
+    const qtyTarget = Math.max(1, Number(formData.qty) || 1);
+
+    // 1. Total Biaya Bahan & Aksesoris
+    const totalBiayaBahan = (formData.kebutuhanBahan || []).reduce(
+      (acc, curr) => {
+        const q = Number(curr.qty) || 0;
+        const h = Number(curr.hargaSatuan) || 0;
+        return acc + q * h;
+      },
+      0
+    );
+
+    // 2. Upah Borongan Tenaga Kerja
+    const tarifCut = Number(defaultTarifCutting) || 1500;
+    const tarifJht = Number(defaultTarifJahit) || 3500;
+    const tarifFin = 1000;
+    const biayaCutting = qtyTarget * tarifCut;
+    const biayaJahit = qtyTarget * tarifJht;
+    const biayaFinishing = qtyTarget * tarifFin;
+    const totalUpahBorongan = biayaCutting + biayaJahit + biayaFinishing;
+
+    // 3. Total HPP Batch & HPP per Pcs
+    const totalHpp = totalBiayaBahan + totalUpahBorongan;
+    const hppPerPcs = Math.round(totalHpp / qtyTarget);
+
+    // 4. Analisis Profit & Margin jika ada harga jual produk
+    const hargaJual = Number(selectedProduct?.harga || 0);
+    const profitPerPcs = hargaJual > 0 ? hargaJual - hppPerPcs : 0;
+    const marginPersen =
+      hargaJual > 0 ? Math.round((profitPerPcs / hargaJual) * 100) : 0;
+
+    return {
+      totalBiayaBahan,
+      tarifCut,
+      tarifJht,
+      tarifFin,
+      biayaCutting,
+      biayaJahit,
+      biayaFinishing,
+      totalUpahBorongan,
+      totalHpp,
+      hppPerPcs,
+      hargaJual,
+      profitPerPcs,
+      marginPersen,
+    };
+  }, [
+    formData.qty,
+    formData.kebutuhanBahan,
+    defaultTarifCutting,
+    defaultTarifJahit,
+    selectedProduct,
+  ]);
 
   // Filtered products inside combobox dropdown
   const filteredComboboxProducts = useMemo(() => {
@@ -433,6 +557,7 @@ export default function Antrean({
       ...initialForm,
       noAntrian: generateNoAntrian(),
       sku: defaultSku,
+      kebutuhanBahan: [],
     });
     setModalMode("create");
     setCurrentId(null);
@@ -443,6 +568,19 @@ export default function Antrean({
 
   // Open Modal Edit
   const handleOpenEdit = (item) => {
+    let parsedKebutuhan = [];
+    if (item.kebutuhanBahan) {
+      if (typeof item.kebutuhanBahan === "string") {
+        try {
+          parsedKebutuhan = JSON.parse(item.kebutuhanBahan);
+        } catch (_) {
+          parsedKebutuhan = [];
+        }
+      } else if (Array.isArray(item.kebutuhanBahan)) {
+        parsedKebutuhan = item.kebutuhanBahan;
+      }
+    }
+
     setFormData({
       noAntrian: item.noAntrian || "",
       tglMasuk: item.tglMasuk || "",
@@ -454,6 +592,30 @@ export default function Antrean({
       deadline: item.deadline || "",
       status: item.status || "Menunggu Cutting",
       catatan: item.catatan || "",
+      kebutuhanBahan: Array.isArray(parsedKebutuhan)
+        ? parsedKebutuhan.map((k) => {
+            let harga = Number(k.hargaSatuan || 0);
+            let sat = k.satuan || "Pcs";
+            if (!harga && k.namaBahan) {
+              const match = bahan.find(
+                (b) =>
+                  (b.namaBahan || "").toLowerCase() ===
+                    k.namaBahan.toLowerCase() ||
+                  (b.kodeBahan || "").toLowerCase() ===
+                    k.namaBahan.toLowerCase()
+              );
+              if (match) {
+                harga = Number(match.harga || 0);
+                if (!sat) sat = match.satuan || "Pcs";
+              }
+            }
+            return {
+              ...k,
+              hargaSatuan: harga,
+              satuan: sat,
+            };
+          })
+        : [],
     });
     setModalMode("edit");
     setCurrentId(item.id);
@@ -1323,6 +1485,9 @@ export default function Antrean({
         ...formData,
         ...prodDetails,
         qty: Number(formData.qty),
+        totalBiayaBahan: hppCalculation.totalBiayaBahan,
+        totalHpp: hppCalculation.totalHpp,
+        hppPerPcs: hppCalculation.hppPerPcs,
       };
 
       // Simpan ke state & localStorage agar saat refresh TIDAK HILANG
@@ -1370,6 +1535,9 @@ export default function Antrean({
         ...formData,
         ...prodDetails,
         qty: Number(formData.qty),
+        totalBiayaBahan: hppCalculation.totalBiayaBahan,
+        totalHpp: hppCalculation.totalHpp,
+        hppPerPcs: hppCalculation.hppPerPcs,
       };
 
       setAntreanList((prev) => {
@@ -1596,9 +1764,9 @@ export default function Antrean({
         </div>
       </div>
 
-      {/* 2. STATS KPI CARDS (4 KARTU BER-BORDER #cbd5e1) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+      {/* 2. STATS KPI CARDS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="bg-white border border-slate-200/70 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Total Antrean Masuk
@@ -1615,7 +1783,7 @@ export default function Antrean({
           </div>
         </div>
 
-        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+        <div className="bg-white border border-slate-200/70 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold text-[#b91c1c] uppercase tracking-wider">
               Prioritas Urgent
@@ -1632,7 +1800,7 @@ export default function Antrean({
           </div>
         </div>
 
-        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+        <div className="bg-white border border-slate-200/70 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold text-[#047857] uppercase tracking-wider">
               Menunggu Cutting
@@ -1649,7 +1817,7 @@ export default function Antrean({
           </div>
         </div>
 
-        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+        <div className="bg-white border border-slate-200/70 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Total Target Volume
@@ -1752,16 +1920,16 @@ export default function Antrean({
         </button>
       </div>
 
-      {/* 4. FILTER BAR CARD (HIGH CONTRAST) */}
-      <div className="bg-white border border-[#cbd5e1] rounded-xl p-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex flex-col sm:flex-row items-center gap-2">
+      {/* 4. FILTER BAR CARD */}
+      <div className="bg-white border border-slate-200/70 rounded-xl p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-center gap-2">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-[#94a3b8] absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari No Antrian, No Reff, SKU, Model Produk, Catatan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm bg-[#f8fafc] border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] focus:bg-white text-[#0f172a] transition-all"
+            className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm bg-slate-50/50 border border-slate-200/80 rounded-lg focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/60 focus:bg-white text-slate-900 transition-all"
           />
         </div>
 
@@ -1769,7 +1937,7 @@ export default function Antrean({
           <select
             value={filterSumber}
             onChange={(e) => setFilterSumber(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
+            className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200/80 rounded-lg focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/60 text-slate-700 cursor-pointer"
           >
             <option value="">Semua Sumber Permintaan</option>
             {sumberOptions.map((opt) => (
@@ -1784,7 +1952,7 @@ export default function Antrean({
           <select
             value={filterPrioritas}
             onChange={(e) => setFilterPrioritas(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
+            className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200/80 rounded-lg focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/60 text-slate-700 cursor-pointer"
           >
             <option value="">Semua Prioritas</option>
             <option value="Urgent">Urgent</option>
@@ -2014,6 +2182,19 @@ export default function Antrean({
                                 </span>
                               </>
                             )}
+                            {Array.isArray(item.kebutuhanBahan) &&
+                              item.kebutuhanBahan.length > 0 && (
+                                <>
+                                  <span className="text-slate-400">•</span>
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300 font-bold text-[10.5px]">
+                                    <Layers className="w-3 h-3 text-amber-600" />
+                                    <span>
+                                      {item.kebutuhanBahan.length}{" "}
+                                      Bahan/Aksesoris
+                                    </span>
+                                  </span>
+                                </>
+                              )}
                           </div>
                         </div>
                       </td>
@@ -2041,6 +2222,14 @@ export default function Antrean({
                             )}
                             <span>{item.prioritas}</span>
                           </span>
+
+                          {/* Info HPP per Pcs */}
+                          {Number(item.hppPerPcs) > 0 && (
+                            <span className="text-[10px] font-mono font-extrabold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-300">
+                              HPP: Rp{" "}
+                              {Number(item.hppPerPcs).toLocaleString("id-ID")}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -2375,7 +2564,7 @@ export default function Antrean({
 
       {/* 7. MODAL FORM TAMBAH / EDIT ANTREAN (FULL SCREEN VIEW - COMPACT & RAPI) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#edf1f7] flex flex-col overflow-hidden animate-fade-in font-sans">
+        <div className="fixed inset-0 z-50 bg-[#f8fafc] flex flex-col overflow-hidden animate-fade-in font-sans">
           {/* Modal Top Header Full Screen */}
           <div className="bg-gradient-to-r from-[#0284c7] via-[#0369a1] to-[#075985] text-white px-3 py-1.5 flex items-center justify-between shadow-xs shrink-0">
             <div className="flex items-center gap-2">
@@ -2424,26 +2613,26 @@ export default function Antrean({
             </button>
           </div>
 
-          {/* Scrollable Form Body Full Screen 100% Width (COMPACT) */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-2.5 w-full">
+          {/* Scrollable Form Body Full Screen 100% Width */}
+          <div className="flex-1 overflow-y-auto p-2.5 sm:p-3.5 w-full">
             <form
               id="form-antrean-fullscreen"
               onSubmit={handleSubmit}
-              className="w-full space-y-1.5 text-xs"
+              className="w-full space-y-2.5 text-xs"
             >
               {/* SECTION 1: DOKUMEN & REGISTRASI ANTREAN */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Hash className="w-3 h-3 text-[#0284c7]" />
+              <div className="bg-white rounded-xl border border-slate-200/70 p-3 sm:p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 text-[#0284c7]" />
                     Informasi Dokumen & Registrasi
                   </span>
-                  <span className="text-[9.5px] text-slate-400">
+                  <span className="text-[9.5px] text-slate-400 font-medium">
                     Otomatis / Manual
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
                       No Antrian <span className="text-rose-500">*</span>
@@ -2459,7 +2648,7 @@ export default function Antrean({
                             noAntrian: e.target.value,
                           })
                         }
-                        className="w-full h-7 px-2 rounded border border-slate-300 font-mono font-bold text-[#0284c7] bg-sky-50/40 text-xs focus:outline-none focus:border-[#0284c7] focus:bg-white transition-all"
+                        className="w-full h-8 px-2.5 rounded-lg border border-slate-200/80 hover:border-slate-300 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 font-mono font-bold text-[#0284c7] bg-sky-50/30 text-xs focus:bg-white transition-all outline-none"
                       />
                       <button
                         type="button"
@@ -2488,12 +2677,12 @@ export default function Antrean({
                       onChange={(e) =>
                         setFormData({ ...formData, tglMasuk: e.target.value })
                       }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7] transition-all"
+                      className="w-full h-8 px-2.5 rounded-lg border border-slate-200/80 hover:border-slate-300 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 text-xs text-slate-800 bg-white transition-all outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <div className="flex items-center justify-between mb-0.5">
                       <label className="text-[10.5px] font-bold text-slate-700">
@@ -2522,7 +2711,7 @@ export default function Antrean({
                           sumberPermintaan: e.target.value,
                         })
                       }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs bg-white text-slate-800 font-medium focus:outline-none focus:border-[#0284c7] transition-all cursor-pointer"
+                      className="w-full h-8 px-2.5 rounded-lg border border-slate-200/80 hover:border-slate-300 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 text-xs bg-white text-slate-800 font-medium transition-all cursor-pointer outline-none"
                     >
                       {sumberOptions.map((opt) => (
                         <option key={opt} value={opt}>
@@ -2543,21 +2732,21 @@ export default function Antrean({
                         setFormData({ ...formData, noReff: e.target.value })
                       }
                       placeholder="mis: PO-2026-CLIENT-08"
-                      className="w-full h-7 px-2 rounded border border-slate-300 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7] focus:bg-white transition-all"
+                      className="w-full h-8 px-2.5 rounded-lg border border-slate-200/80 hover:border-slate-300 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 font-mono text-xs text-slate-800 focus:bg-white transition-all outline-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* SECTION 2: SEARCHABLE PRODUCT SELECT (COMBOBOX) */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5 relative">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Tag className="w-3 h-3 text-[#0284c7]" />
+              <div className="bg-white rounded-xl border border-slate-200/70 p-3 sm:p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2.5 relative">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 text-[#0284c7]" />
                     Pilih Produk Konveksi (Searchable SKU){" "}
                     <span className="text-rose-500">*</span>
                   </span>
-                  <span className="px-1.5 py-0.2 rounded bg-sky-100 text-[#0284c7] text-[9.5px] font-bold border border-sky-200">
+                  <span className="px-2 py-0.5 rounded-full bg-sky-50 text-[#0284c7] text-[10px] font-bold border border-sky-100">
                     {products.length} Model Terdaftar
                   </span>
                 </div>
@@ -2567,10 +2756,10 @@ export default function Antrean({
                   <button
                     type="button"
                     onClick={() => setIsProductComboboxOpen((prev) => !prev)}
-                    className={`w-full h-7.5 px-2.5 rounded border text-left flex items-center justify-between transition-all cursor-pointer ${
+                    className={`w-full h-8.5 px-3 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
                       isProductComboboxOpen
-                        ? "border-[#0284c7] ring-1 ring-[#0284c7]/20 bg-white"
-                        : "border-slate-300 bg-white hover:border-[#0284c7] shadow-2xs"
+                        ? "border-[#0284c7] ring-2 ring-sky-100 bg-white"
+                        : "border-slate-200/80 bg-white hover:border-slate-300 shadow-2xs"
                     }`}
                   >
                     {selectedProduct ? (
@@ -2600,10 +2789,10 @@ export default function Antrean({
 
                   {/* POP-OVER DROPDOWN DENGAN SEARCH INPUT */}
                   {isProductComboboxOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-xl z-50 overflow-hidden animate-scale-in">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-scale-in">
                       {/* Search Bar Input inside Combobox */}
-                      <div className="p-1.5 border-b border-slate-200 bg-slate-50 flex items-center gap-1.5">
-                        <Search className="w-3 h-3 text-slate-400 shrink-0" />
+                      <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
+                        <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <input
                           type="text"
                           autoFocus
@@ -2649,10 +2838,10 @@ export default function Antrean({
                                   setIsProductComboboxOpen(false);
                                   setProductComboboxSearch("");
                                 }}
-                                className={`w-full p-1.5 rounded text-left transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                                className={`w-full p-2 rounded-lg text-left transition-colors flex items-center justify-between gap-2 cursor-pointer ${
                                   isSelected
-                                    ? "bg-sky-50/80 border border-sky-300/60"
-                                    : "hover:bg-slate-100/80 border border-transparent"
+                                    ? "bg-sky-50 text-[#0284c7] font-bold"
+                                    : "hover:bg-slate-50 text-slate-700"
                                 }`}
                               >
                                 <div className="flex items-center gap-2 min-w-0">
@@ -2710,7 +2899,7 @@ export default function Antrean({
 
                 {/* Highlight Card Produk yang Terpilih (COMPACT) */}
                 {selectedProduct && (
-                  <div className="bg-[#f8fafc] rounded border border-[#cbd5e1] p-2 shadow-2xs grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-slate-50/70 rounded-xl border border-slate-200/50 p-2.5 shadow-2xs grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div>
                       <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
                         Model Produk
@@ -2752,18 +2941,18 @@ export default function Antrean({
               </div>
 
               {/* SECTION 3: TARGET PRODUKSI, PRIORITAS, DAN DEADLINE */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Boxes className="w-3 h-3 text-[#0284c7]" />
+              <div className="bg-white rounded-xl border border-slate-200/70 p-3 sm:p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Boxes className="w-3.5 h-3.5 text-[#0284c7]" />
                     Target Kuantitas & Parameter Waktu
                   </span>
-                  <span className="text-[9.5px] text-slate-400">
+                  <span className="text-[9.5px] text-slate-400 font-medium">
                     Wajib diisi
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {/* Qty Input with Quick Chips */}
                   <div>
                     <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
@@ -2778,7 +2967,7 @@ export default function Antrean({
                             qty: Math.max(1, Number(prev.qty || 1) - 10),
                           }))
                         }
-                        className="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-l border border-slate-300 border-r-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                        className="w-8 h-8 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 rounded-l-lg border border-slate-200/80 border-r-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
                       >
                         -
                       </button>
@@ -2790,7 +2979,7 @@ export default function Antrean({
                         onChange={(e) =>
                           setFormData({ ...formData, qty: e.target.value })
                         }
-                        className="w-full h-7 px-2 text-center border-y border-slate-300 font-mono font-extrabold text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
+                        className="w-full h-8 px-2 text-center border-y border-slate-200/80 font-mono font-extrabold text-xs text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-[#0284c7]"
                       />
                       <button
                         type="button"
@@ -2800,23 +2989,23 @@ export default function Antrean({
                             qty: Number(prev.qty || 0) + 10,
                           }))
                         }
-                        className="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-r border border-slate-300 border-l-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                        className="w-8 h-8 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 rounded-r-lg border border-slate-200/80 border-l-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
                       >
                         +
                       </button>
                     </div>
 
                     {/* Quick Add Chips */}
-                    <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 mt-1.5">
                       {[50, 100, 200, 500].map((val) => (
                         <button
                           key={val}
                           type="button"
                           onClick={() => setFormData({ ...formData, qty: val })}
-                          className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all cursor-pointer ${
+                          className={`px-2 py-0.5 rounded-md text-[9.5px] font-bold transition-all cursor-pointer ${
                             Number(formData.qty) === val
                               ? "bg-[#0284c7] text-white shadow-2xs"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 border border-slate-200/60"
                           }`}
                         >
                           {val}
@@ -2830,7 +3019,7 @@ export default function Antrean({
                     <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
                       Tingkat Prioritas
                     </label>
-                    <div className="grid grid-cols-3 gap-1">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {[
                         {
                           id: "Urgent",
@@ -2839,7 +3028,7 @@ export default function Antrean({
                           activeClass:
                             "bg-rose-500 text-white border-rose-600 shadow-2xs",
                           inactiveClass:
-                            "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
+                            "bg-rose-50/70 text-rose-700 border-rose-200/70 hover:bg-rose-100",
                         },
                         {
                           id: "Normal",
@@ -2848,7 +3037,7 @@ export default function Antrean({
                           activeClass:
                             "bg-[#0284c7] text-white border-[#0369a1] shadow-2xs",
                           inactiveClass:
-                            "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+                            "bg-sky-50/70 text-sky-700 border-sky-200/70 hover:bg-sky-100",
                         },
                         {
                           id: "Low",
@@ -2857,7 +3046,7 @@ export default function Antrean({
                           activeClass:
                             "bg-slate-700 text-white border-slate-800 shadow-2xs",
                           inactiveClass:
-                            "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200",
+                            "bg-slate-100/80 text-slate-600 border-slate-200/70 hover:bg-slate-200/80",
                         },
                       ].map((prio) => {
                         const Icon = prio.icon;
@@ -2869,11 +3058,11 @@ export default function Antrean({
                             onClick={() =>
                               setFormData({ ...formData, prioritas: prio.id })
                             }
-                            className={`h-7 px-1 rounded border text-[10px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            className={`h-8 px-1 rounded-lg border text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                               isSelected ? prio.activeClass : prio.inactiveClass
                             }`}
                           >
-                            <Icon className="w-2.5 h-2.5 shrink-0" />
+                            <Icon className="w-3 h-3 shrink-0" />
                             <span>{prio.label}</span>
                           </button>
                         );
@@ -2893,25 +3082,373 @@ export default function Antrean({
                       onChange={(e) =>
                         setFormData({ ...formData, deadline: e.target.value })
                       }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7] transition-all"
+                      className="w-full h-8 px-2.5 rounded-lg border border-slate-200/80 hover:border-slate-300 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 text-xs text-slate-800 bg-white transition-all outline-none"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 4: STATUS ALUR & CATATAN KHUSUS */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-[#0284c7]" />
+              {/* SECTION 4: KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (Kancing, Resleting, Kain, dll.) */}
+              <div className="bg-white rounded-xl border border-slate-200/70 p-3 sm:p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-[#0284c7]" />
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-800">
+                      Kebutuhan Bahan & Aksesoris Produksi
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-sky-50 text-[#0284c7] font-bold text-[9.5px] border border-sky-100">
+                      {formData.kebutuhanBahan?.length || 0} Bahan Terdaftar
+                    </span>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="text-[9.5px] font-bold text-slate-400">
+                      Tambah Cepat:
+                    </span>
+                    {[
+                      { label: "+ Kancing", nama: "Kancing", satuan: "Pcs" },
+                      {
+                        label: "+ Resleting",
+                        nama: "Resleting",
+                        satuan: "Pcs",
+                      },
+                      {
+                        label: "+ Karet",
+                        nama: "Karet Elastis",
+                        satuan: "Meter",
+                      },
+                      {
+                        label: "+ Benang",
+                        nama: "Benang Jahit",
+                        satuan: "Cone",
+                      },
+                      {
+                        label: "+ Hangtag",
+                        nama: "Hangtag / Label",
+                        satuan: "Pcs",
+                      },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() =>
+                          handleAddKebutuhanBahan(preset.nama, preset.satuan)
+                        }
+                        className="px-2 py-0.5 rounded-lg text-[9.5px] font-bold bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-[#0284c7] border border-slate-200/80 transition-colors cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => handleAddKebutuhanBahan("", "Pcs")}
+                      className="px-2.5 py-0.5 rounded-lg text-[9.5px] font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                    >
+                      <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                      <span>Tambah Bahan</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Datalist Master Bahan untuk rekomendasi autocomplete */}
+                <datalist id="list-master-bahan">
+                  {bahan.map((b) => (
+                    <option
+                      key={b.id || b.kodeBahan}
+                      value={b.namaBahan || b.kodeBahan}
+                    >
+                      {b.kodeBahan} - Stok: {b.stok || 0} {b.satuan}
+                    </option>
+                  ))}
+                </datalist>
+
+                {/* Tabel Kebutuhan Bahan atau Empty Notice */}
+                {!formData.kebutuhanBahan ||
+                formData.kebutuhanBahan.length === 0 ? (
+                  <div className="py-3 px-3 text-center bg-slate-50/60 border border-dashed border-slate-200 rounded-xl text-slate-500 text-xs">
+                    <p className="font-semibold text-slate-700">
+                      Belum ada rincian bahan/aksesoris khusus.
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Klik salah satu tombol <strong>Tambah Cepat</strong> (+
+                      Kancing, + Resleting, + Karet, dll.) di kanan atas untuk
+                      mencatat kebutuhan bahan produksi.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-slate-200/70 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/90 text-slate-600 text-[10px] font-black uppercase border-b border-slate-200/70">
+                          <th className="py-1.5 px-2.5 w-8 text-center border-r border-slate-200/60">
+                            No
+                          </th>
+                          <th className="py-1.5 px-2.5 min-w-[180px] border-r border-slate-200/60">
+                            Nama Bahan / Aksesoris
+                          </th>
+                          <th className="py-1.5 px-2.5 w-20 text-center border-r border-slate-200/60">
+                            Qty
+                          </th>
+                          <th className="py-1.5 px-2.5 w-24 border-r border-slate-200/60">
+                            Satuan
+                          </th>
+                          <th className="py-1.5 px-2.5 w-28 text-right border-r border-slate-200/60">
+                            Harga Satuan
+                          </th>
+                          <th className="py-1.5 px-2.5 w-28 text-right border-r border-slate-200/60">
+                            Subtotal Bahan
+                          </th>
+                          <th className="py-1.5 px-2.5 min-w-[140px] border-r border-slate-200/60">
+                            Catatan / Spek
+                          </th>
+                          <th className="py-1.5 px-2.5 w-10 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {formData.kebutuhanBahan.map((item, idx) => {
+                          const itemQty = Number(item.qty) || 0;
+                          const itemHarga = Number(item.hargaSatuan) || 0;
+                          const itemSubtotal = itemQty * itemHarga;
+
+                          return (
+                            <tr
+                              key={item.id || idx}
+                              className="hover:bg-sky-50/40 transition-colors"
+                            >
+                              <td className="py-1.5 px-2.5 text-center font-bold text-slate-400 text-[10.5px] border-r border-slate-100">
+                                {idx + 1}
+                              </td>
+                              <td className="py-1 px-2 border-r border-slate-100">
+                                <input
+                                  type="text"
+                                  list="list-master-bahan"
+                                  required
+                                  placeholder="cth: Kancing Batok, Resleting..."
+                                  value={item.namaBahan || ""}
+                                  onChange={(e) =>
+                                    handleUpdateKebutuhanBahan(
+                                      idx,
+                                      "namaBahan",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full h-7 px-2 rounded-lg border border-slate-200/80 bg-slate-50/40 focus:bg-white text-xs text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/50"
+                                />
+                              </td>
+                              <td className="py-1 px-2 border-r border-slate-100">
+                                <input
+                                  type="number"
+                                  min="0.01"
+                                  step="any"
+                                  required
+                                  placeholder="0"
+                                  value={item.qty ?? ""}
+                                  onChange={(e) =>
+                                    handleUpdateKebutuhanBahan(
+                                      idx,
+                                      "qty",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full h-7 px-1.5 text-center font-mono font-bold rounded-lg border border-slate-200/80 bg-slate-50/40 focus:bg-white text-xs text-slate-900 focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/50"
+                                />
+                              </td>
+                              <td className="py-1 px-2 border-r border-slate-100">
+                                <select
+                                  value={item.satuan || "Pcs"}
+                                  onChange={(e) =>
+                                    handleUpdateKebutuhanBahan(
+                                      idx,
+                                      "satuan",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full h-7 px-1.5 rounded-lg border border-slate-200/80 text-xs bg-slate-50/40 focus:bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/50 cursor-pointer"
+                                >
+                                  <option value="Pcs">Pcs</option>
+                                  <option value="Buah">Buah</option>
+                                  <option value="Meter">Meter</option>
+                                  <option value="Yard">Yard</option>
+                                  <option value="Kg">Kg</option>
+                                  <option value="Roll">Roll</option>
+                                  <option value="Cone">Cone</option>
+                                  <option value="Pasang">Pasang</option>
+                                  <option value="Lusin">Lusin</option>
+                                  <option value="Gross">Gross</option>
+                                  <option value="Lembar">Lembar</option>
+                                  <option value="Set">Set</option>
+                                </select>
+                              </td>
+                              <td className="py-1 px-2 border-r border-slate-100">
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1.5 text-[10px] text-slate-400 font-bold">
+                                    Rp
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="any"
+                                    placeholder="0"
+                                    value={item.hargaSatuan ?? ""}
+                                    onChange={(e) =>
+                                      handleUpdateKebutuhanBahan(
+                                        idx,
+                                        "hargaSatuan",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full h-7 pl-6.5 pr-2 text-right font-mono font-bold rounded-lg border border-slate-200/80 bg-slate-50/40 focus:bg-white text-xs text-slate-800 focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/50"
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-1.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900 border-r border-slate-100 bg-slate-50/30">
+                                Rp {itemSubtotal.toLocaleString("id-ID")}
+                              </td>
+                              <td className="py-1 px-2 border-r border-slate-100">
+                                <input
+                                  type="text"
+                                  placeholder="mis: warna senada..."
+                                  value={item.catatan || ""}
+                                  onChange={(e) =>
+                                    handleUpdateKebutuhanBahan(
+                                      idx,
+                                      "catatan",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full h-7 px-2 rounded-lg border border-slate-200/80 bg-slate-50/40 focus:bg-white text-xs text-slate-700 focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100/50"
+                                />
+                              </td>
+                              <td className="py-1.5 px-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteKebutuhanBahan(idx)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="Hapus Bahan"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* KALKULATOR RINGKASAN HPP OTOMATIS (KOMPREHENSIF) */}
+                <div className="mt-2.5 bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 text-white rounded-xl p-3 shadow-md border border-slate-700/80 font-sans">
+                  <div className="flex items-center justify-between border-b border-white/15 pb-1.5 mb-2 flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                        ⚡
+                      </div>
+                      <span className="font-black text-xs uppercase tracking-wider text-emerald-400">
+                        Kalkulator HPP Otomatis (Harga Pokok Produksi)
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-300 font-medium">
+                      Biaya Bahan + Ongkos Borongan (Cutting, Jahit, Finishing)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {/* 1. Biaya Bahan & Aksesoris */}
+                    <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+                      <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
+                        1. Total Biaya Bahan
+                      </span>
+                      <span className="font-mono font-bold text-sm text-sky-300 block mt-0.5">
+                        Rp {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
+                      </span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        {formData.kebutuhanBahan?.length || 0} Material/Aksesoris
+                      </span>
+                    </div>
+
+                    {/* 2. Total Upah Borongan */}
+                    <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+                      <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
+                        2. Total Upah Borongan
+                      </span>
+                      <span className="font-mono font-bold text-sm text-amber-300 block mt-0.5">
+                        Rp {hppCalculation.totalUpahBorongan.toLocaleString("id-ID")}
+                      </span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        Potong, Jahit, Finishing
+                      </span>
+                    </div>
+
+                    {/* 3. Total HPP Batch */}
+                    <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+                      <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
+                        3. Total HPP ({formData.qty || 0} Pcs)
+                      </span>
+                      <span className="font-mono font-black text-sm text-white block mt-0.5">
+                        Rp {hppCalculation.totalHpp.toLocaleString("id-ID")}
+                      </span>
+                      <span className="text-[9px] text-slate-400 block mt-0.5">
+                        Biaya Keseluruhan Batch
+                      </span>
+                    </div>
+
+                    {/* 4. HPP PER PCS (HIGHLIGHTED) */}
+                    <div className="bg-emerald-500/20 rounded-lg p-2 border-2 border-emerald-400/80 flex flex-col justify-between">
+                      <span className="text-[9.5px] uppercase font-black text-emerald-300 block tracking-wider">
+                        ★ ESTIMASI HPP / PCS
+                      </span>
+                      <span className="font-mono font-black text-base sm:text-lg text-emerald-400 block leading-tight mt-0.5">
+                        Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")}
+                      </span>
+                      <span className="text-[9px] text-emerald-200/80 block mt-0.5 font-semibold">
+                        Modal Bersih per Pcs
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Analisis Profit & Margin jika ada harga jual */}
+                  {hppCalculation.hargaJual > 0 && (
+                    <div className="mt-2 pt-2 border-t border-white/15 flex items-center justify-between text-xs flex-wrap gap-2 text-slate-300">
+                      <div className="flex items-center gap-1.5">
+                        <span>Harga Jual Produk:</span>
+                        <strong className="text-white font-mono">
+                          Rp {hppCalculation.hargaJual.toLocaleString("id-ID")}
+                        </strong>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span>Estimasi Margin Laba:</span>
+                        <span
+                          className={`px-2 py-0.5 rounded font-mono font-extrabold text-xs ${
+                            hppCalculation.profitPerPcs >= 0
+                              ? "bg-emerald-500 text-white"
+                              : "bg-rose-500 text-white"
+                          }`}
+                        >
+                          {hppCalculation.profitPerPcs >= 0 ? "+" : ""}
+                          Rp {hppCalculation.profitPerPcs.toLocaleString("id-ID")}{" "}
+                          / Pcs ({hppCalculation.marginPersen}%)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 5: STATUS ALUR & CATATAN KHUSUS */}
+              <div className="bg-white rounded-xl border border-slate-200/70 p-3 sm:p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0284c7]" />
                     Status Tahapan & Catatan SOP
                   </span>
-                  <span className="text-[9.5px] text-slate-400">
+                  <span className="text-[9.5px] text-slate-400 font-medium">
                     Instruksi Produksi
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2.5">
                   <div className="col-span-1">
                     <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
                       Status Tahapan
@@ -2921,7 +3458,7 @@ export default function Antrean({
                       onChange={(e) =>
                         setFormData({ ...formData, status: e.target.value })
                       }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] transition-all cursor-pointer"
+                      className="w-full h-8 px-2.5 rounded-lg border border-slate-200/80 hover:border-slate-300 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 text-xs bg-white text-slate-800 font-medium transition-all cursor-pointer outline-none"
                     >
                       <option value="Menunggu Cutting">Menunggu Cutting</option>
                       <option value="Proses Cutting">Proses Cutting</option>
@@ -2944,7 +3481,7 @@ export default function Antrean({
                         setFormData({ ...formData, catatan: e.target.value })
                       }
                       placeholder="mis: Sablon DTF dada 10cm, jahit rantai pundak, kemasan satuan..."
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7] transition-all"
+                      className="w-full h-8 px-2.5 rounded-lg border border-slate-200/80 hover:border-slate-300 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-100 text-xs text-slate-800 bg-white transition-all outline-none"
                     />
                   </div>
                 </div>
@@ -2953,7 +3490,7 @@ export default function Antrean({
           </div>
 
           {/* Bottom Bar Full Screen 100% Width (COMPACT) */}
-          <div className="bg-white border-t border-[#cbd5e1] px-3 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-xs shrink-0 w-full">
+          <div className="bg-white border-t border-slate-200/70 px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] shrink-0 w-full">
             <div className="flex items-center gap-2.5 text-xs">
               <div className="text-slate-500 font-medium">
                 No. Antrean:{" "}
@@ -2974,14 +3511,14 @@ export default function Antrean({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="h-7 px-3 rounded text-slate-600 hover:bg-slate-100 border border-slate-300 font-bold text-xs cursor-pointer transition-colors"
+                className="h-8 px-3.5 rounded-lg text-slate-600 hover:bg-slate-100 border border-slate-200 font-bold text-xs cursor-pointer transition-colors"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 form="form-antrean-fullscreen"
-                className="h-7 px-4 rounded bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
+                className="h-8 px-4 rounded-lg bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer transition-all"
               >
                 <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>

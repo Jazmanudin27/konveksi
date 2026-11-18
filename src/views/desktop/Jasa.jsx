@@ -15,7 +15,7 @@ import {
   Coins,
   FileSpreadsheet
 } from 'lucide-react';
-import { JASA_SATUAN_OPTIONS } from '../../constants/appConstants';
+import { JASA_SATUAN_OPTIONS } from '../../constants/uiConstants';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
 

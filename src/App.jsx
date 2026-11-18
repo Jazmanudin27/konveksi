@@ -13,11 +13,12 @@ import PembayaranUpah from './views/desktop/pembayaran';
 import Kasbon from './views/desktop/Kasbon';
 import Penjahit from './views/desktop/Penjahit';
 import TimFinishing from './views/desktop/TimFinishing';
+import PermintaanProduksiGudang from './views/desktop/PermintaanProduksiGudang';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
 import MobileApp from './views/mobile/MobileApp';
 import CustomerTracking from './views/tracking/CustomerTracking';
 import { api } from './services/api';
-import { HARGA_POTONG_MAP } from './constants/appConstants';
+import { USER_ROLES } from './constants/userRoles';
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -56,6 +57,7 @@ export default function App() {
     'bahan',
     'mutasi-bahan',
     'mutasi-gudang-jadi',
+    'permintaan-produksi',
     'antrean',
     'laporan-stok-gudang',
     'pembayaran-upah',
@@ -91,6 +93,28 @@ export default function App() {
   };
 
   const [activeMenu, setActiveMenuState] = useState(getInitialMenu);
+
+  // Role User: 6 Role (superadmin, gudang, cutting, jahit, qc, finishing) tersimpan di localStorage
+  const [userRole, setUserRole] = useState(() => {
+    try {
+      return localStorage.getItem('konveksi_user_role') || 'superadmin';
+    } catch (_) {
+      return 'superadmin';
+    }
+  });
+
+  const handleRoleChange = (newRole) => {
+    setUserRole(newRole);
+    try {
+      localStorage.setItem('konveksi_user_role', newRole);
+    } catch (_) {}
+    const config = USER_ROLES[newRole];
+    if (config && Array.isArray(config.allowedMenus)) {
+      if (!config.allowedMenus.includes(activeMenu)) {
+        setActiveMenu(config.defaultMenu || 'dashboard');
+      }
+    }
+  };
 
   const setActiveMenu = (menuKey) => {
     if (!VALID_MENUS.includes(menuKey)) return;
@@ -172,10 +196,7 @@ export default function App() {
         if (Array.isArray(cats)) {
           const mergedCats = cats.map((c) => ({
             ...c,
-            hargaPotong:
-              c.hargaPotong !== undefined && c.hargaPotong !== null && Number(c.hargaPotong) > 0
-                ? Number(c.hargaPotong)
-                : (HARGA_POTONG_MAP[c.nama?.toUpperCase()] || 0),
+            hargaPotong: Number(c.hargaPotong || c.harga_potong || 0),
           }));
           setCategories(mergedCats);
           hasData = true;
@@ -185,16 +206,10 @@ export default function App() {
           hasData = true;
         }
         if (Array.isArray(prds)) {
-          const mergedPrds = prds.map((p) => {
-            const catPotong = HARGA_POTONG_MAP[p.kategori?.toUpperCase()] || 0;
-            return {
-              ...p,
-              hargaPotong:
-                p.hargaPotong !== undefined && p.hargaPotong !== null && Number(p.hargaPotong) > 0
-                  ? Number(p.hargaPotong)
-                  : catPotong,
-            };
-          });
+          const mergedPrds = prds.map((p) => ({
+            ...p,
+            hargaPotong: Number(p.hargaPotong || p.harga_potong || 0),
+          }));
           setProducts(mergedPrds);
           hasData = true;
         }
@@ -325,6 +340,7 @@ export default function App() {
         onClose={() => setSidebarOpen(false)}
         activeMenu={activeMenu}
         onSelectMenu={(menuKey) => setActiveMenu(menuKey)}
+        userRole={userRole}
       />
 
       {/* Main Content Area (Area Scroll Mandiri) */}
@@ -333,6 +349,8 @@ export default function App() {
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           dbConnected={dbConnected}
           onSwitchToMobile={() => toggleViewMode(true)}
+          userRole={userRole}
+          onRoleChange={handleRoleChange}
         />
 
         <main className="flex-1 p-2.5 sm:p-3 overflow-y-auto overflow-x-hidden scrollbar-thin">
@@ -399,6 +417,16 @@ export default function App() {
               products={products}
             />
           )}
+          {activeMenu === 'permintaan-produksi' && (
+            <PermintaanProduksiGudang
+              antreanList={antreanList}
+              setAntreanList={setAntreanList}
+              products={products}
+              mutasiGudangJadiList={mutasiGudangJadiList}
+              setMutasiGudangJadiList={setMutasiGudangJadiList}
+              onNavigateToMutasiGudang={() => setActiveMenu('mutasi-gudang-jadi')}
+            />
+          )}
           {activeMenu === 'antrean' && (
             <Antrean
               antreanList={antreanList}
@@ -407,6 +435,7 @@ export default function App() {
               employees={employees}
               jasa={jasa}
               bahan={bahan}
+              userRole={userRole}
             />
           )}
           {activeMenu === 'laporan-stok-gudang' && (

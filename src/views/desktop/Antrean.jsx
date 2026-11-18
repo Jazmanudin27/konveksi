@@ -48,10 +48,9 @@ import {
 import { api } from "../../services/api";
 import { Swal } from "../../utils/swal";
 import {
-  SUMBER_PERMINTAAN_OPTIONS,
   ANTREAN_PRIORITAS_OPTIONS,
   ANTREAN_STATUS_OPTIONS,
-} from "../../constants/appConstants";
+} from "../../constants/uiConstants";
 
 // Sub-komponen Modular
 import SewingMachineIcon from "./antrean/SewingMachineIcon";
@@ -72,12 +71,34 @@ export default function Antrean({
   jasa = [],
   bahan = [],
   timFinishingList: propTimFinishingList = [],
+  userRole = 'superadmin',
 }) {
+  const getDefaultTabForRole = (role) => {
+    switch (role) {
+      case 'cutting':
+        return 'Proses Cutting';
+      case 'jahit':
+        return 'Proses Jahit';
+      case 'qc':
+        return 'Proses QC';
+      case 'finishing':
+        return 'Proses Finishing';
+      default:
+        return 'Semua Antrean';
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSumber, setFilterSumber] = useState("");
   const [filterPrioritas, setFilterPrioritas] = useState("");
-  const [activeTab, setActiveTab] = useState("Semua Antrean"); // 'Semua Antrean' | 'Menunggu Cutting' | 'Proses Cutting' | 'Proses Jahit' | 'Proses QC' | 'Proses Finishing' | 'Selesai'
+  const [activeTab, setActiveTab] = useState(() => getDefaultTabForRole(userRole));
   const [shareTrackingItem, setShareTrackingItem] = useState(null);
+
+  useEffect(() => {
+    if (userRole && userRole !== 'superadmin') {
+      setActiveTab(getDefaultTabForRole(userRole));
+    }
+  }, [userRole]);
 
   // State Manajemen List Tim Finishing
   const [timFinishingList, setTimFinishingList] =
@@ -89,13 +110,13 @@ export default function Antrean({
     }
   }, [propTimFinishingList]);
 
-  // State Manajemen List Sumber Permintaan (Tersinkron ke Database SQLite)
+  // State Manajemen List Sumber Permintaan (Tersinkron ke Database MySQL)
   const [sumberOptions, setSumberOptions] = useState(() => {
     try {
       const cached = localStorage.getItem("konveksi_sumber_permintaan");
-      return cached ? JSON.parse(cached) : SUMBER_PERMINTAAN_OPTIONS;
+      return cached ? JSON.parse(cached) : ['PO Pelanggan', 'Marketplace / Toko', 'Stok Gudang', 'Rencana Internal'];
     } catch (_) {
-      return SUMBER_PERMINTAAN_OPTIONS;
+      return ['PO Pelanggan', 'Marketplace / Toko', 'Stok Gudang', 'Rencana Internal'];
     }
   });
 
@@ -1737,6 +1758,11 @@ export default function Antrean({
               <span className="px-2 py-0.5 rounded-md bg-white/25 text-white text-[10.5px] font-black">
                 TAHAP 1 SOP
               </span>
+              {userRole && userRole !== 'superadmin' && (
+                <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[10.5px] font-black uppercase tracking-wider shadow-xs">
+                  Akses {userRole}
+                </span>
+              )}
             </div>
             <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
               Pendaftaran permintaan masuk dari PO, barang kosong, atau rencana

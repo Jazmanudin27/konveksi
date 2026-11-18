@@ -567,7 +567,7 @@ export default function MutasiBahan({
                         <div className="inline-flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => setSelectedMutasiShow(item)}
-                            className="w-6 h-6 rounded bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                            className="w-7 h-7 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                             title="Tampilkan Rincian Detail Bahan"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -575,7 +575,7 @@ export default function MutasiBahan({
 
                           <button
                             onClick={() => handleDeleteMutasiPrompt(item)}
-                            className="w-6 h-6 rounded bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                            className="w-7 h-7 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                             title="Hapus Bukti Mutasi"
                           >
                             <Trash2 className="w-3 h-3" />

@@ -215,6 +215,83 @@ async function initMysql() {
       }
     } catch (_) {}
 
+    // Pastikan master kategori dan harga potong tersimpan permanen di database MySQL
+    try {
+      const initialCategories = [
+        { kode: 'CAT-SAMIRA', nama: 'SAMIRA', harga_potong: 700 },
+        { kode: 'CAT-AISHA', nama: 'AISHA', harga_potong: 600 },
+        { kode: 'CAT-SHAFEA', nama: 'SHAFEA', harga_potong: 1000 },
+        { kode: 'CAT-COQUETTE', nama: 'COQUETTE', harga_potong: 1000 },
+        { kode: 'CAT-NAYYARA', nama: 'NAYYARA', harga_potong: 1000 },
+        { kode: 'CAT-ALUNA', nama: 'ALUNA', harga_potong: 1000 },
+        { kode: 'CAT-HAFSA', nama: 'HAFSA', harga_potong: 1000 },
+        { kode: 'CAT-MINA', nama: 'MINA', harga_potong: 1000 },
+        { kode: 'CAT-NAEEMA', nama: 'NAEEMA', harga_potong: 1000 },
+        { kode: 'CAT-IRANANDHA', nama: 'IRANANDHA', harga_potong: 500 },
+        { kode: 'CAT-NAOMI', nama: 'NAOMI', harga_potong: 500 },
+        { kode: 'CAT-RALINE', nama: 'RALINE', harga_potong: 500 },
+        { kode: 'CAT-AYUMI', nama: 'AYUMI', harga_potong: 500 },
+        { kode: 'CAT-VISCOSE', nama: 'VISCOSE', harga_potong: 500 },
+        { kode: 'CAT-KERUDUNG', nama: 'KERUDUNG', harga_potong: 500 },
+        { kode: 'CAT-OVAL', nama: 'OVAL', harga_potong: 500 },
+        { kode: 'CAT-RAWDA', nama: 'RAWDA', harga_potong: 700 },
+        { kode: 'CAT-LINI', nama: 'LINI', harga_potong: 600 },
+        { kode: 'CAT-ZAFIRA', nama: 'ZAFIRA', harga_potong: 700 },
+        { kode: 'CAT-NOIRA', nama: 'NOIRA', harga_potong: 600 },
+        { kode: 'CAT-ALYSSA', nama: 'ALYSSA', harga_potong: 700 },
+        { kode: 'CAT-LAVINA', nama: 'LAVINA', harga_potong: 600 },
+        { kode: 'CAT-ELVARA', nama: 'ELVARA', harga_potong: 500 },
+        { kode: 'CAT-ARUMI', nama: 'ARUMI', harga_potong: 500 },
+        { kode: 'CAT-HABIBAH', nama: 'HABIBAH', harga_potong: 500 },
+        { kode: 'CAT-FATIYA', nama: 'FATIYA', harga_potong: 500 },
+        { kode: 'CAT-HANA', nama: 'HANA', harga_potong: 700 },
+        { kode: 'CAT-LARISA', nama: 'LARISA', harga_potong: 600 },
+        { kode: 'CAT-LUNARA', nama: 'LUNARA', harga_potong: 200 },
+        { kode: 'CAT-ALIFA', nama: 'ALIFA', harga_potong: 600 },
+        { kode: 'CAT-KALUNA', nama: 'KALUNA', harga_potong: 600 },
+        { kode: 'CAT-HUMAIRA', nama: 'HUMAIRA', harga_potong: 1000 },
+        { kode: 'CAT-PASBAN-UV', nama: 'PASBAN UV', harga_potong: 500 },
+        { kode: 'CAT-ZAHWA', nama: 'ZAHWA', harga_potong: 500 },
+      ];
+
+      for (const cat of initialCategories) {
+        const [existing] = await connection.query(
+          "SELECT id, harga_potong FROM categories WHERE UPPER(nama) = ? OR UPPER(kode) = ?",
+          [cat.nama.toUpperCase(), cat.kode.toUpperCase()]
+        );
+        if (!existing || existing.length === 0) {
+          await connection.query(
+            "INSERT INTO categories (kode, nama, harga_potong, status) VALUES (?, ?, ?, 'Aktif')",
+            [cat.kode, cat.nama, cat.harga_potong]
+          );
+        } else if (Number(existing[0].harga_potong || 0) === 0) {
+          await connection.query(
+            "UPDATE categories SET harga_potong = ? WHERE id = ?",
+            [cat.harga_potong, existing[0].id]
+          );
+        }
+      }
+      console.log("✅ Master kategori & harga potong tersinkron permanen di MySQL");
+    } catch (catErr) {
+      console.warn("Peringatan sinkronisasi kategori MySQL:", catErr.message);
+    }
+
+    // Pastikan master ukuran (sizes) tersedia di tabel sizes MySQL
+    try {
+      const defaultSizes = [
+        'S', 'M', 'L', 'XL', 'XXL', '3XL', 'All Size', '28', '30', '32', '34', '36'
+      ];
+      for (let i = 0; i < defaultSizes.length; i++) {
+        await connection.query(
+          "INSERT IGNORE INTO sizes (nama, urutan) VALUES (?, ?)",
+          [defaultSizes[i], i + 1]
+        );
+      }
+      console.log("✅ Master ukuran (sizes) tersinkron permanen di MySQL");
+    } catch (szErr) {
+      console.warn("Peringatan sinkronisasi sizes MySQL:", szErr.message);
+    }
+
     connection.release();
   } catch (err) {
     console.error("❌ Gagal inisialisasi MySQL Database:", err.message);

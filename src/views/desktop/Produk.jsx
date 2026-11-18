@@ -34,13 +34,13 @@ import {
 } from "lucide-react";
 import { api } from "../../services/api";
 import { Swal } from "../../utils/swal";
-import { HARGA_POTONG_MAP } from "../../constants/appConstants";
-import {
-  PRODUCT_SIZES,
-  PRODUCT_CATEGORIES,
-  PRODUCT_STATUSES,
-  BAHAN_OPTIONS,
-} from "../../constants/productConstants";
+
+const PRODUCT_STATUSES = [
+  { value: 'Aktif', label: 'Aktif', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { value: 'Produksi', label: 'Produksi', badgeClass: 'bg-sky-50 text-sky-700 border-sky-200' },
+  { value: 'Sample', label: 'Sample', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { value: 'Habis', label: 'Habis', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' },
+];
 
 export function getSmartColorHex(varianName, fallbackHex) {
   if (
@@ -536,17 +536,12 @@ export default function Produk({
               className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#cbd5e1] rounded-md focus:outline-none focus:border-[#0284c7] text-[#334155] cursor-pointer"
             >
               <option value="">Semua Bahan Kain</option>
-              {bahanList && bahanList.length > 0
-                ? bahanList.map((b) => (
-                    <option key={b.id || b.kodeBahan} value={b.kodeBahan}>
-                      {b.kodeBahan} - {b.namaBahan}
-                    </option>
-                  ))
-                : BAHAN_OPTIONS.map((b) => (
-                    <option key={b.code} value={b.code}>
-                      {b.name}
-                    </option>
-                  ))}
+              {bahanList && bahanList.length > 0 &&
+                bahanList.map((b) => (
+                  <option key={b.id || b.kodeBahan} value={b.kodeBahan}>
+                    {b.kodeBahan} - {b.namaBahan}
+                  </option>
+                ))}
             </select>
           </div>
         </div>
@@ -1204,26 +1199,26 @@ export default function Produk({
                                     <button
                                       type="button"
                                       onClick={() => setViewProduct(variant)}
-                                      className="w-6 h-6 rounded bg-slate-100 hover:bg-sky-50 text-slate-600 hover:text-sky-600 flex items-center justify-center transition-colors cursor-pointer"
+                                      className="w-6 h-6 rounded-md bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                                       title="Lihat Detail"
                                     >
-                                      <Eye className="w-3 h-3" />
+                                      <Eye className="w-3 h-3 text-white" />
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleOpenEdit(variant)}
-                                      className="w-6 h-6 rounded bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-600 flex items-center justify-center transition-colors cursor-pointer"
+                                      className="w-6 h-6 rounded-md bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                                       title="Edit Varian"
                                     >
-                                      <Edit3 className="w-3 h-3" />
+                                      <Edit3 className="w-3 h-3 text-white" />
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteProductPrompt(variant)}
-                                      className="w-6 h-6 rounded bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
+                                      className="w-6 h-6 rounded-md bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                                       title="Hapus Varian"
                                     >
-                                      <Trash2 className="w-3 h-3" />
+                                      <Trash2 className="w-3 h-3 text-white" />
                                     </button>
                                   </div>
                                 </div>
@@ -1326,30 +1321,30 @@ export default function Produk({
                                       </span>
                                     </td>
                                     <td className="py-2 px-3 text-center">
-                                      <div className="flex items-center justify-center gap-1">
+                                      <div className="flex items-center justify-center gap-1.5">
                                         <button
                                           type="button"
                                           onClick={() => setViewProduct(variant)}
-                                          className="p-1 rounded text-slate-500 hover:text-[#0284c7] hover:bg-sky-50 transition-colors cursor-pointer"
+                                          className="w-6 h-6 rounded-md bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                                           title="Lihat Detail"
                                         >
-                                          <Eye className="w-3.5 h-3.5" />
+                                          <Eye className="w-3 h-3 text-white" />
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => handleOpenEdit(variant)}
-                                          className="p-1 rounded text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                                          className="w-6 h-6 rounded-md bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                                           title="Edit Varian"
                                         >
-                                          <Edit3 className="w-3.5 h-3.5" />
+                                          <Edit3 className="w-3 h-3 text-white" />
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => handleDeleteProductPrompt(variant)}
-                                          className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                          className="w-6 h-6 rounded-md bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                                           title="Hapus Varian"
                                         >
-                                          <Trash2 className="w-3.5 h-3.5" />
+                                          <Trash2 className="w-3 h-3 text-white" />
                                         </button>
                                       </div>
                                     </td>
@@ -2218,8 +2213,7 @@ function FormModalProduk({
                     )}
                     {formData.skuBahan &&
                       formData.skuBahan !== '-' &&
-                      !bahanList?.some((b) => b.kodeBahan === formData.skuBahan) &&
-                      !BAHAN_OPTIONS?.some((b) => b.code === formData.skuBahan) && (
+                      !bahanList?.some((b) => b.kodeBahan === formData.skuBahan) && (
                         <option value={formData.skuBahan}>{formData.skuBahan} (Custom)</option>
                       )}
                   </select>
@@ -2259,12 +2253,7 @@ function FormModalProduk({
                       setFormData({
                         ...formData,
                         kategori: selectedCat,
-                        hargaPotong:
-                          catObj?.hargaPotong !== undefined &&
-                          catObj.hargaPotong > 0
-                            ? catObj.hargaPotong
-                            : HARGA_POTONG_MAP[selectedCat?.toUpperCase()] ||
-                              formData.hargaPotong,
+                        hargaPotong: Number(catObj?.hargaPotong || formData.hargaPotong || 0),
                       });
                     }}
                     className="w-full h-7 px-2 text-xs font-medium bg-white border border-slate-300 rounded focus:outline-none focus:border-[#0284c7] cursor-pointer text-slate-800"
@@ -2469,9 +2458,9 @@ function FormModalProduk({
                   </div>
 
                   <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto pr-1 p-1.5 bg-slate-50/80 rounded-lg border border-slate-200">
-                    {(sizes.length > 0
+                    {(sizes && sizes.length > 0
                       ? sizes.map((s) => s.nama || s)
-                      : PRODUCT_SIZES
+                      : ['S', 'M', 'L', 'XL', 'XXL', '3XL', 'All Size']
                     ).map((sz) => {
                       const isSelected = formData.ukuran === sz;
                       return (

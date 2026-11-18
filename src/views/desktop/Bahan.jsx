@@ -14,7 +14,7 @@ import {
   Package,
   Boxes
 } from 'lucide-react';
-import { BAHAN_SATUAN_OPTIONS } from '../../constants/appConstants';
+import { BAHAN_SATUAN_OPTIONS } from '../../constants/uiConstants';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
 
@@ -351,20 +351,20 @@ export default function Bahan({ bahan = [], setBahan }) {
                       </div>
                     </td>
                     <td className="py-2 px-2 text-center">
-                      <div className="inline-flex items-center justify-center gap-1">
+                      <div className="inline-flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handleOpenEdit(item)}
-                          className="w-6 h-6 rounded bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                          className="w-7 h-7 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                           title="Edit Bahan"
                         >
-                          <Edit3 className="w-3 h-3" />
+                          <Edit3 className="w-3.5 h-3.5 text-white" />
                         </button>
                         <button
                           onClick={() => handleDeleteBahanPrompt(item)}
-                          className="w-6 h-6 rounded bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                          className="w-7 h-7 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
                           title="Hapus Bahan"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5 text-white" />
                         </button>
                       </div>
                     </td>

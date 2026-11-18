@@ -218,8 +218,8 @@ export default function AntreanMobile({
                       className="text-[10.5px] font-bold text-white bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer"
                     >
                       <span>
-                        {(item.status === 'Menunggu Cutting' || item.status === 'Draft') && 'Serah Cutting'}
-                        {item.status === 'Proses Cutting' && 'Serah Jahit'}
+                        {(item.status === 'Menunggu Cutting' || item.status === 'Draft') && 'Proses Cutting'}
+                        {item.status === 'Proses Cutting' && 'Serahkan ke Penjahit'}
                         {item.status === 'Proses Jahit' && 'Serah QC'}
                         {item.status === 'Proses QC' && 'Serah Finishing'}
                         {item.status === 'Proses Finishing' && 'Masuk Gudang'}

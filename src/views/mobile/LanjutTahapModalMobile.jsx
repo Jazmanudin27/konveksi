@@ -419,9 +419,9 @@ export default function LanjutTahapModalMobile({
             <div>
               <h3 className="text-sm font-extrabold tracking-wide">
                 {currentStatus === "Menunggu Cutting" &&
-                  "Serah ke Tim Cutting (Tahap 2)"}
+                  "Mulai Proses Cutting (Pola Kain)"}
                 {currentStatus === "Proses Cutting" &&
-                  "Serah ke Tim Penjahit (Tahap 3)"}
+                  "Selesaikan Cutting & Serah ke Penjahit"}
                 {currentStatus === "Proses Jahit" &&
                   "Serah ke Pemeriksaan QC (Tahap 4)"}
                 {currentStatus === "Proses QC" &&
@@ -818,7 +818,7 @@ export default function LanjutTahapModalMobile({
                 <>
                   <span>
                     {currentStatus === "Menunggu Cutting" &&
-                      "Serahkan ke Cutting"}
+                      "Mulai Proses Cutting"}
                     {currentStatus === "Proses Cutting" &&
                       "Serahkan ke Penjahit"}
                     {currentStatus === "Proses Jahit" && "Mulai QC"}

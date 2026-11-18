@@ -26,6 +26,7 @@ import {
   X,
   ShieldCheck,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { USER_ROLES } from "../../constants/userRoles";
 
@@ -35,6 +36,8 @@ export default function Sidebar({
   activeMenu,
   onSelectMenu,
   userRole = "superadmin",
+  currentUser = null,
+  onLogout = null,
 }) {
   // State collapse sub-menu Data Master, Laporan, & Settings
   const [isDataMasterOpen, setIsDataMasterOpen] = useState(true);
@@ -725,6 +728,22 @@ export default function Sidebar({
             </>
           )}
         </div>
+
+        {/* Footer Logout Button */}
+        {onLogout && (
+          <div className="p-3 border-t border-slate-800/80 bg-[#080e1e]">
+            <button
+              onClick={() => {
+                if (onClose) onClose();
+                onLogout();
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-800/50 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-98"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <span>Keluar (Logout)</span>
+            </button>
+          </div>
+        )}
       </aside>
     </>
   );

@@ -131,7 +131,8 @@ export const api = {
   deleteKasbon: (id) => request(`/kasbon/${id}`, { method: 'DELETE' }),
   getKasbonRiwayat: (id) => request(`/kasbon/${id}/riwayat`),
 
-  // Users & Role Management (Pengaturan Akun)
+  // Users & Role Management (Pengaturan Akun & Login)
+  login: (data) => request('/users/login', { method: 'POST', body: JSON.stringify(data) }),
   getUsers: () => request('/users'),
   getUserById: (id) => request(`/users/${id}`),
   createUser: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),

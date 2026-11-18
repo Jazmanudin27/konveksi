@@ -3,6 +3,47 @@ import db from '../db/database.js';
 
 const router = Router();
 
+// POST /login - Autentikasi Pengguna
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username dan Password wajib diisi.' });
+  }
+
+  const cleanUsername = String(username).trim().toLowerCase();
+  const inputPassword = String(password).trim();
+
+  try {
+    const user = await db.get(
+      'SELECT id, username, nama, email, password, role, status, telepon, keterangan FROM users WHERE LOWER(username) = ?',
+      [cleanUsername]
+    );
+
+    if (!user) {
+      return res.status(401).json({ error: 'Username tidak ditemukan di database.' });
+    }
+
+    if (user.status !== 'Aktif') {
+      return res.status(403).json({ error: `Akun "${user.username}" sedang ${user.status}. Hubungi Super Admin.` });
+    }
+
+    if (user.password !== inputPassword) {
+      return res.status(401).json({ error: 'Password yang Anda masukkan salah.' });
+    }
+
+    // Login sukses: kembalikan data profil tanpa password
+    const { password: _, ...userData } = user;
+    res.json({
+      success: true,
+      message: 'Login berhasil.',
+      user: userData
+    });
+  } catch (err) {
+    console.error('❌ Error POST /api/users/login:', err);
+    res.status(500).json({ error: 'Terjadi kesalahan server saat login: ' + err.message });
+  }
+});
+
 // GET all users
 router.get('/', async (req, res) => {
   try {

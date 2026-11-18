@@ -15,7 +15,8 @@ import {
   ChevronDown,
   Check,
   ShieldCheck,
-  Layers
+  Layers,
+  LogOut
 } from 'lucide-react';
 import { useClock } from '../../hooks/useClock';
 import { USER_ROLES } from '../../constants/userRoles';
@@ -26,6 +27,8 @@ export default function TopHeader({
   onSwitchToMobile,
   userRole = 'superadmin',
   onRoleChange,
+  currentUser = null,
+  onLogout = null,
 }) {
   const timeStr = useClock();
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -197,7 +200,7 @@ export default function TopHeader({
           )}
         </div>
 
-        {/* Status Database SQLite */}
+        {/* Status Database MySQL */}
         <div
           className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
             dbConnected
@@ -206,8 +209,8 @@ export default function TopHeader({
           }`}
           title={
             dbConnected
-              ? 'Terhubung ke Database SQLite (konveksi.db di port 3008)'
-              : 'Server backend belum jalan, memakai mock data sementara'
+              ? 'Terhubung ke Database MySQL (konveksi@localhost)'
+              : 'Server backend offline / belum terhubung'
           }
         >
           <Database className="w-3 h-3 text-cyan-400" />
@@ -216,7 +219,7 @@ export default function TopHeader({
               dbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
             }`}
           />
-          <span>{dbConnected ? 'SQLite Online' : 'SQLite Offline'}</span>
+          <span>{dbConnected ? 'MySQL Online' : 'MySQL Offline'}</span>
         </div>
 
         {/* Tombol Beralih ke Versi Mobile */}
@@ -228,6 +231,18 @@ export default function TopHeader({
           <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
           <span>Versi Mobile</span>
         </button>
+
+        {/* Tombol Logout Akun */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white border border-rose-800/60 text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+            title={currentUser ? `Keluar dari akun @${currentUser.username}` : 'Keluar dari Akun'}
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        )}
 
         {/* Jam Real-time */}
         <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/60 text-slate-300 border border-slate-700/60 text-[11px] font-medium font-mono">

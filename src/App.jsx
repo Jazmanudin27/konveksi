@@ -22,7 +22,9 @@ import DivisiCutting from './views/desktop/divisi/DivisiCutting';
 import DivisiJahit from './views/desktop/divisi/DivisiJahit';
 import DivisiQC from './views/desktop/divisi/DivisiQC';
 import DivisiFinishing from './views/desktop/divisi/DivisiFinishing';
+import Login from './views/auth/Login';
 import { api } from './services/api';
+import { Swal } from './utils/swal';
 import { USER_ROLES } from './constants/userRoles';
 
 export default function App() {
@@ -104,14 +106,56 @@ export default function App() {
 
   const [activeMenu, setActiveMenuState] = useState(getInitialMenu);
 
+  // Status Login Pengguna (Tersimpan di localStorage konveksi_user)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('konveksi_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (_) {
+      return null;
+    }
+  });
+
   // Role User: 6 Role (superadmin, gudang, cutting, jahit, qc, finishing) tersimpan di localStorage
   const [userRole, setUserRole] = useState(() => {
     try {
+      const savedUser = localStorage.getItem('konveksi_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.role) return u.role;
+      }
       return localStorage.getItem('konveksi_user_role') || 'superadmin';
     } catch (_) {
       return 'superadmin';
     }
   });
+
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('konveksi_user', JSON.stringify(user));
+      localStorage.setItem('konveksi_user_role', user.role || 'superadmin');
+    } catch (_) {}
+    const roleKey = user.role || 'superadmin';
+    setUserRole(roleKey);
+    const config = USER_ROLES[roleKey];
+    setActiveMenu(config?.defaultMenu || 'dashboard');
+    Swal.toast(`Selamat datang, ${user.nama} (${roleKey})!`);
+  };
+
+  const handleLogout = async () => {
+    const res = await Swal.confirm(
+      'Keluar dari Akun?',
+      'Anda harus login kembali dengan username & password untuk mengakses sistem.'
+    );
+    if (res.isConfirmed) {
+      setCurrentUser(null);
+      try {
+        localStorage.removeItem('konveksi_user');
+      } catch (_) {}
+      Swal.toast('Berhasil keluar.');
+    }
+  };
 
   const handleRoleChange = (newRole) => {
     setUserRole(newRole);
@@ -319,6 +363,11 @@ export default function App() {
     );
   }
 
+  // Jika Belum Login -> Tampilkan Halaman Login Pengguna
+  if (!currentUser) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
   if (isMobileView) {
     return (
       <MobileApp
@@ -338,6 +387,8 @@ export default function App() {
         setMutasiGudangJadiList={setMutasiGudangJadiList}
         dbConnected={dbConnected}
         onSwitchToDesktop={() => toggleViewMode(false)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
     );
   }
@@ -351,6 +402,8 @@ export default function App() {
         activeMenu={activeMenu}
         onSelectMenu={(menuKey) => setActiveMenu(menuKey)}
         userRole={userRole}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area (Area Scroll Mandiri) */}
@@ -361,6 +414,8 @@ export default function App() {
           onSwitchToMobile={() => toggleViewMode(true)}
           userRole={userRole}
           onRoleChange={handleRoleChange}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
         <main className="flex-1 p-2.5 sm:p-3 overflow-y-auto overflow-x-hidden scrollbar-thin">

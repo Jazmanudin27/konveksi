@@ -446,29 +446,29 @@ export default function Users() {
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleOpenDetail(item)}
-                            className="w-7 h-7 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                            className="w-7.5 h-7.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
                             title="Lihat Detail User"
                           >
-                            <Eye className="w-3.5 h-3.5 text-white" />
+                            <Eye className="w-4 h-4 text-white stroke-[2.2]" />
                           </button>
                           <button
                             onClick={() => handleOpenEdit(item)}
-                            className="w-7 h-7 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                            className="w-7.5 h-7.5 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
                             title="Edit User"
                           >
-                            <Edit3 className="w-3.5 h-3.5 text-white" />
+                            <Edit3 className="w-4 h-4 text-white stroke-[2.2]" />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(item)}
                             disabled={item.username === 'admin'}
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-xs active:scale-95 ${
+                            className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-95 ${
                               item.username === 'admin'
                                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                                 : 'bg-[#ef4444] hover:bg-[#dc2626] text-white cursor-pointer'
                             }`}
                             title={item.username === 'admin' ? 'Super Admin utama tidak dapat dihapus' : 'Hapus User'}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4 stroke-[2.2]" />
                           </button>
                         </div>
                       </td>

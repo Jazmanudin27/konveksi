@@ -79,7 +79,11 @@ export default function MobileApp({
   setMutasiGudangJadiList,
   dbConnected,
   onSwitchToDesktop,
+  userRole = 'superadmin',
+  currentUser = null,
+  onLogout = () => {},
 }) {
+  const isGudang = userRole === 'gudang';
   // Tab Navigasi Aktif Mobile: 'home' | 'antrean' | 'mutasi' | 'produk' | 'menu'
   // Diinisialisasi langsung dari URL hash agar saat di-reload tetap di menu tersebut!
   const [mobileRoute, setMobileRoute] = useState(resolveMobileRouteFromHash);
@@ -326,6 +330,9 @@ export default function MobileApp({
                   activeUrgentCount={activeUrgentCount}
                   notificationCount={notificationCount}
                   onOpenNotifications={() => setIsNotificationOpen(true)}
+                  userRole={userRole}
+                  currentUser={currentUser}
+                  onLogout={onLogout}
                 />
                 <div className="px-3.5">
                   <DashboardMobile
@@ -334,6 +341,8 @@ export default function MobileApp({
                     bahan={bahan}
                     employees={employees}
                     categories={categories}
+                    userRole={userRole}
+                    currentUser={currentUser}
                     onNavigate={(tab) => {
                       if (['karyawan', 'bahan', 'kategori', 'laporan', 'pembayaran-upah', 'kasbon'].includes(tab)) {
                         navigateMobile('menu', tab);
@@ -389,6 +398,7 @@ export default function MobileApp({
         onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
         onOpenMenu={() => setIsMenuOpen(true)}
         activeOrderCount={activeOrderCount}
+        isGudang={isGudang}
       />
 
       {/* 4. MODAL BOTTOM SHEET PROFIL & MENU LENGKAP */}
@@ -403,6 +413,10 @@ export default function MobileApp({
         employeeCount={employees.length}
         bahanCount={bahan.length}
         categoryCount={categories.length}
+        userRole={userRole}
+        currentUser={currentUser}
+        onLogout={onLogout}
+        isGudang={isGudang}
       />
 
       {/* 5. MODAL FORM TAMBAH ANTREAN */}

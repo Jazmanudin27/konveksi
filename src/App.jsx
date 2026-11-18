@@ -387,6 +387,7 @@ export default function App() {
         setMutasiGudangJadiList={setMutasiGudangJadiList}
         dbConnected={dbConnected}
         onSwitchToDesktop={() => toggleViewMode(false)}
+        userRole={userRole}
         currentUser={currentUser}
         onLogout={handleLogout}
       />

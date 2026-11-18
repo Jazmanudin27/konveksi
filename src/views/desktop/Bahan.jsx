@@ -354,17 +354,17 @@ export default function Bahan({ bahan = [], setBahan }) {
                       <div className="inline-flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handleOpenEdit(item)}
-                          className="w-7 h-7 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                          className="w-7.5 h-7.5 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
                           title="Edit Bahan"
                         >
-                          <Edit3 className="w-3.5 h-3.5 text-white" />
+                          <Edit3 className="w-4 h-4 text-white stroke-[2.2]" />
                         </button>
                         <button
                           onClick={() => handleDeleteBahanPrompt(item)}
-                          className="w-7 h-7 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                          className="w-7.5 h-7.5 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
                           title="Hapus Bahan"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-white" />
+                          <Trash2 className="w-4 h-4 text-white stroke-[2.2]" />
                         </button>
                       </div>
                     </td>

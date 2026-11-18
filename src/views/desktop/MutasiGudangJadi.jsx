@@ -535,43 +535,43 @@ export default function MutasiGudangJadi({
       </div>
 
       {/* 5. TABEL INDEX MUTASI GUDANG JADI (DESAIN SPREADSHEET ELEGAN & HIGH CONTRAST) */}
-      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-slate-800">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border border-slate-800">
-                <th className="py-2.5 px-1 text-center w-10 min-w-[36px] border border-slate-800 text-white font-bold">
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-1 text-center w-10 min-w-[36px] border-r border-[#3b4c5e] text-white font-bold">
                   NO
                 </th>
-                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[150px] border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[150px] border-r border-[#3b4c5e] text-white font-bold">
                   NO. BUKTI & TANGGAL
                 </th>
-                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[140px] border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[140px] border-r border-[#3b4c5e] text-white font-bold">
                   SUMBER / NO. ANTREAN
                 </th>
-                <th className="py-2.5 px-1.5 text-center whitespace-nowrap min-w-[90px] border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-1.5 text-center whitespace-nowrap min-w-[90px] border-r border-[#3b4c5e] text-white font-bold">
                   JENIS
                 </th>
-                <th className="py-2.5 px-3 min-w-[200px] border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-3 min-w-[200px] border-r border-[#3b4c5e] text-white font-bold">
                   MODEL PRODUK (SKU & VARIAN)
                 </th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[100px] border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[100px] border-r border-[#3b4c5e] text-white font-bold">
                   KUANTITI
                 </th>
-                <th className="py-2.5 px-2.5 min-w-[150px] border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-2.5 min-w-[150px] border-r border-[#3b4c5e] text-white font-bold">
                   LOKASI RAK & STATUS
                 </th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[110px] border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[110px] text-white font-bold">
                   AKSI
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200">
               {filteredList.length === 0 ? (
                 <tr>
                   <td
                     colSpan="8"
-                    className="py-14 text-center text-slate-400 border border-slate-800 bg-slate-50/30"
+                    className="py-14 text-center text-slate-400 bg-slate-50/30"
                   >
                     <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400">
                       <Warehouse className="w-6 h-6 stroke-[1.8]" />
@@ -599,12 +599,12 @@ export default function MutasiGudangJadi({
                       } hover:bg-sky-50/70`}
                     >
                       {/* 1. NO */}
-                      <td className="py-[2px] px-1 text-center text-slate-600 font-mono font-bold text-[11px] border border-slate-800">
+                      <td className="py-[2px] px-1 text-center text-slate-600 font-mono font-bold text-[11px] border-r border-slate-200/60">
                         {idx + 1}
                       </td>
 
                       {/* 2. NO BUKTI & TANGGAL */}
-                      <td className="py-[2px] px-2 border border-slate-800">
+                      <td className="py-[2px] px-2 border-r border-slate-200/60">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span className="font-mono font-black text-[11px] text-[#0284c7] bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 inline-block w-fit">
                             {item.noMutasi}
@@ -621,7 +621,7 @@ export default function MutasiGudangJadi({
                       </td>
 
                       {/* 3. SUMBER / NO ANTREAN */}
-                      <td className="py-[2px] px-2 border border-slate-800">
+                      <td className="py-[2px] px-2 border-r border-slate-200/60">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span
                             className="font-bold text-[11px] text-slate-800 truncate leading-tight"
@@ -652,7 +652,7 @@ export default function MutasiGudangJadi({
                       </td>
 
                       {/* 4. JENIS MUTASI */}
-                      <td className="py-[2px] px-1 text-center border border-slate-800">
+                      <td className="py-[2px] px-1 text-center border-r border-slate-200/60">
                         <span
                           className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold border shadow-2xs ${
                             isMasuk
@@ -675,7 +675,7 @@ export default function MutasiGudangJadi({
                       </td>
 
                       {/* 5. MODEL PRODUK (SKU, NAMA, VARIAN, UKURAN) */}
-                      <td className="py-[2px] px-3 border border-slate-800">
+                      <td className="py-[2px] px-3 border-r border-slate-200/60">
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-mono font-extrabold text-[9.5px] text-sky-800 bg-sky-100/70 px-1.5 py-0.2 rounded border border-sky-300 shrink-0">
@@ -700,7 +700,7 @@ export default function MutasiGudangJadi({
                       </td>
 
                       {/* 6. KUANTITI MUTASI (DEDICATED CONTRAST BADGE) */}
-                      <td className="py-[2px] px-1 text-center border border-slate-800">
+                      <td className="py-[2px] px-1 text-center border-r border-slate-200/60">
                         <div className="flex flex-col items-center">
                           <span
                             className={`font-mono font-black text-xs px-2 py-0.5 rounded-md border shadow-2xs whitespace-nowrap ${
@@ -720,7 +720,7 @@ export default function MutasiGudangJadi({
                       </td>
 
                       {/* 7. LOKASI RAK & STATUS PENERIMAAN */}
-                      <td className="py-[2px] px-2 text-xs border border-slate-800">
+                      <td className="py-[2px] px-2 text-xs border-r border-slate-200/60">
                         {isPending ? (
                           <div className="space-y-0.5">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9.5px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs">
@@ -771,7 +771,7 @@ export default function MutasiGudangJadi({
                       </td>
 
                       {/* 8. AKSI (TIDAK KETUTUP / TERPOTONG) */}
-                      <td className="py-[2px] px-2 text-center border border-slate-800">
+                      <td className="py-[2px] px-2 text-center">
                         <div className="inline-flex items-center justify-center gap-1.5">
                           {isPending && (
                             <button

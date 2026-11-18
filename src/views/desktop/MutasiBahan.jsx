@@ -462,24 +462,24 @@ export default function MutasiBahan({
       </div>
 
       {/* 5. TABEL INDEX MUTASI */}
-      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-slate-800">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
-                <th className="py-2.5 px-2 text-center w-10 min-w-[36px] border border-slate-800 text-white font-bold">NO</th>
-                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[140px] border border-slate-800 text-white font-bold">NO BUKTI</th>
-                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[100px] border border-slate-800 text-white font-bold">TGL</th>
-                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[110px] border border-slate-800 text-white font-bold">NO REFF</th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[110px] border border-slate-800 text-white font-bold">JENIS MUTASI</th>
-                <th className="py-2.5 px-3 min-w-[200px] border border-slate-800 text-white font-bold">KETERANGAN</th>
-                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[80px] border border-slate-800 text-white font-bold">AKSI</th>
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-2 text-center w-10 min-w-[36px] border-r border-[#3b4c5e] text-white font-bold">NO</th>
+                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[140px] border-r border-[#3b4c5e] text-white font-bold">NO BUKTI</th>
+                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[100px] border-r border-[#3b4c5e] text-white font-bold">TGL</th>
+                <th className="py-2.5 px-2.5 whitespace-nowrap min-w-[110px] border-r border-[#3b4c5e] text-white font-bold">NO REFF</th>
+                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[110px] border-r border-[#3b4c5e] text-white font-bold">JENIS MUTASI</th>
+                <th className="py-2.5 px-3 min-w-[200px] border-r border-[#3b4c5e] text-white font-bold">KETERANGAN</th>
+                <th className="py-2.5 px-2 text-center whitespace-nowrap min-w-[80px] text-white font-bold">AKSI</th>
               </tr>
             </thead>
-            <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
+            <tbody className="font-medium text-slate-800 divide-y divide-slate-200">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400 border border-slate-800">
+                  <td colSpan="7" className="py-12 text-center text-slate-400">
                     <FolderOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">Tidak ada data mutasi bahan baku</p>
                     <p className="text-[11px] text-slate-400">Klik "+ Bahan Masuk" atau "- Bahan Keluar" untuk mencatat bukti transaksi baru</p>
@@ -491,21 +491,21 @@ export default function MutasiBahan({
                   const totalItem = (item.items || []).length;
 
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-800">
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       {/* NO */}
-                      <td className="py-2 px-1 text-center text-slate-700 font-bold text-xs border border-slate-800">
+                      <td className="py-2 px-1 text-center text-slate-700 font-bold text-xs border-r border-slate-200/60">
                         {idx + 1}
                       </td>
 
                       {/* NO BUKTI */}
-                      <td className="py-2 px-2.5 border border-slate-800">
+                      <td className="py-2 px-2.5 border-r border-slate-200/60">
                         <span className="font-mono font-bold text-xs text-[#0284c7] whitespace-nowrap">
                           {item.noBukti}
                         </span>
                       </td>
 
                       {/* TGL */}
-                      <td className="py-2 px-2.5 text-slate-700 text-xs border border-slate-800">
+                      <td className="py-2 px-2.5 text-slate-700 text-xs border-r border-slate-200/60">
                         <div className="flex items-center gap-1 min-w-0">
                           <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-mono text-xs font-semibold text-slate-900 whitespace-nowrap">
@@ -515,7 +515,7 @@ export default function MutasiBahan({
                       </td>
 
                       {/* NO REFF */}
-                      <td className="py-2 px-2.5 border border-slate-800">
+                      <td className="py-2 px-2.5 border-r border-slate-200/60">
                         <span
                           className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300 inline-block truncate max-w-full"
                           title={item.noReff}
@@ -525,7 +525,7 @@ export default function MutasiBahan({
                       </td>
 
                       {/* JENIS MUTASI */}
-                      <td className="py-2 px-2 text-center border border-slate-800">
+                      <td className="py-2 px-2 text-center border-r border-slate-200/60">
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-bold border ${
                             isMasuk
@@ -548,7 +548,7 @@ export default function MutasiBahan({
                       </td>
 
                       {/* KETERANGAN (AUTO FIT DENGAN TRUNCATE, ZERO SCROLL) */}
-                      <td className="py-2 px-3 text-slate-700 text-xs border border-slate-800 overflow-hidden">
+                      <td className="py-2 px-3 text-slate-700 text-xs border-r border-slate-200/60 overflow-hidden">
                         <div className="flex items-center justify-between gap-1.5 min-w-0">
                           <span
                             className="truncate text-slate-800 text-xs leading-tight block"
@@ -563,7 +563,7 @@ export default function MutasiBahan({
                       </td>
 
                       {/* AKSI: HANYA IKON (SHOW & HAPUS) */}
-                      <td className="py-2 px-2 text-center border border-slate-800">
+                      <td className="py-2 px-2 text-center">
                         <div className="inline-flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => setSelectedMutasiShow(item)}

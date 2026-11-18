@@ -332,15 +332,15 @@ export default function ModalShowAntrean({
         </div>
 
         {/* 1.1 KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (Kancing, Resleting, Kain, dll.) */}
-        <div className="bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] shrink-0 overflow-hidden">
-          <div className="p-2.5 bg-slate-50/80 border-b border-slate-200/60 flex items-center justify-between">
+        <div className="bg-white border border-[#cbd5e1] rounded-lg shadow-2xs shrink-0 overflow-hidden">
+          <div className="p-2 bg-[#f8fafc] border-b border-[#cbd5e1] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-[#0284c7]" />
               <h4 className="font-bold text-xs text-slate-800">
                 Kebutuhan Bahan & Aksesoris Produksi (Kancing, Resleting, Benang, dll.)
               </h4>
             </div>
-            <div className="text-[11px] font-bold text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200/70">
+            <div className="text-[11px] font-bold text-[#0284c7] bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
               {kebutuhanBahanList.length} Bahan Terdaftar
             </div>
           </div>
@@ -353,13 +353,13 @@ export default function ModalShowAntrean({
             ) : (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/60 text-slate-500 text-[10px] font-extrabold uppercase border-b border-slate-200/60">
-                    <th className="py-1.5 px-2 text-center w-10 border-r border-slate-200/50">NO</th>
-                    <th className="py-1.5 px-3 border-r border-slate-200/50">NAMA BAHAN / AKSESORIS</th>
-                    <th className="py-1.5 px-3 text-center w-20 border-r border-slate-200/50">QTY</th>
-                    <th className="py-1.5 px-3 w-24 border-r border-slate-200/50">SATUAN</th>
-                    <th className="py-1.5 px-3 text-right w-28 border-r border-slate-200/50">HARGA SATUAN</th>
-                    <th className="py-1.5 px-3 text-right w-28 border-r border-slate-200/50">SUBTOTAL</th>
+                  <tr className="bg-[#f8fafc] text-slate-500 text-[10px] font-extrabold uppercase border-b border-[#cbd5e1]">
+                    <th className="py-1.5 px-2 text-center w-10 border-r border-[#cbd5e1]">NO</th>
+                    <th className="py-1.5 px-3 border-r border-[#cbd5e1]">NAMA BAHAN / AKSESORIS</th>
+                    <th className="py-1.5 px-3 text-center w-20 border-r border-[#cbd5e1]">QTY</th>
+                    <th className="py-1.5 px-3 w-24 border-r border-[#cbd5e1]">SATUAN</th>
+                    <th className="py-1.5 px-3 text-right w-28 border-r border-[#cbd5e1]">HARGA SATUAN</th>
+                    <th className="py-1.5 px-3 text-right w-28 border-r border-[#cbd5e1]">SUBTOTAL</th>
                     <th className="py-1.5 px-3 text-slate-600 text-[11px]">CATATAN / SPEK</th>
                   </tr>
                 </thead>
@@ -369,25 +369,25 @@ export default function ModalShowAntrean({
                     const h = Number(item.hargaSatuan || 0);
                     const sub = q * h;
                     return (
-                      <tr key={item.id || idx} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-1.5 px-2 text-center text-slate-400 font-semibold text-[11px] border-r border-slate-100">
+                      <tr key={item.id || idx} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-1.5 px-2 text-center text-slate-400 font-semibold text-[11px] border-r border-[#cbd5e1]">
                           {idx + 1}
                         </td>
-                        <td className="py-1.5 px-3 font-bold text-slate-900 border-r border-slate-100">
+                        <td className="py-1.5 px-3 font-bold text-slate-900 border-r border-[#cbd5e1]">
                           {item.namaBahan || '-'}
                         </td>
-                        <td className="py-1.5 px-3 text-center font-mono font-bold text-xs text-slate-800 border-r border-slate-100">
+                        <td className="py-1.5 px-3 text-center font-mono font-bold text-xs text-slate-800 border-r border-[#cbd5e1]">
                           {q.toLocaleString('id-ID')}
                         </td>
-                        <td className="py-1.5 px-3 border-r border-slate-100">
-                          <span className="px-1.5 py-0.2 rounded bg-slate-100/80 text-slate-700 font-semibold border border-slate-200/60 text-[11px]">
+                        <td className="py-1.5 px-3 border-r border-[#cbd5e1]">
+                          <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200 text-[11px]">
                             {item.satuan || 'Pcs'}
                           </span>
                         </td>
-                        <td className="py-1.5 px-3 text-right font-mono font-semibold text-slate-700 border-r border-slate-100">
+                        <td className="py-1.5 px-3 text-right font-mono font-semibold text-slate-700 border-r border-[#cbd5e1]">
                           Rp {h.toLocaleString('id-ID')}
                         </td>
-                        <td className="py-1.5 px-3 text-right font-mono font-bold text-xs text-[#0284c7] border-r border-slate-100 bg-sky-50/30">
+                        <td className="py-1.5 px-3 text-right font-mono font-bold text-xs text-[#0284c7] border-r border-[#cbd5e1] bg-sky-50/30">
                           Rp {sub.toLocaleString('id-ID')}
                         </td>
                         <td className="py-1.5 px-3 text-slate-600 text-[11px]">
@@ -402,9 +402,9 @@ export default function ModalShowAntrean({
           </div>
 
           {/* RINGKASAN HPP OTOMATIS */}
-          <div className="p-3 bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 text-white border-t border-slate-700/80">
+          <div className="p-2.5 bg-slate-900 text-white border-t border-[#cbd5e1]">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+              <div className="bg-white/10 rounded p-2">
                 <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
                   Total Biaya Bahan
                 </span>
@@ -412,7 +412,7 @@ export default function ModalShowAntrean({
                   Rp {hppShowData.totalBahan.toLocaleString('id-ID')}
                 </span>
               </div>
-              <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+              <div className="bg-white/10 rounded p-2">
                 <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
                   Upah Borongan (Cut+Jht+Fin)
                 </span>
@@ -420,7 +420,7 @@ export default function ModalShowAntrean({
                   Rp {hppShowData.totalUpah.toLocaleString('id-ID')}
                 </span>
               </div>
-              <div className="bg-white/10 rounded-lg p-2 border border-white/10">
+              <div className="bg-white/10 rounded p-2">
                 <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
                   Total HPP Batch ({antrean.qty} Pcs)
                 </span>
@@ -428,7 +428,7 @@ export default function ModalShowAntrean({
                   Rp {hppShowData.totalHpp.toLocaleString('id-ID')}
                 </span>
               </div>
-              <div className="bg-emerald-500/20 rounded-lg p-2 border-2 border-emerald-400/80">
+              <div className="bg-emerald-500/20 rounded p-2 border border-emerald-400">
                 <span className="text-[9.5px] uppercase font-black text-emerald-300 block">
                   ★ HPP / PCS
                 </span>
@@ -438,7 +438,7 @@ export default function ModalShowAntrean({
               </div>
             </div>
             {hppShowData.hargaJual > 0 && (
-              <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between text-xs flex-wrap gap-2 text-slate-300">
+              <div className="mt-2 pt-1.5 border-t border-white/15 flex items-center justify-between text-xs flex-wrap gap-2 text-slate-300">
                 <span>Harga Jual: <strong className="text-white font-mono">Rp {hppShowData.hargaJual.toLocaleString('id-ID')}</strong></span>
                 <span className={`px-2 py-0.5 rounded font-mono font-bold text-xs ${hppShowData.profitPerPcs >= 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
                   Margin: {hppShowData.profitPerPcs >= 0 ? '+' : ''}Rp {hppShowData.profitPerPcs.toLocaleString('id-ID')} ({hppShowData.marginPersen}%)
@@ -449,7 +449,7 @@ export default function ModalShowAntrean({
         </div>
 
         {/* 2. INFO HEADER CARD NO ANTREAN DLL (DI BAWAHNYA) */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] shrink-0">
+        <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs shrink-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
             <div>
               <div className="text-[9.5px] uppercase font-bold text-slate-400">No Antrian</div>
@@ -527,7 +527,7 @@ export default function ModalShowAntrean({
           <div className={`grid gap-2 ${visibleCardsCount === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
             {/* TAHAP 2: CUTTING */}
             {showCutting && (
-              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -596,7 +596,7 @@ export default function ModalShowAntrean({
 
             {/* TAHAP 3: JAHIT */}
             {showJahit && (
-              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -665,7 +665,7 @@ export default function ModalShowAntrean({
 
             {/* TAHAP 4: QC */}
             {showQc && (
-              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -746,7 +746,7 @@ export default function ModalShowAntrean({
 
             {/* TAHAP 5: FINISHING & PACKING */}
             {showFinishing && (
-              <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 flex flex-col justify-between">
+              <div className="bg-white border border-[#cbd5e1] rounded-lg p-2.5 shadow-2xs space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -834,7 +834,7 @@ export default function ModalShowAntrean({
 
         {/* TAHAP 6: HISTORI PENYERAHAN GUDANG JADI (JIKA SELESAI) */}
         {showGudangJadi && (
-          <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-2 shrink-0">
+          <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-lg p-2.5 shadow-2xs space-y-1.5 shrink-0">
             <div className="flex items-center justify-between border-b border-emerald-200 pb-1">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
                 <Warehouse className="w-3.5 h-3.5 text-emerald-600" />
@@ -867,7 +867,7 @@ export default function ModalShowAntrean({
       </div>
 
       {/* 3. BOTTOM BAR */}
-      <div className="bg-white border-t border-slate-200/80 px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] shrink-0">
+      <div className="bg-white border-t border-[#cbd5e1] px-3 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-md shrink-0">
         <div className="flex items-center gap-3 text-xs">
           <div className="text-slate-500 font-medium">
             No Antrean: <span className="font-mono font-bold text-slate-800">{antrean.noAntrian}</span>

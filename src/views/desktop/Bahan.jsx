@@ -280,33 +280,33 @@ export default function Bahan({ bahan = [], setBahan }) {
       </div>
 
       {/* 4. TABEL BAHAN RINGKAS (KOLOM TERPADU, ANTI-SCROLL HORIZONTAL) */}
-      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-slate-800">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
-                <th className="py-2.5 px-2 text-center w-12 border border-slate-800 text-white font-bold">NO</th>
-                <th className="py-2.5 px-3 min-w-[220px] border border-slate-800 text-white font-bold">KODE & NAMA BAHAN</th>
-                <th className="py-2.5 px-3 min-w-[200px] border border-slate-800 text-white font-bold">SUPPLIER UTAMA</th>
-                <th className="py-2.5 px-3 text-right min-w-[180px] border border-slate-800 text-white font-bold">HARGA & STOK</th>
-                <th className="py-2.5 px-2 text-center w-20 border border-slate-800 text-white font-bold">AKSI</th>
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-2 text-center w-12 border-r border-[#3b4c5e] text-white font-bold">NO</th>
+                <th className="py-2.5 px-3 min-w-[220px] border-r border-[#3b4c5e] text-white font-bold">KODE & NAMA BAHAN</th>
+                <th className="py-2.5 px-3 min-w-[200px] border-r border-[#3b4c5e] text-white font-bold">SUPPLIER UTAMA</th>
+                <th className="py-2.5 px-3 text-right min-w-[180px] border-r border-[#3b4c5e] text-white font-bold">HARGA & STOK</th>
+                <th className="py-2.5 px-2 text-center w-20 text-white font-bold">AKSI</th>
               </tr>
             </thead>
-            <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
+            <tbody className="font-medium text-slate-800 divide-y divide-slate-200">
               {filteredBahan.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-10 text-center text-slate-400 border border-slate-800">
+                  <td colSpan="5" className="py-10 text-center text-slate-400">
                     <FolderOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">Tidak ada bahan baku ditemukan</p>
                   </td>
                 </tr>
               ) : (
                 filteredBahan.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-800">
-                    <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs border border-slate-800">
+                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs border-r border-slate-200/60">
                       {idx + 1}
                     </td>
-                    <td className="py-2 px-3 border border-slate-800">
+                    <td className="py-2 px-3 border-r border-slate-200/60">
                       <div className="flex flex-col gap-0.5 items-start">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono font-bold text-xs text-[#0284c7]">
@@ -331,10 +331,10 @@ export default function Bahan({ bahan = [], setBahan }) {
                         )}
                       </div>
                     </td>
-                    <td className="py-2 px-3 border border-slate-800 text-slate-800 font-semibold text-xs">
+                    <td className="py-2 px-3 border-r border-slate-200/60 text-slate-800 font-semibold text-xs">
                       {item.supplier || '-'}
                     </td>
-                    <td className="py-2 px-3 text-right border border-slate-800">
+                    <td className="py-2 px-3 text-right border-r border-slate-200/60">
                       <div className="flex flex-col items-end gap-0.5">
                         <div className="flex items-center gap-1.5 text-xs">
                           <span className="text-[10px] uppercase font-bold text-slate-500">Harga:</span>
@@ -350,7 +350,7 @@ export default function Bahan({ bahan = [], setBahan }) {
                         </div>
                       </div>
                     </td>
-                    <td className="py-2 px-2 text-center border border-slate-800">
+                    <td className="py-2 px-2 text-center">
                       <div className="inline-flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleOpenEdit(item)}

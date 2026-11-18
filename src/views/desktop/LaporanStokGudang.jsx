@@ -439,7 +439,7 @@ export default function LaporanStokGudang({
 
         {/* Kolom Kanan: Card Filter Laporan Persediaan (PERSIS GAMBAR 1) */}
         <div className="md:col-span-9">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-md overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Header Card Biru Navy (Persis Gambar 1) */}
             <div className="bg-[#1e40af] text-white px-4 py-2.5 flex items-center justify-between">
               <div className="flex items-center gap-2 font-bold text-xs">

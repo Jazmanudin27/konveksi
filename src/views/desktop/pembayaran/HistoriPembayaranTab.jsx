@@ -32,7 +32,7 @@ export default function HistoriPembayaranTab({
   return (
     <div className="space-y-3">
       {/* Search Bar */}
-      <div className="bg-white border-2 border-slate-400 rounded-xl p-3 shadow-md flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -49,40 +49,40 @@ export default function HistoriPembayaranTab({
       </div>
 
       {/* TABEL SPREADSHEET HISTORI PEMBAYARAN */}
-      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-slate-800">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border border-slate-800">
-                <th className="py-2.5 px-3 text-center w-12 border border-slate-800 text-white font-bold">
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-3 text-center w-12 border-r border-[#3b4c5e] text-white font-bold">
                   NO
                 </th>
-                <th className="py-2.5 px-4 whitespace-nowrap border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-4 whitespace-nowrap border-r border-[#3b4c5e] text-white font-bold">
                   TANGGAL BAYAR & METODE
                 </th>
-                <th className="py-2.5 px-4 whitespace-nowrap border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-4 whitespace-nowrap border-r border-[#3b4c5e] text-white font-bold">
                   PERIODE KERJA
                 </th>
-                <th className="py-2.5 px-4 border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-4 border-r border-[#3b4c5e] text-white font-bold">
                   PENERIMA UPAH & DIVISI
                 </th>
-                <th className="py-2.5 px-4 text-center whitespace-nowrap border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-4 text-center whitespace-nowrap border-r border-[#3b4c5e] text-white font-bold">
                   VOLUME PEKERJAAN
                 </th>
-                <th className="py-2.5 px-4 text-right whitespace-nowrap border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-4 text-right whitespace-nowrap border-r border-[#3b4c5e] text-white font-bold">
                   JUMLAH BAYAR
                 </th>
-                <th className="py-2.5 px-4 text-center w-40 whitespace-nowrap border border-slate-800 text-white font-bold">
+                <th className="py-2.5 px-4 text-center w-40 whitespace-nowrap text-white font-bold">
                   AKSI
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 font-medium text-slate-800">
+            <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
               {filteredList.length === 0 ? (
                 <tr>
                   <td
                     colSpan="7"
-                    className="py-12 text-center text-slate-400 border border-slate-800"
+                    className="py-12 text-center text-slate-400"
                   >
                     <Receipt className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-sm font-semibold text-slate-600">
@@ -97,14 +97,14 @@ export default function HistoriPembayaranTab({
                 filteredList.map((h, idx) => (
                   <tr
                     key={h.key || idx}
-                    className="hover:bg-slate-50 transition-colors border-b border-slate-800"
+                    className="hover:bg-slate-50 transition-colors"
                   >
-                    <td className="py-2.5 px-3 text-center text-slate-700 font-bold font-mono border border-slate-800">
+                    <td className="py-2.5 px-3 text-center text-slate-700 font-bold font-mono border-r border-slate-200/60">
                       {idx + 1}
                     </td>
 
                     {/* Tanggal Pembayaran */}
-                    <td className="py-2.5 px-4 border border-slate-800 whitespace-nowrap">
+                    <td className="py-2.5 px-4 border-r border-slate-200/60 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900">
                         <Calendar className="w-3.5 h-3.5 text-emerald-600" />
                         <span>{h.tglBayar}</span>
@@ -115,12 +115,12 @@ export default function HistoriPembayaranTab({
                     </td>
 
                     {/* Periode */}
-                    <td className="py-2.5 px-4 border border-slate-800 whitespace-nowrap font-mono text-slate-800 text-xs">
+                    <td className="py-2.5 px-4 border-r border-slate-200/60 whitespace-nowrap font-mono text-slate-800 text-xs">
                       {h.periode}
                     </td>
 
                     {/* Tim / Penjahit */}
-                    <td className="py-2.5 px-4 border border-slate-800">
+                    <td className="py-2.5 px-4 border-r border-slate-200/60">
                       <div className="font-bold text-slate-900 text-sm">
                         {h.namaPetugas}
                       </div>
@@ -128,7 +128,7 @@ export default function HistoriPembayaranTab({
                     </td>
 
                     {/* Jumlah Order & Pcs */}
-                    <td className="py-2.5 px-4 border border-slate-800 text-center whitespace-nowrap">
+                    <td className="py-2.5 px-4 border-r border-slate-200/60 text-center whitespace-nowrap">
                       <div className="font-mono font-bold text-rose-800 text-xs">
                         {h.totalQty.toLocaleString('id-ID')} Pcs
                       </div>
@@ -138,14 +138,14 @@ export default function HistoriPembayaranTab({
                     </td>
 
                     {/* Jumlah Bayar */}
-                    <td className="py-2.5 px-4 border border-slate-800 text-right whitespace-nowrap">
+                    <td className="py-2.5 px-4 border-r border-slate-200/60 text-right whitespace-nowrap">
                       <span className="font-mono font-black text-sm text-[#064e3b]">
                         Rp {h.totalBersih.toLocaleString('id-ID')}
                       </span>
                     </td>
 
                     {/* Aksi: Cetak Slip, Show, dan Batal */}
-                    <td className="py-2.5 px-4 text-center whitespace-nowrap border border-slate-800">
+                    <td className="py-2.5 px-4 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5">
                         {/* Tombol Cetak Slip (Khusus Sudah Bayar / Histori) */}
                         <button

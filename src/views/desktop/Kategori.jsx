@@ -186,25 +186,25 @@ export default function Kategori({
       </div>
 
       {/* 3. TABEL KATEGORI CARD (HIGH CONTRAST) */}
-      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-slate-800">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
-                <th className="py-2.5 px-2.5 text-center w-12 border border-slate-800 text-white font-bold">NO</th>
-                <th className="py-2.5 px-2.5 min-w-[130px] border border-slate-800 text-white font-bold">KODE KATEGORI</th>
-                <th className="py-2.5 px-2.5 min-w-[160px] border border-slate-800 text-white font-bold">NAMA KATEGORI</th>
-                <th className="py-2.5 px-2.5 min-w-[200px] border border-slate-800 text-white font-bold">DESKRIPSI PRODUK</th>
-                <th className="py-2.5 px-2.5 text-right w-32 border border-slate-800 text-white font-bold">HARGA POTONG</th>
-                <th className="py-2.5 px-2.5 text-center w-28 border border-slate-800 text-white font-bold">TOTAL PRODUK</th>
-                <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">STATUS</th>
-                <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">AKSI</th>
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-2.5 text-center w-12 border-r border-[#3b4c5e] text-white font-bold">NO</th>
+                <th className="py-2.5 px-2.5 min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KODE KATEGORI</th>
+                <th className="py-2.5 px-2.5 min-w-[160px] border-r border-[#3b4c5e] text-white font-bold">NAMA KATEGORI</th>
+                <th className="py-2.5 px-2.5 min-w-[200px] border-r border-[#3b4c5e] text-white font-bold">DESKRIPSI PRODUK</th>
+                <th className="py-2.5 px-2.5 text-right w-32 border-r border-[#3b4c5e] text-white font-bold">HARGA POTONG</th>
+                <th className="py-2.5 px-2.5 text-center w-28 border-r border-[#3b4c5e] text-white font-bold">TOTAL PRODUK</th>
+                <th className="py-2.5 px-2.5 text-center w-24 border-r border-[#3b4c5e] text-white font-bold">STATUS</th>
+                <th className="py-2.5 px-2.5 text-center w-24 text-white font-bold">AKSI</th>
               </tr>
             </thead>
-            <tbody className="font-medium text-slate-800 divide-y divide-slate-800">
+            <tbody className="font-medium text-slate-800 divide-y divide-slate-200">
               {filteredCategories.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-10 text-center text-slate-400 border border-slate-800">
+                  <td colSpan="8" className="py-10 text-center text-slate-400">
                     <FolderOpen className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">Tidak ada kategori ditemukan</p>
                   </td>
@@ -219,33 +219,33 @@ export default function Kategori({
                   );
 
                   return (
-                    <tr key={cat.id} className="hover:bg-slate-50 transition-colors border-b border-slate-800">
-                      <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs border border-slate-800">
+                    <tr key={cat.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs border-r border-slate-200/60">
                         {idx + 1}
                       </td>
-                      <td className="py-2 px-2.5 border border-slate-800">
+                      <td className="py-2 px-2.5 border-r border-slate-200/60">
                         <span className="font-mono font-bold text-xs text-[#0284c7]">
                           {cat.kode}
                         </span>
                       </td>
-                      <td className="py-2 px-2.5 font-bold text-slate-900 text-xs border border-slate-800">
+                      <td className="py-2 px-2.5 font-bold text-slate-900 text-xs border-r border-slate-200/60">
                         <div className="flex items-center gap-1.5">
                           <Tag className="w-3.5 h-3.5 text-[#0284c7] shrink-0" />
                           <span>{cat.nama}</span>
                         </div>
                       </td>
-                      <td className="py-2 px-2.5 text-slate-700 max-w-sm truncate text-xs border border-slate-800">
+                      <td className="py-2 px-2.5 text-slate-700 max-w-sm truncate text-xs border-r border-slate-200/60">
                         {cat.deskripsi}
                       </td>
-                      <td className="py-2 px-2.5 text-right font-mono font-bold text-slate-900 text-xs border border-slate-800">
+                      <td className="py-2 px-2.5 text-right font-mono font-bold text-slate-900 text-xs border-r border-slate-200/60">
                         Rp {hargaPotong.toLocaleString('id-ID')}
                       </td>
-                      <td className="py-2 px-2.5 text-center font-bold text-slate-800 border border-slate-800">
+                      <td className="py-2 px-2.5 text-center font-bold text-slate-800 border-r border-slate-200/60">
                         <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 text-[11px] font-bold">
                           {productCount} Item
                         </span>
                       </td>
-                      <td className="py-2 px-2.5 text-center border border-slate-800">
+                      <td className="py-2 px-2.5 text-center border-r border-slate-200/60">
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold border ${
                             cat.status === 'Aktif'
@@ -256,7 +256,7 @@ export default function Kategori({
                           {cat.status}
                         </span>
                       </td>
-                      <td className="py-2 px-2.5 text-center border border-slate-800">
+                      <td className="py-2 px-2.5 text-center">
                         <div className="inline-flex items-center justify-center gap-1">
                           <button
                             onClick={() => handleOpenEdit(cat)}

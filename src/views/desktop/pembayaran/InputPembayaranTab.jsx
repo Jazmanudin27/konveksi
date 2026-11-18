@@ -35,7 +35,7 @@ export default function InputPembayaranTab({
   return (
     <div className="space-y-3">
       {/* 1. TOOLBAR FILTER & DIVISI SELECTION */}
-      <div className="bg-white border-2 border-slate-400 rounded-xl p-3 shadow-md flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
         {/* Divisi Tabs (Pemotong, Penjahit, QC, Finishing) */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {[
@@ -129,9 +129,9 @@ export default function InputPembayaranTab({
       </div>
 
       {/* 2. KERTAS SLIP GAJI EMRA PRODUCTION (GOOGLE SHEETS STYLE) */}
-      <div className="w-full max-w-4xl mx-auto bg-white border-2 border-slate-800 p-6 sm:p-8 shadow-xl font-mono text-black select-none">
+      <div className="w-full max-w-4xl mx-auto bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm font-mono text-black select-none">
         {/* Header Title & Monogram */}
-        <div className="flex items-start justify-between border-b-2 border-black pb-3">
+        <div className="flex items-start justify-between border-b border-slate-300 pb-3">
           <div className="space-y-1">
             <h1 className="text-lg sm:text-xl font-black tracking-wider uppercase text-black">
               INPUT GAJI EMRA PRODUCTION
@@ -267,8 +267,8 @@ export default function InputPembayaranTab({
             </div>
           )}
 
-          {/* Garis Tebal Pembatas */}
-          <div className="h-0.5 bg-black my-2"></div>
+          {/* Garis Pembatas */}
+          <div className="h-px bg-slate-300 my-2"></div>
 
           {/* Total GAJI */}
           <div className="flex items-center justify-between font-bold text-sm">
@@ -285,7 +285,7 @@ export default function InputPembayaranTab({
 
           {/* Sisa Pinjaman (Khusus Penjahit) */}
           {isJahit && activeSheetTeamData && (
-            <div className="flex items-center justify-between text-xs border-b border-dotted border-black pb-1 pt-1">
+            <div className="flex items-center justify-between text-xs border-b border-dotted border-slate-400 pb-1 pt-1">
               <span className="text-slate-800 font-semibold">
                 * Sisa Pinjaman
               </span>
@@ -312,7 +312,7 @@ export default function InputPembayaranTab({
           <div className="flex items-start gap-2 pt-1 text-xs">
             <span className="text-slate-800 shrink-0">* Terbilang</span>
             <span className="text-black">:</span>
-            <span className="border-b border-dotted border-black flex-1 pb-1 font-semibold italic text-slate-800">
+            <span className="border-b border-dotted border-slate-400 flex-1 pb-1 font-semibold italic text-slate-800">
               {angkaTerbilang(displayTotalBersih)}
             </span>
           </div>
@@ -337,17 +337,17 @@ export default function InputPembayaranTab({
         </div>
 
         {/* TABEL KISI-KISI SPREADSHEET (PERSIS REFERENSI USER) */}
-        <div className="mt-2 border border-black overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse border border-black font-mono">
+        <div className="mt-2 border border-slate-300 rounded-lg overflow-x-auto">
+          <table className="w-full text-xs text-left border-collapse border border-slate-300 font-mono">
             <thead>
-              <tr className="bg-[#2b3a4a] text-white font-bold uppercase tracking-wider text-center text-[11px] border border-black">
-                <th className="py-1.5 px-3 border border-black text-left">
+              <tr className="bg-[#2b3a4a] text-white font-bold uppercase tracking-wider text-center text-[11px] border border-slate-300">
+                <th className="py-1.5 px-3 border border-slate-300 text-left">
                   MODEL
                 </th>
-                <th className="py-1.5 px-3 border border-black w-32">Warna</th>
-                <th className="py-1.5 px-3 border border-black w-28">Harga</th>
-                <th className="py-1.5 px-3 border border-black w-20">Qty</th>
-                <th className="py-1.5 px-3 border border-black w-36">Total</th>
+                <th className="py-1.5 px-3 border border-slate-300 w-32">Warna</th>
+                <th className="py-1.5 px-3 border border-slate-300 w-28">Harga</th>
+                <th className="py-1.5 px-3 border border-slate-300 w-20">Qty</th>
+                <th className="py-1.5 px-3 border border-slate-300 w-36">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -356,24 +356,24 @@ export default function InputPembayaranTab({
                 activeSheetTeamData.items.map((item, idx) => (
                   <tr
                     key={item.id || idx}
-                    className="hover:bg-amber-50/20 border-b border-black text-black"
+                    className="hover:bg-slate-50 border-b border-slate-300 text-black"
                   >
                     <td
-                      className="py-1.5 px-2.5 border border-black font-bold uppercase truncate max-w-[240px]"
+                      className="py-1.5 px-2.5 border border-slate-300 font-bold uppercase truncate max-w-[240px]"
                       title={item.namaProduk}
                     >
                       {item.skuInduk || item.namaProduk}
                     </td>
-                    <td className="py-1.5 px-2.5 border border-black text-center font-medium">
+                    <td className="py-1.5 px-2.5 border border-slate-300 text-center font-medium">
                       {item.varian || "-"}
                     </td>
-                    <td className="py-1.5 px-2.5 border border-black text-right font-medium">
+                    <td className="py-1.5 px-2.5 border border-slate-300 text-right font-medium">
                       Rp {Number(item.tarifPerPcs || 0).toLocaleString("id-ID")}
                     </td>
-                    <td className="py-1.5 px-2.5 border border-black text-center font-bold">
+                    <td className="py-1.5 px-2.5 border border-slate-300 text-center font-bold">
                       {Number(item.qty || 0).toLocaleString("id-ID")}
                     </td>
-                    <td className="py-1.5 px-2.5 border border-black text-right font-bold">
+                    <td className="py-1.5 px-2.5 border border-slate-300 text-right font-bold">
                       <div className="flex items-center justify-between">
                         <span>Rp</span>
                         <span>
@@ -393,13 +393,13 @@ export default function InputPembayaranTab({
               }).map((_, emptyIdx) => (
                 <tr
                   key={`empty-${emptyIdx}`}
-                  className="h-6 border-b border-black"
+                  className="h-6 border-b border-slate-200"
                 >
-                  <td className="border border-black"></td>
-                  <td className="border border-black"></td>
-                  <td className="border border-black"></td>
-                  <td className="border border-black"></td>
-                  <td className="border border-black"></td>
+                  <td className="border border-slate-200"></td>
+                  <td className="border border-slate-200"></td>
+                  <td className="border border-slate-200"></td>
+                  <td className="border border-slate-200"></td>
+                  <td className="border border-slate-200"></td>
                 </tr>
               ))}
             </tbody>

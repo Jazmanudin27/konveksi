@@ -323,24 +323,24 @@ export default function Karyawan({
       </div>
 
       {/* 4. TABEL KARYAWAN CARD (HIGH CONTRAST) */}
-      <div className="bg-white border-2 border-slate-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse border border-slate-800">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase border-b-2 border-slate-800">
-                <th className="py-2.5 px-2.5 text-center w-12 border border-slate-800 text-white font-bold">NO</th>
-                <th className="py-2.5 px-2.5 min-w-[130px] border border-slate-800 text-white font-bold">NIK</th>
-                <th className="py-2.5 px-2.5 min-w-[200px] border border-slate-800 text-white font-bold">NAMA KARYAWAN</th>
-                <th className="py-2.5 px-2.5 min-w-[130px] border border-slate-800 text-white font-bold">KATEGORI</th>
-                <th className="py-2.5 px-2.5 min-w-[160px] border border-slate-800 text-white font-bold">BAGIAN</th>
-                <th className="py-2.5 px-2.5 text-center w-28 border border-slate-800 text-white font-bold">STATUS</th>
-                <th className="py-2.5 px-2.5 text-center w-24 border border-slate-800 text-white font-bold">AKSI</th>
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-2.5 text-center w-12 border-r border-[#3b4c5e] text-white font-bold">NO</th>
+                <th className="py-2.5 px-2.5 min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">NIK</th>
+                <th className="py-2.5 px-2.5 min-w-[200px] border-r border-[#3b4c5e] text-white font-bold">NAMA KARYAWAN</th>
+                <th className="py-2.5 px-2.5 min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KATEGORI</th>
+                <th className="py-2.5 px-2.5 min-w-[160px] border-r border-[#3b4c5e] text-white font-bold">BAGIAN</th>
+                <th className="py-2.5 px-2.5 text-center w-28 border-r border-[#3b4c5e] text-white font-bold">STATUS</th>
+                <th className="py-2.5 px-2.5 text-center w-24 text-white font-bold">AKSI</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 font-medium text-slate-800">
+            <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400 border border-slate-800">
+                  <td colSpan="7" className="py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">Tidak ada karyawan ditemukan</p>
                     <p className="text-[11px] text-slate-400">Coba ubah kata kunci pencarian atau filter</p>
@@ -350,22 +350,22 @@ export default function Karyawan({
                 filteredEmployees.map((emp, index) => (
                   <tr
                     key={emp.id}
-                    className="hover:bg-slate-50 transition-colors border-b border-slate-800"
+                    className="hover:bg-slate-50 transition-colors"
                   >
                     {/* NO */}
-                    <td className="py-2 px-2.5 text-center text-slate-700 font-bold text-xs border border-slate-800">
+                    <td className="py-2 px-2.5 text-center text-slate-700 font-bold text-xs border-r border-slate-200/60">
                       {index + 1}
                     </td>
 
                     {/* NIK */}
-                    <td className="py-2 px-2.5 border border-slate-800">
+                    <td className="py-2 px-2.5 border-r border-slate-200/60">
                       <span className="font-mono text-xs font-bold text-[#0284c7]">
                         {emp.nik}
                       </span>
                     </td>
 
                     {/* NAMA KARYAWAN */}
-                    <td className="py-2 px-2.5 border border-slate-800">
+                    <td className="py-2 px-2.5 border-r border-slate-200/60">
                       <div className="font-bold text-slate-900 leading-snug text-xs">
                         {emp.nama}
                       </div>
@@ -376,14 +376,14 @@ export default function Karyawan({
                     </td>
 
                     {/* KATEGORI */}
-                    <td className="py-2 px-2.5 border border-slate-800">
+                    <td className="py-2 px-2.5 border-r border-slate-200/60">
                       <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
                         {emp.kategori}
                       </span>
                     </td>
 
                     {/* BAGIAN */}
-                    <td className="py-2 px-2.5 border border-slate-800">
+                    <td className="py-2 px-2.5 border-r border-slate-200/60">
                       <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
                         <Briefcase className="w-3 h-3 text-slate-600" />
                         <span>{emp.bagian}</span>
@@ -391,7 +391,7 @@ export default function Karyawan({
                     </td>
 
                     {/* STATUS */}
-                    <td className="py-2 px-2.5 text-center border border-slate-800">
+                    <td className="py-2 px-2.5 text-center border-r border-slate-200/60">
                       <span
                         className={`inline-block px-2.5 py-0.5 rounded text-[10.5px] font-bold border ${getBadgeClass(
                           emp.status
@@ -402,7 +402,7 @@ export default function Karyawan({
                     </td>
 
                     {/* AKSI */}
-                    <td className="py-2 px-2.5 text-center border border-slate-800">
+                    <td className="py-2 px-2.5 text-center">
                       <div className="inline-flex items-center justify-center gap-1">
                         <button
                           onClick={() => setViewEmployee(emp)}

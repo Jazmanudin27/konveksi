@@ -326,6 +326,156 @@ function SearchableProductSelectMobile({
   );
 }
 
+// Sub-komponen Select Bahan Baku Searchable Mobile
+function SearchableBahanSelectMobile({
+  masterBahan = [],
+  selectedKode = '',
+  selectedNama = '',
+  onSelect,
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const searchInputRef = useRef(null);
+
+  const selectedBahan = useMemo(() => {
+    return masterBahan.find(
+      (m) =>
+        (selectedKode && m.kodeBahan === selectedKode) ||
+        (selectedNama && (m.namaBahan || '').toLowerCase() === selectedNama.toLowerCase())
+    );
+  }, [masterBahan, selectedKode, selectedNama]);
+
+  const filteredBahan = useMemo(() => {
+    if (!query.trim()) return masterBahan;
+    const q = query.toLowerCase();
+    return masterBahan.filter(
+      (m) =>
+        (m.namaBahan || '').toLowerCase().includes(q) ||
+        (m.kodeBahan || '').toLowerCase().includes(q) ||
+        (m.satuan || '').toLowerCase().includes(q) ||
+        (m.supplier || '').toLowerCase().includes(q)
+    );
+  }, [masterBahan, query]);
+
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 80);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative flex-1 min-w-0">
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={() => {
+            setIsOpen(true);
+            setQuery('');
+          }}
+          className={`w-full px-2.5 py-1.5 rounded-lg border flex items-center justify-between text-left transition-all cursor-pointer shadow-2xs ${
+            selectedBahan
+              ? 'bg-amber-50/70 border-amber-300 hover:bg-amber-100/60'
+              : 'bg-slate-50 border-slate-200 hover:border-amber-400'
+          }`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0 truncate">
+            <Search className="w-3 h-3 text-amber-700 shrink-0" />
+            {selectedBahan ? (
+              <span className="text-xs font-bold text-slate-900 truncate">
+                {selectedBahan.namaBahan}
+              </span>
+            ) : (
+              <span className="text-xs text-slate-400 font-medium truncate">
+                -- Cari & Pilih Bahan --
+              </span>
+            )}
+          </div>
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
+        </button>
+      ) : (
+        <div className="absolute left-0 right-0 top-0 z-50 bg-white rounded-xl shadow-2xl border border-amber-300 p-2 space-y-2 min-w-[260px] animate-fadeIn">
+          {/* Search Input Bar */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Cari bahan (Kain, Kancing, Benang...)"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-600 focus:outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-2 top-2 p-0.5 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* List Bahan Hasil Pencarian */}
+          <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/50">
+            {filteredBahan.length === 0 ? (
+              <div className="py-4 text-center text-[11px] text-slate-400">
+                Bahan tidak ditemukan
+              </div>
+            ) : (
+              filteredBahan.map((m) => {
+                const isSelected =
+                  selectedBahan &&
+                  (selectedBahan.kodeBahan === m.kodeBahan || selectedBahan.namaBahan === m.namaBahan);
+                const stokVal = Number(m.stok ?? 0);
+                return (
+                  <button
+                    key={m.id || m.kodeBahan}
+                    type="button"
+                    onClick={() => {
+                      onSelect(m);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full p-2 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                      isSelected ? 'bg-amber-100/70 text-amber-950 font-black' : 'hover:bg-amber-50/60 text-slate-800'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-xs truncate">{m.namaBahan}</div>
+                      <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                        <span className="bg-white px-1 py-0.2 rounded border border-slate-200 text-slate-700">
+                          {m.kodeBahan}
+                        </span>
+                        <span>•</span>
+                        <span className={stokVal <= 10 ? 'text-rose-600 font-bold' : 'text-slate-600'}>
+                          Stok: {stokVal} {m.satuan}
+                        </span>
+                      </div>
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-amber-700 shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {/* Footer Popover */}
+          <div className="flex justify-between items-center pt-1 text-[10px] text-slate-500">
+            <span>Ditemukan {filteredBahan.length} bahan</span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="text-[10.5px] font-bold text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded bg-slate-100 cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AddAntreanModalMobile({
   isOpen,
   onClose,
@@ -765,30 +915,13 @@ export default function AddAntreanModalMobile({
                       <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-mono">
                         #{idx + 1}
                       </span>
-                      {/* Pilihan Dropdown dari Master Bahan Baku */}
-                      <div className="flex-1 min-w-0">
-                        <select
-                          value={b.kodeBahan || b.namaBahan}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            const found = masterBahanList.find(
-                              (m) => m.kodeBahan === val || m.namaBahan === val
-                            );
-                            if (found) {
-                              handleSelectMasterBahan(idx, found);
-                            }
-                          }}
-                          required
-                          className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:border-amber-600 focus:outline-none"
-                        >
-                          <option value="">-- Pilih dari Master Bahan Baku --</option>
-                          {masterBahanList.map((m) => (
-                            <option key={m.id || m.kodeBahan} value={m.kodeBahan || m.namaBahan}>
-                              {m.namaBahan} ({m.kodeBahan}) • Stok: {m.stok ?? 0} {m.satuan}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {/* Searchable Select Option Master Bahan Baku */}
+                      <SearchableBahanSelectMobile
+                        masterBahan={masterBahanList}
+                        selectedKode={b.kodeBahan}
+                        selectedNama={b.namaBahan}
+                        onSelect={(selected) => handleSelectMasterBahan(idx, selected)}
+                      />
 
                       {/* Tombol Hapus Row */}
                       <button

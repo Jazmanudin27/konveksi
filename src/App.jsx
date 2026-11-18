@@ -17,6 +17,7 @@ import PermintaanProduksiGudang from './views/desktop/PermintaanProduksiGudang';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
 import MobileApp from './views/mobile/MobileApp';
 import CustomerTracking from './views/tracking/CustomerTracking';
+import Users from './views/desktop/Users';
 import { api } from './services/api';
 import { USER_ROLES } from './constants/userRoles';
 
@@ -62,6 +63,7 @@ export default function App() {
     'laporan-stok-gudang',
     'pembayaran-upah',
     'kasbon',
+    'users',
   ];
 
   // Ambil menu aktif terakhir dari URL hash atau localStorage agar tidak reset saat refresh
@@ -455,6 +457,9 @@ export default function App() {
             <Kasbon
               employees={employees}
             />
+          )}
+          {activeMenu === 'users' && (
+            <Users />
           )}
         </main>
       </div>

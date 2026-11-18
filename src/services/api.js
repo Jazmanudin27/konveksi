@@ -130,6 +130,13 @@ export const api = {
   updateKasbon: (id, data) => request(`/kasbon/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteKasbon: (id) => request(`/kasbon/${id}`, { method: 'DELETE' }),
   getKasbonRiwayat: (id) => request(`/kasbon/${id}/riwayat`),
+
+  // Users & Role Management (Pengaturan Akun)
+  getUsers: () => request('/users'),
+  getUserById: (id) => request(`/users/${id}`),
+  createUser: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
 };
 
 

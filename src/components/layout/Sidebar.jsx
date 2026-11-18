@@ -25,6 +25,7 @@ import {
   Wallet,
   X,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 import { USER_ROLES } from "../../constants/userRoles";
 
@@ -35,9 +36,10 @@ export default function Sidebar({
   onSelectMenu,
   userRole = "superadmin",
 }) {
-  // State collapse sub-menu Data Master & Laporan
+  // State collapse sub-menu Data Master, Laporan, & Settings
   const [isDataMasterOpen, setIsDataMasterOpen] = useState(true);
   const [isLaporanOpen, setIsLaporanOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
 
   // Navigasi menu sekaligus tutup drawer
   const handleMenuClick = (menuKey) => {
@@ -604,6 +606,44 @@ export default function Sidebar({
                     >
                       <Boxes className="w-3.5 h-3.5 shrink-0" />
                       <span>Stok Gudang Jadi</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* GRUP MENU PENGATURAN (SETTINGS DROPDOWN) */}
+              <div className="pt-2 border-t border-slate-800/60">
+                <button
+                  onClick={() => setIsSettingsOpen((prev) => !prev)}
+                  className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all cursor-pointer"
+                  title="Klik untuk buka/tutup Pengaturan"
+                >
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-200">
+                      Settings
+                    </span>
+                  </div>
+                  {isSettingsOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </button>
+
+                {/* Sub Menu Settings */}
+                {isSettingsOpen && (
+                  <div className="mt-1 space-y-0.5 border-l border-slate-800 ml-4 pl-2">
+                    <button
+                      onClick={() => handleMenuClick("users")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "users"
+                          ? "bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-sm shadow-indigo-950 font-bold"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                      <span>Users (Pengguna)</span>
                     </button>
                   </div>
                 )}

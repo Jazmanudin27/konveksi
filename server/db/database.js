@@ -102,47 +102,57 @@ async function initMysql() {
 
     // Pastikan kolom tarif & status bayar QC / Finishing tersedia di antrean
     const extraCols = [
-      { name: 'tarif_qc', def: 'DECIMAL(12,2) DEFAULT 0' },
-      { name: 'total_biaya_qc', def: 'DECIMAL(14,2) DEFAULT 0' },
-      { name: 'tarif_finishing', def: 'DECIMAL(12,2) DEFAULT 0' },
-      { name: 'total_biaya_finishing', def: 'DECIMAL(14,2) DEFAULT 0' },
-      { name: 'status_bayar_cutting', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
-      { name: 'status_bayar_jahit', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
-      { name: 'status_bayar_qc', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
-      { name: 'status_bayar_finishing', def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
-      { name: 'kebutuhan_bahan', def: "TEXT NULL" },
-      { name: 'total_biaya_bahan', def: "DECIMAL(14,2) DEFAULT 0" },
-      { name: 'total_hpp', def: "DECIMAL(14,2) DEFAULT 0" },
-      { name: 'hpp_per_pcs', def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: "tarif_qc", def: "DECIMAL(12,2) DEFAULT 0" },
+      { name: "total_biaya_qc", def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: "tarif_finishing", def: "DECIMAL(12,2) DEFAULT 0" },
+      { name: "total_biaya_finishing", def: "DECIMAL(14,2) DEFAULT 0" },
+      {
+        name: "status_bayar_cutting",
+        def: "VARCHAR(30) DEFAULT 'Belum Lunas'",
+      },
+      { name: "status_bayar_jahit", def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
+      { name: "status_bayar_qc", def: "VARCHAR(30) DEFAULT 'Belum Lunas'" },
+      {
+        name: "status_bayar_finishing",
+        def: "VARCHAR(30) DEFAULT 'Belum Lunas'",
+      },
+      { name: "kebutuhan_bahan", def: "TEXT NULL" },
+      { name: "total_biaya_bahan", def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: "total_hpp", def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: "hpp_per_pcs", def: "DECIMAL(14,2) DEFAULT 0" },
     ];
 
     for (const col of extraCols) {
       try {
         const [colCheck] = await connection.query(
           "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'antrean' AND COLUMN_NAME = ? AND TABLE_SCHEMA = DATABASE()",
-          [col.name]
+          [col.name],
         );
         if (!colCheck || colCheck.length === 0) {
-          await connection.query(`ALTER TABLE antrean ADD COLUMN ${col.name} ${col.def}`);
+          await connection.query(
+            `ALTER TABLE antrean ADD COLUMN ${col.name} ${col.def}`,
+          );
         }
       } catch (_) {}
     }
 
     // Pastikan kolom potongan kasbon tersedia di pembayaran_upah
     const upahCols = [
-      { name: 'potongan_kasbon', def: 'DECIMAL(14,2) DEFAULT 0' },
-      { name: 'total_bersih', def: 'DECIMAL(14,2) DEFAULT 0' },
-      { name: 'kasbon_id', def: 'INT NULL' }
+      { name: "potongan_kasbon", def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: "total_bersih", def: "DECIMAL(14,2) DEFAULT 0" },
+      { name: "kasbon_id", def: "INT NULL" },
     ];
 
     for (const col of upahCols) {
       try {
         const [colCheck] = await connection.query(
           "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'pembayaran_upah' AND COLUMN_NAME = ? AND TABLE_SCHEMA = DATABASE()",
-          [col.name]
+          [col.name],
         );
         if (!colCheck || colCheck.length === 0) {
-          await connection.query(`ALTER TABLE pembayaran_upah ADD COLUMN ${col.name} ${col.def}`);
+          await connection.query(
+            `ALTER TABLE pembayaran_upah ADD COLUMN ${col.name} ${col.def}`,
+          );
         }
       } catch (_) {}
     }
@@ -150,10 +160,12 @@ async function initMysql() {
     // Pastikan kolom sku_induk tersedia di products (Etalase SKU Induk)
     try {
       const [colCheck] = await connection.query(
-        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'products' AND COLUMN_NAME = 'sku_induk' AND TABLE_SCHEMA = DATABASE()"
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'products' AND COLUMN_NAME = 'sku_induk' AND TABLE_SCHEMA = DATABASE()",
       );
       if (!colCheck || colCheck.length === 0) {
-        await connection.query("ALTER TABLE products ADD COLUMN sku_induk VARCHAR(100) NULL AFTER id");
+        await connection.query(
+          "ALTER TABLE products ADD COLUMN sku_induk VARCHAR(100) NULL AFTER id",
+        );
       }
       // Isi default sku_induk dari kategori atau nama_produk jika masih kosong
       await connection.query(`
@@ -175,7 +187,7 @@ async function initMysql() {
     // Migrasi data penjahit ke employees & hapus tabel terpisah penjahit
     try {
       const [tableCheck] = await connection.query(
-        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'penjahit' AND TABLE_SCHEMA = DATABASE()"
+        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'penjahit' AND TABLE_SCHEMA = DATABASE()",
       );
       if (tableCheck && tableCheck.length > 0) {
         await connection.query(`
@@ -183,113 +195,59 @@ async function initMysql() {
           SELECT nik, nama, kategori, 'Penjahit', status, telepon, CURRENT_DATE FROM penjahit
         `);
         await connection.query("DROP TABLE IF EXISTS penjahit");
-        console.log("✅ Data penjahit berhasil digabungkan ke tabel employees dan tabel penjahit lama telah dibersihkan");
+        console.log(
+          "✅ Data penjahit berhasil digabungkan ke tabel employees dan tabel penjahit lama telah dibersihkan",
+        );
       }
     } catch (_) {}
 
-    // Pastikan karyawan dengan bagian Penjahit tersedia di tabel employees
+    // Bersihkan data dummy / fake lama jika pernah ter-generate otomatis
     try {
-      const [jahitEmpRows] = await connection.query(
-        "SELECT COUNT(*) as cnt FROM employees WHERE LOWER(bagian) LIKE '%jahit%' OR LOWER(bagian) LIKE '%penjahit%'"
+      await connection.query(
+        "DELETE FROM employees WHERE nik IN ('JHT-001', 'JHT-002', 'JHT-003') AND nama IN ('CEPI', 'Siti Aminah', 'Budi Santoso')",
       );
-      if (jahitEmpRows[0].cnt === 0) {
-        await connection.query(`
-          INSERT IGNORE INTO employees (nik, nama, kategori, bagian, status, telepon, tanggal_masuk) VALUES
-          ('JHT-001', 'CEPI', 'Borongan', 'Penjahit', 'Aktif', '0812-1111-2222', CURRENT_DATE),
-          ('JHT-002', 'Siti Aminah', 'Tetap', 'Penjahit', 'Aktif', '0813-2222-3333', CURRENT_DATE),
-          ('JHT-003', 'Budi Santoso', 'Borongan', 'Penjahit', 'Aktif', '0815-3333-4444', CURRENT_DATE)
-        `);
-      }
+      await connection.query(
+        "DELETE FROM tim_finishing WHERE kode_tim IN ('FIN-001', 'FIN-002', 'FIN-003') AND nama_tim LIKE 'Tim Finishing%'",
+      );
     } catch (_) {}
 
-    // Pastikan data awal tabel tim_finishing tersedia (Terpisah murni dari penjahit)
+    // Pastikan tabel users dan user operasional tersedia di database MySQL
     try {
-      const [finishingRows] = await connection.query("SELECT COUNT(*) as cnt FROM tim_finishing");
-      if (finishingRows[0].cnt === 0) {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          username VARCHAR(100) NOT NULL UNIQUE,
+          nama VARCHAR(150) NOT NULL,
+          email VARCHAR(150),
+          password VARCHAR(255) NOT NULL DEFAULT '123456',
+          role VARCHAR(50) NOT NULL DEFAULT 'superadmin',
+          status VARCHAR(30) NOT NULL DEFAULT 'Aktif',
+          telepon VARCHAR(50),
+          keterangan TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_users_role (role),
+          INDEX idx_users_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      const [userRows] = await connection.query(
+        "SELECT COUNT(*) as cnt FROM users",
+      );
+      if (userRows[0].cnt === 0) {
         await connection.query(`
-          INSERT IGNORE INTO tim_finishing (kode_tim, nama_tim, kategori, spesialisasi, kapasitas_harian, telepon) VALUES
-          ('FIN-001', 'Tim Finishing 1 (Uap & Lipat)', 'Internal', 'Setrika Uap & Lipat Presisi', 300, '0812-4444-5555'),
-          ('FIN-002', 'Tim Finishing 2 (Hangtag & Plastik OPP)', 'Internal', 'Pemasangan Hangtag & Packing OPP', 250, '0813-5555-6666'),
-          ('FIN-003', 'Gudang Packing Akhir', 'Borongan', 'Finishing Akhir & Box Karton', 500, '0817-6666-7777')
+          INSERT IGNORE INTO users (username, nama, email, password, role, status, telepon) VALUES
+          ('admin', 'Super Admin Ruang Konveksi', 'admin@ruangtech.com', '123456', 'superadmin', 'Aktif', '0812-3456-7890'),
+          ('gudang', 'Admin Gudang & Restock', 'gudang@ruangtech.com', '123456', 'gudang', 'Aktif', '0813-1122-3344'),
+          ('cutting', 'Admin Divisi Cutting', 'cutting@ruangtech.com', '123456', 'cutting', 'Aktif', '0815-5566-7788'),
+          ('jahit', 'Admin Divisi Jahit', 'jahit@ruangtech.com', '123456', 'jahit', 'Aktif', '0817-9900-1122'),
+          ('qc', 'Admin Quality Control', 'qc@ruangtech.com', '123456', 'qc', 'Aktif', '0818-3344-5566'),
+          ('finishing', 'Admin Finishing & Packing', 'finishing@ruangtech.com', '123456', 'finishing', 'Aktif', '0819-7788-9900')
         `);
       }
-    } catch (_) {}
-
-    // Pastikan master kategori dan harga potong tersimpan permanen di database MySQL
-    try {
-      const initialCategories = [
-        { kode: 'CAT-SAMIRA', nama: 'SAMIRA', harga_potong: 700 },
-        { kode: 'CAT-AISHA', nama: 'AISHA', harga_potong: 600 },
-        { kode: 'CAT-SHAFEA', nama: 'SHAFEA', harga_potong: 1000 },
-        { kode: 'CAT-COQUETTE', nama: 'COQUETTE', harga_potong: 1000 },
-        { kode: 'CAT-NAYYARA', nama: 'NAYYARA', harga_potong: 1000 },
-        { kode: 'CAT-ALUNA', nama: 'ALUNA', harga_potong: 1000 },
-        { kode: 'CAT-HAFSA', nama: 'HAFSA', harga_potong: 1000 },
-        { kode: 'CAT-MINA', nama: 'MINA', harga_potong: 1000 },
-        { kode: 'CAT-NAEEMA', nama: 'NAEEMA', harga_potong: 1000 },
-        { kode: 'CAT-IRANANDHA', nama: 'IRANANDHA', harga_potong: 500 },
-        { kode: 'CAT-NAOMI', nama: 'NAOMI', harga_potong: 500 },
-        { kode: 'CAT-RALINE', nama: 'RALINE', harga_potong: 500 },
-        { kode: 'CAT-AYUMI', nama: 'AYUMI', harga_potong: 500 },
-        { kode: 'CAT-VISCOSE', nama: 'VISCOSE', harga_potong: 500 },
-        { kode: 'CAT-KERUDUNG', nama: 'KERUDUNG', harga_potong: 500 },
-        { kode: 'CAT-OVAL', nama: 'OVAL', harga_potong: 500 },
-        { kode: 'CAT-RAWDA', nama: 'RAWDA', harga_potong: 700 },
-        { kode: 'CAT-LINI', nama: 'LINI', harga_potong: 600 },
-        { kode: 'CAT-ZAFIRA', nama: 'ZAFIRA', harga_potong: 700 },
-        { kode: 'CAT-NOIRA', nama: 'NOIRA', harga_potong: 600 },
-        { kode: 'CAT-ALYSSA', nama: 'ALYSSA', harga_potong: 700 },
-        { kode: 'CAT-LAVINA', nama: 'LAVINA', harga_potong: 600 },
-        { kode: 'CAT-ELVARA', nama: 'ELVARA', harga_potong: 500 },
-        { kode: 'CAT-ARUMI', nama: 'ARUMI', harga_potong: 500 },
-        { kode: 'CAT-HABIBAH', nama: 'HABIBAH', harga_potong: 500 },
-        { kode: 'CAT-FATIYA', nama: 'FATIYA', harga_potong: 500 },
-        { kode: 'CAT-HANA', nama: 'HANA', harga_potong: 700 },
-        { kode: 'CAT-LARISA', nama: 'LARISA', harga_potong: 600 },
-        { kode: 'CAT-LUNARA', nama: 'LUNARA', harga_potong: 200 },
-        { kode: 'CAT-ALIFA', nama: 'ALIFA', harga_potong: 600 },
-        { kode: 'CAT-KALUNA', nama: 'KALUNA', harga_potong: 600 },
-        { kode: 'CAT-HUMAIRA', nama: 'HUMAIRA', harga_potong: 1000 },
-        { kode: 'CAT-PASBAN-UV', nama: 'PASBAN UV', harga_potong: 500 },
-        { kode: 'CAT-ZAHWA', nama: 'ZAHWA', harga_potong: 500 },
-      ];
-
-      for (const cat of initialCategories) {
-        const [existing] = await connection.query(
-          "SELECT id, harga_potong FROM categories WHERE UPPER(nama) = ? OR UPPER(kode) = ?",
-          [cat.nama.toUpperCase(), cat.kode.toUpperCase()]
-        );
-        if (!existing || existing.length === 0) {
-          await connection.query(
-            "INSERT INTO categories (kode, nama, harga_potong, status) VALUES (?, ?, ?, 'Aktif')",
-            [cat.kode, cat.nama, cat.harga_potong]
-          );
-        } else if (Number(existing[0].harga_potong || 0) === 0) {
-          await connection.query(
-            "UPDATE categories SET harga_potong = ? WHERE id = ?",
-            [cat.harga_potong, existing[0].id]
-          );
-        }
-      }
-      console.log("✅ Master kategori & harga potong tersinkron permanen di MySQL");
-    } catch (catErr) {
-      console.warn("Peringatan sinkronisasi kategori MySQL:", catErr.message);
-    }
-
-    // Pastikan master ukuran (sizes) tersedia di tabel sizes MySQL
-    try {
-      const defaultSizes = [
-        'S', 'M', 'L', 'XL', 'XXL', '3XL', 'All Size', '28', '30', '32', '34', '36'
-      ];
-      for (let i = 0; i < defaultSizes.length; i++) {
-        await connection.query(
-          "INSERT IGNORE INTO sizes (nama, urutan) VALUES (?, ?)",
-          [defaultSizes[i], i + 1]
-        );
-      }
-      console.log("✅ Master ukuran (sizes) tersinkron permanen di MySQL");
-    } catch (szErr) {
-      console.warn("Peringatan sinkronisasi sizes MySQL:", szErr.message);
+      console.log("✅ Tabel users & data akun operasional tersinkron di MySQL");
+    } catch (uErr) {
+      console.warn("Peringatan sinkronisasi users MySQL:", uErr.message);
     }
 
     connection.release();

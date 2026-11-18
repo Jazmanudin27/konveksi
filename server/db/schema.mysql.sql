@@ -303,3 +303,29 @@ INSERT IGNORE INTO sizes (nama, urutan) VALUES
   ('SET CELANA STANDAR', 25),
   ('SET CELANA JUMBO', 26),
   ('CAMPUR', 27);
+
+-- TABEL MANAJEMEN PENGGUNA (USERS)
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(100) NOT NULL UNIQUE,
+  nama VARCHAR(150) NOT NULL,
+  email VARCHAR(150),
+  password VARCHAR(255) NOT NULL DEFAULT '123456',
+  role VARCHAR(50) NOT NULL DEFAULT 'superadmin',
+  status VARCHAR(30) NOT NULL DEFAULT 'Aktif',
+  telepon VARCHAR(50),
+  keterangan TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_users_role (role),
+  INDEX idx_users_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- SEED DATA DEFAULT USER UNTUK 6 ROLE OPERASIONAL
+INSERT IGNORE INTO users (username, nama, email, password, role, status, telepon) VALUES
+  ('admin', 'Super Admin Ruang Konveksi', 'admin@ruangtech.com', '123456', 'superadmin', 'Aktif', '0812-3456-7890'),
+  ('gudang', 'Admin Gudang & Restock', 'gudang@ruangtech.com', '123456', 'gudang', 'Aktif', '0813-1122-3344'),
+  ('cutting', 'Admin Divisi Cutting', 'cutting@ruangtech.com', '123456', 'cutting', 'Aktif', '0815-5566-7788'),
+  ('jahit', 'Admin Divisi Jahit', 'jahit@ruangtech.com', '123456', 'jahit', 'Aktif', '0817-9900-1122'),
+  ('qc', 'Admin Quality Control', 'qc@ruangtech.com', '123456', 'qc', 'Aktif', '0818-3344-5566'),
+  ('finishing', 'Admin Finishing & Packing', 'finishing@ruangtech.com', '123456', 'finishing', 'Aktif', '0819-7788-9900');

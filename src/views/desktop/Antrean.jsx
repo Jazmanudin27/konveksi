@@ -2414,18 +2414,18 @@ export default function Antrean({
                             <>
                               <button
                                 onClick={() => handleOpenEdit(item)}
-                                className="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                                className="w-8 h-8 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
                                 title="Edit Antrean"
                               >
-                                <Pencil className="w-4 h-4" />
+                                <Pencil className="w-4 h-4 text-white" />
                               </button>
 
                               <button
                                 onClick={() => handleDelete(item)}
-                                className="w-8 h-8 rounded-lg bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                                className="w-8 h-8 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
                                 title="Hapus Antrean"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4 text-white" />
                               </button>
                             </>
                           ) : (

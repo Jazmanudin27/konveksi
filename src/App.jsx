@@ -18,6 +18,10 @@ import DashboardWelcome from './views/desktop/DashboardWelcome';
 import MobileApp from './views/mobile/MobileApp';
 import CustomerTracking from './views/tracking/CustomerTracking';
 import Users from './views/desktop/Users';
+import DivisiCutting from './views/desktop/divisi/DivisiCutting';
+import DivisiJahit from './views/desktop/divisi/DivisiJahit';
+import DivisiQC from './views/desktop/divisi/DivisiQC';
+import DivisiFinishing from './views/desktop/divisi/DivisiFinishing';
 import { api } from './services/api';
 import { USER_ROLES } from './constants/userRoles';
 
@@ -64,6 +68,10 @@ export default function App() {
     'pembayaran-upah',
     'kasbon',
     'users',
+    'divisi-cutting',
+    'divisi-jahit',
+    'divisi-qc',
+    'divisi-finishing',
   ];
 
   // Ambil menu aktif terakhir dari URL hash atau localStorage agar tidak reset saat refresh
@@ -460,6 +468,40 @@ export default function App() {
           )}
           {activeMenu === 'users' && (
             <Users />
+          )}
+          {activeMenu === 'divisi-cutting' && (
+            <DivisiCutting
+              antreanList={antreanList}
+              setAntreanList={setAntreanList}
+              products={products}
+              employees={employees}
+            />
+          )}
+          {activeMenu === 'divisi-jahit' && (
+            <DivisiJahit
+              antreanList={antreanList}
+              setAntreanList={setAntreanList}
+              products={products}
+              employees={employees}
+            />
+          )}
+          {activeMenu === 'divisi-qc' && (
+            <DivisiQC
+              antreanList={antreanList}
+              setAntreanList={setAntreanList}
+              products={products}
+              employees={employees}
+            />
+          )}
+          {activeMenu === 'divisi-finishing' && (
+            <DivisiFinishing
+              antreanList={antreanList}
+              setAntreanList={setAntreanList}
+              products={products}
+              employees={employees}
+              mutasiGudangJadiList={mutasiGudangJadiList}
+              setMutasiGudangJadiList={setMutasiGudangJadiList}
+            />
           )}
         </main>
       </div>

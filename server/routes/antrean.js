@@ -320,6 +320,28 @@ router.post('/', async (req, res) => {
       Number(hppPerPcs) || 0
     ]);
 
+    // Simpan otomatis resep bahan baku per pcs ke Master Produk (agar otomatis terisi kedepannya)
+    if (sku && rawKebutuhan && rawKebutuhan !== '[]') {
+      try {
+        await db.run(
+          'UPDATE products SET kebutuhan_bahan = ? WHERE sku = ?',
+          [rawKebutuhan, String(sku).trim()]
+        );
+        // Sinkronkan juga ke varian lain dalam kategori / model produk yang sama jika resepnya masih kosong
+        const prod = await db.get('SELECT kategori, sku_induk FROM products WHERE sku = ?', [String(sku).trim()]);
+        if (prod && prod.kategori) {
+          await db.run(
+            `UPDATE products 
+             SET kebutuhan_bahan = ? 
+             WHERE (kategori = ? OR sku_induk = ?) AND (kebutuhan_bahan IS NULL OR kebutuhan_bahan = '' OR kebutuhan_bahan = '[]')`,
+            [rawKebutuhan, prod.kategori, prod.sku_induk || prod.kategori]
+          );
+        }
+      } catch (errProd) {
+        console.warn('Gagal auto-update resep bahan ke products:', errProd);
+      }
+    }
+
     res.status(201).json({
       id: Number(info.insertId),
       noAntrian: finalNo,

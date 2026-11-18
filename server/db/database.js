@@ -175,6 +175,18 @@ async function initMysql() {
       `);
     } catch (_) {}
 
+    // Pastikan kolom kebutuhan_bahan (Resep BOM Bahan Baku per Pcs) tersedia di products
+    try {
+      const [colCheck] = await connection.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'products' AND COLUMN_NAME = 'kebutuhan_bahan' AND TABLE_SCHEMA = DATABASE()",
+      );
+      if (!colCheck || colCheck.length === 0) {
+        await connection.query(
+          "ALTER TABLE products ADD COLUMN kebutuhan_bahan TEXT NULL AFTER hpp",
+        );
+      }
+    } catch (_) {}
+
     // Pastikan nilai default total_bersih terisi sesuai total_upah jika belum ada potongan kasbon
     try {
       await connection.query(`

@@ -46,6 +46,11 @@ export const api = {
   createProduct: (data) => request('/products', { method: 'POST', body: JSON.stringify(data) }),
   updateProduct: (id, data) => request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
+  saveResepBahan: (sku, kebutuhanBahan, applyToCategory = true) =>
+    request(`/products/resep-bahan/${encodeURIComponent(sku)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ kebutuhanBahan, applyToCategory }),
+    }),
 
   // Employees
   getEmployees: () => request('/employees'),

@@ -13,6 +13,13 @@ router.get('/', async (req, res) => {
         ? Number(r.hpp)
         : Math.round(hargaJual * 0.70);
 
+      let parsedKebutuhan = [];
+      if (r.kebutuhan_bahan) {
+        try {
+          parsedKebutuhan = typeof r.kebutuhan_bahan === 'string' ? JSON.parse(r.kebutuhan_bahan) : r.kebutuhan_bahan;
+        } catch (_) {}
+      }
+
       return {
         id: r.id,
         skuInduk: r.sku_induk || r.kategori || r.nama_produk,
@@ -28,6 +35,7 @@ router.get('/', async (req, res) => {
         harga: hargaJual,
         hpp: hppValue,
         hargaPotong: Number(r.harga_potong || 0),
+        kebutuhanBahan: Array.isArray(parsedKebutuhan) ? parsedKebutuhan : [],
         tanggalUpdate: r.tanggal_update
       };
     }));
@@ -83,6 +91,31 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// PUT simpan otomatis resep bahan baku per pcs produk (BOM Template)
+router.put('/resep-bahan/:sku', async (req, res) => {
+  const { sku } = req.params;
+  const { kebutuhanBahan, applyToCategory } = req.body;
+  try {
+    const jsonStr = typeof kebutuhanBahan === 'string' ? kebutuhanBahan : JSON.stringify(kebutuhanBahan || []);
+    await db.run('UPDATE products SET kebutuhan_bahan = ? WHERE sku = ?', [jsonStr, sku]);
+
+    if (applyToCategory) {
+      const prod = await db.get('SELECT kategori, sku_induk FROM products WHERE sku = ?', [sku]);
+      if (prod && prod.kategori) {
+        await db.run('UPDATE products SET kebutuhan_bahan = ? WHERE kategori = ? OR sku_induk = ?', [
+          jsonStr,
+          prod.kategori,
+          prod.sku_induk || prod.kategori,
+        ]);
+      }
+    }
+
+    res.json({ success: true, sku, kebutuhanBahan });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -288,9 +288,65 @@ router.post('/', async (req, res) => {
       finalNo = `${finalNo}-${seqSuffix}`;
     }
 
-    const rawKebutuhan = kebutuhanBahan
-      ? (typeof kebutuhanBahan === 'string' ? kebutuhanBahan : JSON.stringify(kebutuhanBahan))
-      : '[]';
+    const targetQty = Math.max(1, Number(qty) || 1);
+
+    // Parse daftar kebutuhan bahan baku
+    let listKebutuhan = [];
+    if (kebutuhanBahan) {
+      if (Array.isArray(kebutuhanBahan)) listKebutuhan = kebutuhanBahan;
+      else if (typeof kebutuhanBahan === 'string') {
+        try { listKebutuhan = JSON.parse(kebutuhanBahan); } catch(_) {}
+      }
+    }
+
+    // Kalkulasi Biaya Bahan Baku & lengkapi data harga dari master bahan jika kosong
+    let calculatedBiayaBahan = 0;
+    const enrichedKebutuhan = [];
+    for (const b of listKebutuhan) {
+      let harga = Number(b.hargaSatuan || b.harga || 0);
+      let kode = b.kodeBahan || '';
+      let satuan = b.satuan || 'Pcs';
+      if (harga === 0 || !kode) {
+        const bhnDb = await db.get(
+          'SELECT kode_bahan, satuan, harga FROM bahan WHERE kode_bahan = ? OR nama_bahan = ?',
+          [kode || b.namaBahan, b.namaBahan]
+        );
+        if (bhnDb) {
+          if (harga === 0) harga = Number(bhnDb.harga || 0);
+          if (!kode) kode = bhnDb.kode_bahan;
+          if (!satuan) satuan = bhnDb.satuan;
+        }
+      }
+      const perPcs = Number(b.qtyPerPcs) || 0;
+      const totBahan = Number(b.totalKebutuhan) || Number((perPcs * targetQty).toFixed(2));
+      calculatedBiayaBahan += (totBahan * harga);
+      enrichedKebutuhan.push({
+        ...b,
+        kodeBahan: kode,
+        satuan,
+        qtyPerPcs: perPcs,
+        totalKebutuhan: totBahan,
+        hargaSatuan: harga,
+      });
+    }
+
+    const finalBiayaBahan = Number(totalBiayaBahan) > 0 ? Number(totalBiayaBahan) : calculatedBiayaBahan;
+
+    // Upah Borongan Standar Konveksi (Cutting 1500 + Jahit 3500 + QC 500 + Finishing 1000 = Rp 6.500)
+    const tarifCut = Number(tarifCutting) || 1500;
+    const tarifJht = 3500;
+    const tarifQc = 500;
+    const tarifFin = 1000;
+    const totalUpahBorongan = targetQty * (tarifCut + tarifJht + tarifQc + tarifFin);
+
+    // Kalkulasi Otomatis Total HPP dan HPP per Pcs
+    const calculatedTotalHpp = finalBiayaBahan + totalUpahBorongan;
+    const calculatedHppPerPcs = Math.round(calculatedTotalHpp / targetQty);
+
+    const finalTotalHpp = Number(totalHpp) > 0 ? Number(totalHpp) : calculatedTotalHpp;
+    const finalHppPerPcs = Number(hppPerPcs) > 0 ? Number(hppPerPcs) : calculatedHppPerPcs;
+
+    const rawKebutuhan = JSON.stringify(enrichedKebutuhan);
 
     const info = await db.run(`
       INSERT INTO antrean (
@@ -304,21 +360,88 @@ router.post('/', async (req, res) => {
       sumberPermintaan || 'Rencana Internal',
       noReff || null,
       String(sku).trim(),
-      Number(qty) || 1,
+      targetQty,
       prioritas || 'Normal',
       deadline || new Date().toISOString().slice(0, 10),
       status || 'Menunggu Cutting',
       catatan || null,
       tglSerahCutting || null,
       timCutting || null,
-      Number(tarifCutting) || 0,
-      Number(totalBiayaCutting) || 0,
+      tarifCut,
+      targetQty * tarifCut,
       catatanCutting || null,
       rawKebutuhan,
-      Number(totalBiayaBahan) || 0,
-      Number(totalHpp) || 0,
-      Number(hppPerPcs) || 0
+      finalBiayaBahan,
+      finalTotalHpp,
+      finalHppPerPcs
     ]);
+
+    // 1. UPDATE OTOMATIS HPP ke Master Produk (products.hpp)
+    if (sku && finalHppPerPcs > 0) {
+      try {
+        await db.run(
+          'UPDATE products SET hpp = ? WHERE sku = ?',
+          [finalHppPerPcs, String(sku).trim()]
+        );
+      } catch (errHpp) {
+        console.warn('Gagal auto-update HPP ke products:', errHpp);
+      }
+    }
+
+    // 2. POTONG STOK BAHAN BAKU OTOMATIS & CATAT MUTASI BAHAN (KELUAR)
+    if (enrichedKebutuhan.length > 0) {
+      try {
+        const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const randNo = Math.floor(100 + Math.random() * 900);
+        const noBuktiMutasi = `MBK-${todayStr}-${randNo}`;
+
+        // Buat Header Mutasi Bahan (KELUAR)
+        const mutasiHeader = await db.run(
+          `INSERT INTO mutasi_bahan (no_bukti, tgl, no_reff, jenis_mutasi, keterangan)
+           VALUES (?, NOW(), ?, 'KELUAR', ?)`,
+          [
+            noBuktiMutasi,
+            finalNo,
+            `Pemakaian Bahan Baku SPK ${finalNo} (${String(sku).trim()}) - ${targetQty} Pcs`
+          ]
+        );
+        const mutasiId = mutasiHeader.insertId;
+
+        // Loop setiap bahan: kurangi stok di tabel bahan & catat ke mutasi_bahan_item
+        for (const item of enrichedKebutuhan) {
+          const qtyPotong = Number(item.totalKebutuhan) || 0;
+          if (qtyPotong <= 0) continue;
+
+          // Kurangi stok fisik bahan
+          await db.run(
+            `UPDATE bahan 
+             SET stok = GREATEST(0, stok - ?) 
+             WHERE (kode_bahan = ? AND kode_bahan != '') OR nama_bahan = ?`,
+            [qtyPotong, item.kodeBahan || '', item.namaBahan]
+          );
+
+          // Insert ke mutasi_bahan_item untuk audit trail
+          if (mutasiId) {
+            await db.run(
+              `INSERT INTO mutasi_bahan_item (mutasi_id, no_bukti, kode_bahan, nama_bahan, satuan, qty, harga, total)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                mutasiId,
+                noBuktiMutasi,
+                item.kodeBahan || '-',
+                item.namaBahan,
+                item.satuan || 'Pcs',
+                qtyPotong,
+                Number(item.hargaSatuan) || 0,
+                qtyPotong * (Number(item.hargaSatuan) || 0)
+              ]
+            );
+          }
+        }
+      } catch (errMutasi) {
+        console.warn('Gagal potong stok bahan baku otomatis:', errMutasi);
+      }
+    }
 
     // Simpan otomatis resep bahan baku per pcs ke Master Produk (agar otomatis terisi kedepannya)
     if (sku && rawKebutuhan && rawKebutuhan !== '[]') {
@@ -1009,12 +1132,42 @@ router.post('/rollback', async (req, res) => {
 // 10. DELETE antrean
 router.delete('/:id', async (req, res) => {
   try {
-    const item = await db.get('SELECT no_antrian FROM antrean WHERE id = ?', [req.params.id]);
-    if (item && item.no_antrian) {
-      try {
-        await db.run('DELETE FROM mutasi_gudang_jadi WHERE no_antrian = ?', [item.no_antrian]);
-      } catch (_) {}
+    const item = await db.get('SELECT no_antrian, kebutuhan_bahan FROM antrean WHERE id = ?', [req.params.id]);
+    if (item) {
+      // 1. Kembalikan stok bahan baku jika SPK dihapus
+      if (item.kebutuhan_bahan) {
+        try {
+          let parsed = [];
+          if (typeof item.kebutuhan_bahan === 'string') {
+            parsed = JSON.parse(item.kebutuhan_bahan);
+          } else if (Array.isArray(item.kebutuhan_bahan)) {
+            parsed = item.kebutuhan_bahan;
+          }
+          for (const b of parsed) {
+            const qtyBalik = Number(b.totalKebutuhan) || 0;
+            if (qtyBalik > 0) {
+              await db.run(
+                'UPDATE bahan SET stok = stok + ? WHERE (kode_bahan = ? AND kode_bahan != "") OR nama_bahan = ?',
+                [qtyBalik, b.kodeBahan || '', b.namaBahan]
+              );
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 2. Hapus mutasi bahan yang terhubung dengan SPK ini
+      if (item.no_antrian) {
+        try {
+          const mbRows = await db.all('SELECT id FROM mutasi_bahan WHERE no_reff = ?', [item.no_antrian]);
+          for (const mb of mbRows) {
+            await db.run('DELETE FROM mutasi_bahan_item WHERE mutasi_id = ?', [mb.id]);
+          }
+          await db.run('DELETE FROM mutasi_bahan WHERE no_reff = ?', [item.no_antrian]);
+          await db.run('DELETE FROM mutasi_gudang_jadi WHERE no_antrian = ?', [item.no_antrian]);
+        } catch (_) {}
+      }
     }
+
     await db.run('DELETE FROM antrean WHERE id = ?', [req.params.id]);
     res.json({ success: true, id: Number(req.params.id) });
   } catch (err) {

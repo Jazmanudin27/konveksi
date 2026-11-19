@@ -2906,28 +2906,24 @@ export default function Antrean({
             </button>
           </div>
 
-          {/* Scrollable Form Body Full Screen Responsif 2-Kolom */}
+          {/* Scrollable Form Body - Streamlined Centered Flow */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
             <form
               id="form-antrean-fullscreen"
               onSubmit={handleSubmit}
               noValidate
-              className="max-w-7xl mx-auto space-y-4 text-xs"
+              className="max-w-4xl mx-auto space-y-4 text-xs pb-6"
             >
-              {/* GRID CONTAINER UTAMA 2-KOLOM RESPONSIF */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                {/* KOLOM KIRI (7/12): Model Produk & Kebutuhan Bahan */}
-                <div className="lg:col-span-7 space-y-4">
-                  {/* CARD 1: PILIH MODEL PRODUK (SKU) */}
-                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+                  {/* CARD 1: PRODUK & TARGET JUMLAH (TERPADU & LOGIS) */}
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-sky-100 text-[#0284c7] flex items-center justify-center">
-                          <Shirt className="w-3.5 h-3.5" />
-                        </div>
+                        <span className="w-5 h-5 rounded-md bg-sky-100 text-[#0284c7] flex items-center justify-center text-[11px] font-bold">
+                          1
+                        </span>
                         <div>
                           <h4 className="font-extrabold text-xs text-slate-900">
-                            Pilih Produk Konveksi (SKU){" "}
+                            Pilih Model Produk & Target Produksi{" "}
                             <span className="text-rose-500">*</span>
                           </h4>
                           <p className="text-[10px] text-slate-400">
@@ -3215,74 +3211,197 @@ export default function Antrean({
                       )}
                     </div>
 
-                    {/* Preview Info Produk Terpilih */}
+                    {/* Ringkasan Produk Terpilih (Satu Baris Bersih & Rapih) */}
                     {selectedProduct && (
-                      <div className="bg-gradient-to-r from-sky-50/70 via-indigo-50/30 to-white rounded-xl p-3 border border-sky-100/80 flex flex-wrap items-center justify-between gap-2.5">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white shadow-xs"
+                      <div className="mt-2.5 px-3.5 py-2 bg-slate-50/80 border border-slate-200/70 rounded-xl flex items-center justify-between flex-wrap gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
                             style={{
                               backgroundColor:
                                 selectedProduct.warnaHex ||
                                 selectedProduct.warna_hex ||
-                                "#e2e8f0",
+                                "#cbd5e1",
                             }}
-                          >
-                            <Shirt className="w-5 h-5 text-slate-700/80" />
-                          </div>
-                          <div>
-                            <span className="font-mono font-black text-xs text-[#0284c7]">
-                              {selectedProduct.sku}
-                            </span>
-                            <div className="font-extrabold text-xs text-slate-900">
-                              {getProdName(selectedProduct)}
-                            </div>
-                            <div className="text-[10.5px] text-slate-500 mt-0.5">
-                              {selectedProduct.kategori || "-"} •{" "}
-                              {selectedProduct.varian || "Polos"} (
-                              {selectedProduct.ukuran || "All Size"})
-                            </div>
-                          </div>
+                          />
+                          <span className="font-extrabold text-slate-900">
+                            {getProdName(selectedProduct)}
+                          </span>
+                          <span className="text-slate-500 text-[11px]">
+                            • {selectedProduct.kategori || "Kaos"} ({selectedProduct.varian || "Polos"} / {selectedProduct.ukuran || "All Size"})
+                          </span>
                         </div>
-
                         <div className="flex items-center gap-2">
                           {getProdBahan(selectedProduct) !== "-" && (
-                            <span className="px-2.5 py-1 rounded-lg bg-white border border-sky-100 text-[#0284c7] font-mono text-xs font-bold shadow-2xs">
+                            <span className="text-[11px] font-mono font-bold text-cyan-800 bg-white px-2 py-0.5 rounded border border-cyan-200">
                               Kain: {getProdBahan(selectedProduct)}
                             </span>
                           )}
                           {Number(selectedProduct.harga || 0) > 0 && (
-                            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono text-xs font-bold shadow-2xs">
-                              Jual: Rp{" "}
-                              {Number(selectedProduct.harga).toLocaleString(
-                                "id-ID",
-                              )}
+                            <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              Harga Jual: Rp {Number(selectedProduct.harga).toLocaleString("id-ID")}
                             </span>
                           )}
                         </div>
                       </div>
                     )}
+
+                  {/* 1.2 Target Qty, Deadline, dan Prioritas dalam 1 Baris Sejajar */}
+                  <div className="pt-3 border-t border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
+                    {/* Target Qty (5 col) */}
+                    <div className="md:col-span-5 space-y-1.5">
+                      <label className="block text-[11px] font-black text-slate-700">
+                        Target Qty Produksi (Pcs) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              qty: Math.max(1, Number(prev.qty || 1) - 10),
+                            }))
+                          }
+                          className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={formData.qty}
+                          onChange={(e) =>
+                            setFormData({ ...formData, qty: e.target.value })
+                          }
+                          className="flex-1 h-9 px-2 text-center rounded-xl border border-slate-200 font-mono font-black text-sm text-slate-900 focus:outline-none focus:border-[#0284c7]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              qty: Number(prev.qty || 0) + 10,
+                            }))
+                          }
+                          className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                        >
+                          +
+                        </button>
+                      </div>
+                      {/* Quick Preset Chips */}
+                      <div className="flex items-center gap-1">
+                        {[50, 100, 200, 500].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, qty: val })}
+                            className={`flex-1 py-0.5 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                              Number(formData.qty) === val
+                                ? "bg-[#0284c7] text-white shadow-2xs"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
+                          >
+                            {val} Pcs
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tingkat Prioritas (4 col) */}
+                    <div className="md:col-span-4 space-y-1.5">
+                      <label className="block text-[11px] font-black text-slate-700">
+                        Tingkat Prioritas
+                      </label>
+                      <div className="grid grid-cols-3 gap-1">
+                        {[
+                          {
+                            id: "Urgent",
+                            label: "Urgent",
+                            icon: Flame,
+                            activeClass: "bg-rose-500 text-white shadow-2xs",
+                            inactiveClass: "bg-rose-50/70 text-rose-700 hover:bg-rose-100",
+                          },
+                          {
+                            id: "Normal",
+                            label: "Normal",
+                            icon: Clock,
+                            activeClass: "bg-[#0284c7] text-white shadow-2xs",
+                            inactiveClass: "bg-sky-50/70 text-sky-800 hover:bg-sky-100",
+                          },
+                          {
+                            id: "Low",
+                            label: "Low",
+                            icon: Sparkles,
+                            activeClass: "bg-slate-700 text-white shadow-2xs",
+                            inactiveClass: "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                          },
+                        ].map((prio) => {
+                          const Icon = prio.icon;
+                          const isSelected = formData.prioritas === prio.id;
+                          return (
+                            <button
+                              key={prio.id}
+                              type="button"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  prioritas: prio.id,
+                                })
+                              }
+                              className={`h-9 px-1 rounded-xl text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                                isSelected ? prio.activeClass : prio.inactiveClass
+                              }`}
+                            >
+                              <Icon className="w-3 h-3 shrink-0" />
+                              <span>{prio.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="h-4"></div>
+                    </div>
+
+                    {/* Deadline Target Selesai (3 col) */}
+                    <div className="md:col-span-3 space-y-1.5">
+                      <label className="block text-[11px] font-black text-slate-700">
+                        Deadline Selesai <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={formData.deadline}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            deadline: e.target.value,
+                          })
+                        }
+                        className="w-full h-9 px-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
+                      />
+                      <div className="h-4"></div>
+                    </div>
                   </div>
+                </div>
 
                   {/* CARD 2: KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (BOM) */}
-                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
-                          <Layers className="w-3.5 h-3.5" />
-                        </div>
+                        <span className="w-5 h-5 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center text-[11px] font-bold">
+                          2
+                        </span>
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="font-extrabold text-xs text-slate-900">
-                              Kebutuhan Bahan & Aksesoris Produksi
+                              Kebutuhan Bahan Baku & Aksesoris per Pcs
                             </h4>
                             <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">
                               {formData.kebutuhanBahan?.length || 0} Terdaftar
                             </span>
                           </div>
-                          <p className="text-[10.5px] text-slate-400">
-                            Bahan baku per Pcs otomatis tersimpan & memotong
-                            stok saat cutting
+                          <p className="text-[10px] text-slate-400">
+                            Resep otomatis tersimpan & memotong stok gudang saat proses cutting
                           </p>
                         </div>
                       </div>
@@ -3336,6 +3455,9 @@ export default function Antrean({
                                 Qty/Pcs
                               </th>
                               <th className="py-2.5 px-2 w-24">Satuan</th>
+                              <th className="py-2.5 px-2 text-center w-24">
+                                Total SPK
+                              </th>
                               <th className="py-2.5 px-3 text-right w-28">
                                 Harga Satuan
                               </th>
@@ -3431,6 +3553,11 @@ export default function Antrean({
                                         )}
                                     </select>
                                   </td>
+                                  <td className="py-2 px-2 text-center">
+                                    <span className="font-mono font-bold text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                                      {Number(((Number(item.qty) || 0) * (Number(formData.qty) || 0)).toFixed(2))} {item.satuan || "Pcs"}
+                                    </span>
+                                  </td>
                                   <td className="py-2 px-3">
                                     <div className="relative">
                                       <span className="absolute left-2.5 top-2 text-[10px] text-slate-400 font-bold pointer-events-none">
@@ -3501,443 +3628,209 @@ export default function Antrean({
                         </table>
                       </div>
                     )}
-                  </div>
-                </div>
-
-                {/* KOLOM KANAN (5/12): Target, Dokumen, Status, dan Kalkulator HPP */}
-                <div className="lg:col-span-5 space-y-4">
-                  {/* CARD 3: TARGET KUANTITAS & PARAMETER WAKTU */}
-                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
-                        <Boxes className="w-3.5 h-3.5" />
+                    {/* Subtotal Bahan Baku */}
+                    {formData.kebutuhanBahan && formData.kebutuhanBahan.length > 0 && (
+                      <div className="flex items-center justify-between pt-2 px-1 text-xs">
+                        <span className="text-slate-500 font-medium">
+                          Total Bahan Terdaftar: <strong>{formData.kebutuhanBahan.length} item</strong>
+                        </span>
+                        <div className="text-right">
+                          <span className="text-slate-500 mr-2">Estimasi Biaya Bahan:</span>
+                          <span className="font-mono font-black text-sm text-[#0284c7]">
+                            Rp {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
+                          </span>
+                        </div>
                       </div>
+                    )}
+                  </div>
+
+                  {/* CARD 3: DOKUMEN & INFORMASI TAMBAHAN (RINGKAS & SIMPEL) */}
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-800 flex items-center justify-center text-[11px] font-bold">
+                        3
+                      </span>
                       <h4 className="font-extrabold text-xs text-slate-900">
-                        Target Kuantitas & Parameter Waktu
+                        Dokumen & Catatan Tambahan (Opsional)
                       </h4>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Target Qty Produksi (Pcs){" "}
-                          <span className="text-rose-500">*</span>
+                        <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                          No Antrian
                         </label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                qty: Math.max(1, Number(prev.qty || 1) - 10),
-                              }))
-                            }
-                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors"
-                          >
-                            -
-                          </button>
+                        <div className="relative">
                           <input
-                            type="number"
-                            min="1"
+                            type="text"
                             required
-                            value={formData.qty}
+                            value={formData.noAntrian}
                             onChange={(e) =>
-                              setFormData({ ...formData, qty: e.target.value })
+                              setFormData({
+                                ...formData,
+                                noAntrian: e.target.value,
+                              })
                             }
-                            className="flex-1 h-9 px-3 text-center rounded-xl border border-slate-200 font-mono font-black text-sm text-slate-900 focus:outline-none focus:border-[#0284c7]"
+                            className="w-full h-8 px-2.5 rounded-xl border border-slate-200 font-mono font-bold text-[#0284c7] bg-slate-50 text-xs focus:bg-white focus:border-[#0284c7] focus:outline-none"
                           />
                           <button
                             type="button"
                             onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                qty: Number(prev.qty || 0) + 10,
-                              }))
+                              setFormData({
+                                ...formData,
+                                noAntrian: generateNoAntrian(),
+                              })
                             }
-                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                            className="absolute right-1 top-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500 hover:text-[#0284c7] cursor-pointer"
+                            title="Generate Acak Baru"
                           >
-                            +
+                            Auto
                           </button>
                         </div>
-
-                        <div className="flex items-center gap-1.5 mt-2">
-                          {[50, 100, 200, 500].map((val) => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() =>
-                                setFormData({ ...formData, qty: val })
-                              }
-                              className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
-                                Number(formData.qty) === val
-                                  ? "bg-[#0284c7] text-white shadow-xs"
-                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                              }`}
-                            >
-                              {val} Pcs
-                            </button>
-                          ))}
-                        </div>
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Tingkat Prioritas Pengerjaan
-                        </label>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {[
-                            {
-                              id: "Urgent",
-                              label: "Urgent",
-                              icon: Flame,
-                              activeClass: "bg-rose-500 text-white shadow-xs",
-                              inactiveClass:
-                                "bg-rose-50 text-rose-700 hover:bg-rose-100/80",
-                            },
-                            {
-                              id: "Normal",
-                              label: "Normal",
-                              icon: Clock,
-                              activeClass: "bg-[#0284c7] text-white shadow-xs",
-                              inactiveClass:
-                                "bg-sky-50 text-sky-800 hover:bg-sky-100/80",
-                            },
-                            {
-                              id: "Low",
-                              label: "Low",
-                              icon: Sparkles,
-                              activeClass: "bg-slate-700 text-white shadow-xs",
-                              inactiveClass:
-                                "bg-slate-100 text-slate-600 hover:bg-slate-200",
-                            },
-                          ].map((prio) => {
-                            const Icon = prio.icon;
-                            const isSelected = formData.prioritas === prio.id;
-                            return (
-                              <button
-                                key={prio.id}
-                                type="button"
-                                onClick={() =>
-                                  setFormData({
-                                    ...formData,
-                                    prioritas: prio.id,
-                                  })
-                                }
-                                className={`h-8 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                                  isSelected
-                                    ? prio.activeClass
-                                    : prio.inactiveClass
-                                }`}
-                              >
-                                <Icon className="w-3.5 h-3.5 shrink-0" />
-                                <span>{prio.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Deadline Target Selesai{" "}
-                          <span className="text-rose-500">*</span>
+                        <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                          Tgl Masuk
                         </label>
                         <input
                           type="date"
                           required
-                          value={formData.deadline}
+                          value={formData.tglMasuk}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              deadline: e.target.value,
+                              tglMasuk: e.target.value,
                             })
                           }
-                          className="w-full h-9 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
+                          className="w-full h-8 px-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10.5px] font-bold text-slate-700">
+                            Sumber Permintaan
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSumberIndex(null);
+                              setSumberInputText("");
+                              setIsSumberModalOpen(true);
+                            }}
+                            className="text-[9.5px] text-[#0284c7] hover:underline font-bold"
+                          >
+                            Kelola
+                          </button>
+                        </div>
+                        <select
+                          value={formData.sumberPermintaan}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              sumberPermintaan: e.target.value,
+                            })
+                          }
+                          className="w-full h-8 px-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                        >
+                          {sumberOptions.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                          No Referensi / PO
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.noReff}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              noReff: e.target.value,
+                            })
+                          }
+                          placeholder="mis: PO-CLIENT-08"
+                          className="w-full h-8 px-2.5 rounded-xl border border-slate-200 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
                         />
                       </div>
                     </div>
+
+                    <div>
+                      <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                        Catatan SOP / Instruksi Produksi Khusus
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.catatan}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            catatan: e.target.value,
+                          })
+                        }
+                        placeholder="mis: Sablon DTF dada kiri, jahit rantai pundak, gunakan benang hitam..."
+                        className="w-full h-8 px-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
+                      />
+                    </div>
                   </div>
 
-                  {/* CARD 4: DOKUMEN & REGISTRASI ANTREAN */}
-                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+                  {/* CARD 4: KALKULATOR HPP & RINGKASAN BIAYA (HORIZONTAL STRIP SLEEK) */}
+                  <div className="bg-[#0b1329] text-white rounded-2xl p-4 shadow-sm border border-slate-800 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center">
-                          <Hash className="w-3.5 h-3.5" />
-                        </div>
-                        <h4 className="font-extrabold text-xs text-slate-900">
-                          Informasi Dokumen & Registrasi
+                        <span className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[11px] font-bold">
+                          ⚡
+                        </span>
+                        <h4 className="font-extrabold text-xs text-emerald-400">
+                          Kalkulator Estimasi HPP (Harga Pokok Produksi)
                         </h4>
                       </div>
-                      <span className="font-mono font-bold text-[10px] text-slate-400">
-                        {formData.noAntrian}
+                      <span className="px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-mono text-[10px]">
+                        Batch: {Number(formData.qty || 0).toLocaleString("id-ID")} Pcs
                       </span>
                     </div>
 
-                    <div className="space-y-2.5">
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
-                            No Antrian <span className="text-rose-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              required
-                              value={formData.noAntrian}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  noAntrian: e.target.value,
-                                })
-                              }
-                              className="w-full h-8 px-2.5 rounded-xl border border-slate-200 font-mono font-bold text-[#0284c7] bg-slate-50 text-xs focus:bg-white focus:border-[#0284c7] focus:outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setFormData({
-                                  ...formData,
-                                  noAntrian: generateNoAntrian(),
-                                })
-                              }
-                              className="absolute right-1 top-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500 hover:text-[#0284c7] cursor-pointer"
-                              title="Generate Acak Baru"
-                            >
-                              Auto
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
-                            Tgl Masuk <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="date"
-                            required
-                            value={formData.tglMasuk}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                tglMasuk: e.target.value,
-                              })
-                            }
-                            className="w-full h-8 px-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-[10.5px] font-bold text-slate-700">
-                              Sumber Permintaan{" "}
-                              <span className="text-rose-500">*</span>
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingSumberIndex(null);
-                                setSumberInputText("");
-                                setIsSumberModalOpen(true);
-                              }}
-                              className="text-[9.5px] text-[#0284c7] hover:underline font-bold"
-                            >
-                              Kelola
-                            </button>
-                          </div>
-                          <select
-                            value={formData.sumberPermintaan}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                sumberPermintaan: e.target.value,
-                              })
-                            }
-                            className="w-full h-8 px-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                          >
-                            {sumberOptions.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
-                            No Referensi (PO / Invoice)
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.noReff}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                noReff: e.target.value,
-                              })
-                            }
-                            placeholder="mis: PO-CLIENT-08"
-                            className="w-full h-8 px-2.5 rounded-xl border border-slate-200 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2.5">
-                        <div className="col-span-1">
-                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
-                            Status Awal
-                          </label>
-                          <select
-                            value={formData.status}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                status: e.target.value,
-                              })
-                            }
-                            className="w-full h-8 px-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                          >
-                            <option value="Menunggu Cutting">
-                              Menunggu Cutting
-                            </option>
-                            <option value="Proses Cutting">
-                              Proses Cutting
-                            </option>
-                            <option value="Proses Jahit">Proses Jahit</option>
-                            <option value="Proses QC">Proses QC</option>
-                            <option value="Proses Finishing">
-                              Proses Finishing
-                            </option>
-                            <option value="Selesai">Selesai</option>
-                            <option value="Dibatalkan">Dibatalkan</option>
-                          </select>
-                        </div>
-
-                        <div className="col-span-2">
-                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
-                            Catatan SOP / Instruksi Produksi
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.catatan}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                catatan: e.target.value,
-                              })
-                            }
-                            placeholder="mis: Sablon DTF dada, jahit rantai pundak..."
-                            className="w-full h-8 px-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* CARD 5: KALKULATOR HPP OTOMATIS (MODERN DASHBOARD CARD) */}
-                  <div className="bg-[#0b1329] text-white rounded-2xl p-4 shadow-md border border-slate-800 space-y-3 font-sans">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                          ⚡
-                        </div>
-                        <div>
-                          <h4 className="font-extrabold text-xs text-emerald-400">
-                            Kalkulator HPP Otomatis
-                          </h4>
-                          <p className="text-[10px] text-slate-400">
-                            Biaya Bahan + Upah (Potong, Jahit, Finishing)
-                          </p>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full bg-white/10 text-slate-300 text-[10px] font-mono">
-                        Batch: {formData.qty || 0} Pcs
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
                       <div className="bg-white/5 rounded-xl p-2.5">
-                        <span className="text-[10px] text-slate-400 block font-semibold">
-                          1. Bahan Baku
+                        <span className="text-[10px] text-slate-400 block">
+                          Biaya Bahan Baku
                         </span>
                         <span className="font-mono font-bold text-xs text-sky-300 block mt-0.5">
-                          Rp{" "}
-                          {hppCalculation.totalBiayaBahan.toLocaleString(
-                            "id-ID",
-                          )}
+                          Rp {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
                         </span>
                       </div>
                       <div className="bg-white/5 rounded-xl p-2.5">
-                        <span className="text-[10px] text-slate-400 block font-semibold">
-                          2. Upah Borongan
+                        <span className="text-[10px] text-slate-400 block">
+                          Upah Borongan Pabrik
                         </span>
                         <span className="font-mono font-bold text-xs text-amber-300 block mt-0.5">
-                          Rp{" "}
-                          {hppCalculation.totalUpahBorongan.toLocaleString(
-                            "id-ID",
-                          )}
+                          Rp {hppCalculation.totalUpahBorongan.toLocaleString("id-ID")}
                         </span>
                       </div>
                       <div className="bg-white/5 rounded-xl p-2.5">
-                        <span className="text-[10px] text-slate-400 block font-semibold">
-                          3. Total Batch
+                        <span className="text-[10px] text-slate-400 block">
+                          Total Biaya Batch
                         </span>
-                        <span className="font-mono font-bold text-xs text-white block mt-0.5">
+                        <span className="font-mono font-bold text-xs text-slate-100 block mt-0.5">
                           Rp {hppCalculation.totalHpp.toLocaleString("id-ID")}
                         </span>
                       </div>
-                    </div>
-
-                    {/* Estimasi HPP per Pcs (Prominent Emerald Glow Banner) */}
-                    <div className="bg-emerald-500/15 border border-emerald-400/40 rounded-xl p-3 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] uppercase font-black text-emerald-300 block tracking-wider">
+                      <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-xl p-2.5 flex flex-col justify-between">
+                        <span className="text-[9.5px] uppercase font-black text-emerald-300 tracking-wider">
                           ★ ESTIMASI HPP / PCS
                         </span>
-                        <span className="text-[10px] text-emerald-200/80">
-                          Modal bersih per pcs siap jual
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-mono font-black text-lg text-emerald-400 block leading-tight">
+                        <span className="font-mono font-black text-base text-emerald-400 mt-0.5">
                           Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")}
-                        </span>
-                        <span className="text-[9.5px] text-emerald-300/80 font-semibold font-mono">
-                          / Pcs
                         </span>
                       </div>
                     </div>
-
-                    {hppCalculation.hargaJual > 0 && (
-                      <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
-                        <span>
-                          Harga Jual:{" "}
-                          <strong className="text-white font-mono">
-                            Rp{" "}
-                            {hppCalculation.hargaJual.toLocaleString("id-ID")}
-                          </strong>
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-lg font-mono font-extrabold text-[11px] ${
-                            hppCalculation.profitPerPcs >= 0
-                              ? "bg-emerald-500 text-white"
-                              : "bg-rose-500 text-white"
-                          }`}
-                        >
-                          {hppCalculation.profitPerPcs >= 0 ? "+" : ""}
-                          Rp{" "}
-                          {hppCalculation.profitPerPcs.toLocaleString(
-                            "id-ID",
-                          )}{" "}
-                          ({hppCalculation.marginPersen}%)
-                        </span>
-                      </div>
-                    )}
                   </div>
-                </div>
-              </div>
             </form>
           </div>
 

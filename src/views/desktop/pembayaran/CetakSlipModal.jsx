@@ -1,13 +1,13 @@
 // g:\Konveksi\src\views\desktop\pembayaran\CetakSlipModal.jsx
-import React from 'react';
-import { Printer, X, FileText, CreditCard } from 'lucide-react';
-import { angkaTerbilang } from './utils';
+import React from "react";
+import { Printer, X, FileText, CreditCard } from "lucide-react";
+import { angkaTerbilang } from "./utils";
 
 export default function CetakSlipModal({
   isOpen,
   slipData,
-  startDate = '',
-  endDate = '',
+  startDate = "",
+  endDate = "",
   onClose,
   onBayarKaryawan,
 }) {
@@ -18,12 +18,13 @@ export default function CetakSlipModal({
   };
 
   const isJahit =
-    slipData.tahapan === 'Jahit' ||
-    (slipData.tahapan || '').toLowerCase().includes('jahit');
+    slipData.tahapan === "Jahit" ||
+    (slipData.tahapan || "").toLowerCase().includes("jahit");
 
   const potongKasbon = Number(slipData.totalPotonganKasbon || 0);
   const totalGajiBersih = Number(
-    slipData.totalBersih ?? Math.max(0, Number(slipData.totalKotor || 0) - potongKasbon)
+    slipData.totalBersih ??
+      Math.max(0, Number(slipData.totalKotor || 0) - potongKasbon),
   );
 
   return (
@@ -78,12 +79,14 @@ export default function CetakSlipModal({
                       Tanggal Periode
                     </span>
                     <span className="font-bold text-slate-800">
-                      : {slipData.periode || (startDate ? `${startDate} s.d ${endDate}` : '-')}
+                      :{" "}
+                      {slipData.periode ||
+                        (startDate ? `${startDate} s.d ${endDate}` : "-")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-28 text-slate-500 font-medium">
-                      {isJahit ? 'Nama Penjahit' : 'Nama Tim'}
+                      {isJahit ? "Nama Penjahit" : "Nama Tim"}
                     </span>
                     <span className="font-black text-slate-900 text-xs">
                       : {slipData.namaPetugas}
@@ -94,7 +97,7 @@ export default function CetakSlipModal({
                       Bagian / Divisi
                     </span>
                     <span className="font-bold text-slate-800">
-                      : {slipData.tahapan || 'Konveksi'}
+                      : {slipData.tahapan || "Konveksi"}
                     </span>
                   </div>
                 </div>
@@ -123,7 +126,7 @@ export default function CetakSlipModal({
                 Total Pembayaran
               </span>
               <span className="font-mono font-bold text-slate-900 text-sm">
-                Rp {Number(slipData.totalKotor || 0).toLocaleString('id-ID')}
+                Rp {Number(slipData.totalKotor || 0).toLocaleString("id-ID")}
               </span>
             </div>
 
@@ -134,7 +137,9 @@ export default function CetakSlipModal({
                   Potongan Pinjaman (Kasbon)
                 </span>
                 <span className="font-mono font-bold text-amber-700">
-                  {potongKasbon > 0 ? `- Rp ${potongKasbon.toLocaleString('id-ID')}` : '-'}
+                  {potongKasbon > 0
+                    ? `- Rp ${potongKasbon.toLocaleString("id-ID")}`
+                    : "-"}
                 </span>
               </div>
             )}
@@ -144,7 +149,7 @@ export default function CetakSlipModal({
                 * Total GAJI (Bersih Diterima)
               </span>
               <span className="font-mono font-black text-base text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
-                Rp {totalGajiBersih.toLocaleString('id-ID')}
+                Rp {totalGajiBersih.toLocaleString("id-ID")}
               </span>
             </div>
 
@@ -155,8 +160,8 @@ export default function CetakSlipModal({
                 </span>
                 <span className="font-mono font-bold text-slate-700">
                   {Number(slipData.sisaPinjamanAktif || 0) > 0
-                    ? `Rp ${Number(slipData.sisaPinjamanAktif).toLocaleString('id-ID')}`
-                    : '-'}
+                    ? `Rp ${Number(slipData.sisaPinjamanAktif).toLocaleString("id-ID")}`
+                    : "-"}
                 </span>
               </div>
             )}
@@ -178,7 +183,7 @@ export default function CetakSlipModal({
               <div className="font-bold text-rose-600 text-xs flex items-center gap-1">
                 <span>* Grand Total QTY :</span>
                 <span className="font-mono font-black text-sm text-rose-700 bg-rose-50 px-2 py-0.2 rounded border border-rose-200">
-                  {Number(slipData.totalQty || 0).toLocaleString('id-ID')} Pcs
+                  {Number(slipData.totalQty || 0).toLocaleString("id-ID")} Pcs
                 </span>
               </div>
             </div>
@@ -218,16 +223,17 @@ export default function CetakSlipModal({
                         {item.skuInduk || item.namaProduk}
                       </td>
                       <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700">
-                        {item.varian || '-'}
+                        {item.varian || "-"}
                       </td>
                       <td className="py-1.5 px-3 border-r border-slate-200 text-right font-mono font-bold text-slate-800">
-                        Rp {Number(item.tarifPerPcs || 0).toLocaleString('id-ID')}
+                        Rp{" "}
+                        {Number(item.tarifPerPcs || 0).toLocaleString("id-ID")}
                       </td>
                       <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-black text-slate-900">
-                        {Number(item.qty || 0).toLocaleString('id-ID')}
+                        {Number(item.qty || 0).toLocaleString("id-ID")}
                       </td>
                       <td className="py-1.5 px-3 text-right font-mono font-black text-slate-900">
-                        Rp {Number(item.totalUpah || 0).toLocaleString('id-ID')}
+                        Rp {Number(item.totalUpah || 0).toLocaleString("id-ID")}
                       </td>
                     </tr>
                   ))}
@@ -241,10 +247,12 @@ export default function CetakSlipModal({
                       Total Qty & Total Upah:
                     </td>
                     <td className="py-2 px-3 text-center font-mono font-black text-rose-700">
-                      {Number(slipData.totalQty || 0).toLocaleString('id-ID')} Pcs
+                      {Number(slipData.totalQty || 0).toLocaleString("id-ID")}{" "}
+                      Pcs
                     </td>
                     <td className="py-2 px-3 text-right font-mono font-black text-emerald-800 text-sm">
-                      Rp {Number(slipData.totalKotor || 0).toLocaleString('id-ID')}
+                      Rp{" "}
+                      {Number(slipData.totalKotor || 0).toLocaleString("id-ID")}
                     </td>
                   </tr>
                 </tfoot>
@@ -276,16 +284,16 @@ export default function CetakSlipModal({
         {/* Bottom Modal Footer */}
         <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between print:hidden">
           <span className="text-xs text-slate-500">
-            Status:{' '}
+            Status:{" "}
             <strong
               className={
                 slipData.pendingCount === 0
-                  ? 'text-emerald-700'
-                  : 'text-rose-600'
+                  ? "text-emerald-700"
+                  : "text-rose-600"
               }
             >
               {slipData.pendingCount === 0
-                ? 'Sudah Lunas'
+                ? "Sudah Lunas"
                 : `${slipData.pendingCount} Order Belum Lunas`}
             </strong>
           </span>
@@ -314,4 +322,3 @@ export default function CetakSlipModal({
     </div>
   );
 }
-

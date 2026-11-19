@@ -450,6 +450,14 @@ function SearchableBahanSelectMobile({
                         <span className={stokVal <= 10 ? 'text-rose-600 font-bold' : 'text-slate-600'}>
                           Stok: {stokVal} {m.satuan}
                         </span>
+                        {Number(m.harga || 0) > 0 && (
+                          <>
+                            <span>•</span>
+                            <span className="text-emerald-700 font-bold">
+                              Rp {Number(m.harga).toLocaleString('id-ID')}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                     {isSelected && <Check className="w-4 h-4 text-amber-700 shrink-0" />}

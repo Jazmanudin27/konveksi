@@ -63,6 +63,208 @@ import ModalSelesaiGudangJadi from "./antrean/ModalSelesaiGudangJadi";
 import ModalHistoriCutting from "./antrean/ModalHistoriCutting";
 import ShareTrackingModal from "../../components/common/ShareTrackingModal";
 
+// Sub-komponen Searchable Select Master Bahan Baku Desktop
+function SearchableBahanSelectDesktop({
+  masterBahan = [],
+  selectedKode = "",
+  selectedNama = "",
+  onSelect,
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const popoverRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  const selectedBahan = useMemo(() => {
+    return masterBahan.find(
+      (m) =>
+        (selectedKode && m.kodeBahan === selectedKode) ||
+        (selectedNama &&
+          (m.namaBahan || "").toLowerCase() === selectedNama.toLowerCase()),
+    );
+  }, [masterBahan, selectedKode, selectedNama]);
+
+  const filteredBahan = useMemo(() => {
+    if (!query.trim()) return masterBahan;
+    const q = query.toLowerCase();
+    return masterBahan.filter(
+      (m) =>
+        (m.namaBahan || "").toLowerCase().includes(q) ||
+        (m.kodeBahan || "").toLowerCase().includes(q) ||
+        (m.satuan || "").toLowerCase().includes(q) ||
+        (m.supplier || "").toLowerCase().includes(q),
+    );
+  }, [masterBahan, query]);
+
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 60);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative w-full" ref={popoverRef}>
+      <button
+        type="button"
+        onClick={() => {
+          setIsOpen((prev) => !prev);
+          setQuery("");
+        }}
+        className={`w-full h-8 px-2.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+          selectedBahan
+            ? "bg-sky-50/70 border-sky-200 hover:bg-sky-100/60"
+            : "bg-white border-slate-200 hover:border-[#0284c7]"
+        }`}
+      >
+        <div className="flex items-center gap-1.5 min-w-0 truncate">
+          <Search className="w-3 h-3 text-[#0284c7] shrink-0" />
+          {selectedBahan ? (
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="font-mono font-bold text-[9.5px] text-sky-800 bg-white px-1 py-0.2 rounded border border-sky-200 shrink-0">
+                {selectedBahan.kodeBahan}
+              </span>
+              <span className="text-xs font-bold text-slate-800 truncate">
+                {selectedBahan.namaBahan}
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                (Stok: {selectedBahan.stok ?? 0} {selectedBahan.satuan})
+              </span>
+              {Number(selectedBahan.harga || 0) > 0 && (
+                <span className="text-[10px] text-emerald-700 font-mono font-bold shrink-0">
+                  • Rp {Number(selectedBahan.harga).toLocaleString("id-ID")}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-xs text-slate-400 font-medium truncate">
+              {selectedNama || "-- Cari & Pilih Bahan dari Master --"}
+            </span>
+          )}
+        </div>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-slate-400 shrink-0 ml-1 transition-transform duration-150 ${
+            isOpen ? "rotate-180 text-[#0284c7]" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-xl border border-slate-200 p-2 space-y-1.5 w-[330px] max-w-[95vw] animate-in fade-in duration-100">
+          {/* Search Input Bar */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2 pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Cari bahan (Kain, Kancing, Benang...)"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full pl-7 pr-6 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#0284c7] focus:outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-1.5 top-1.5 p-0.5 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* List Bahan Hasil Pencarian */}
+          <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/50">
+            {filteredBahan.length === 0 ? (
+              <div className="py-4 text-center text-xs text-slate-400">
+                Bahan baku tidak ditemukan
+              </div>
+            ) : (
+              filteredBahan.map((m) => {
+                const isSelected =
+                  selectedBahan &&
+                  (selectedBahan.kodeBahan === m.kodeBahan ||
+                    selectedBahan.namaBahan === m.namaBahan);
+                const stokVal = Number(m.stok ?? 0);
+                return (
+                  <button
+                    key={m.id || m.kodeBahan}
+                    type="button"
+                    onClick={() => {
+                      onSelect(m);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full p-2 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-sky-100/80 text-sky-950 font-bold"
+                        : "hover:bg-sky-50 text-slate-800"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-xs truncate">
+                        {m.namaBahan}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                        <span className="bg-white px-1 py-0.2 rounded border border-slate-200 text-slate-700">
+                          {m.kodeBahan}
+                        </span>
+                        <span>•</span>
+                        <span
+                          className={
+                            stokVal <= 10
+                              ? "text-rose-600 font-bold"
+                              : "text-emerald-700 font-semibold"
+                          }
+                        >
+                          Stok: {stokVal} {m.satuan}
+                        </span>
+                        {m.harga ? (
+                          <>
+                            <span>•</span>
+                            <span className="text-slate-600">
+                              Rp {Number(m.harga).toLocaleString("id-ID")}
+                            </span>
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <Check className="w-4 h-4 text-[#0284c7] shrink-0" />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="flex justify-between items-center pt-1 text-[10px] text-slate-500">
+            <span>Ditemukan {filteredBahan.length} bahan</span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Antrean({
   antreanList = [],
   setAntreanList,
@@ -71,32 +273,34 @@ export default function Antrean({
   jasa = [],
   bahan = [],
   timFinishingList: propTimFinishingList = [],
-  userRole = 'superadmin',
+  userRole = "superadmin",
 }) {
   const getDefaultTabForRole = (role) => {
     switch (role) {
-      case 'cutting':
-        return 'Proses Cutting';
-      case 'jahit':
-        return 'Proses Jahit';
-      case 'qc':
-        return 'Proses QC';
-      case 'finishing':
-        return 'Proses Finishing';
+      case "cutting":
+        return "Proses Cutting";
+      case "jahit":
+        return "Proses Jahit";
+      case "qc":
+        return "Proses QC";
+      case "finishing":
+        return "Proses Finishing";
       default:
-        return 'Semua Antrean';
+        return "Semua Antrean";
     }
   };
 
-  const isGudang = userRole === 'gudang';
+  const isGudang = userRole === "gudang";
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSumber, setFilterSumber] = useState("");
   const [filterPrioritas, setFilterPrioritas] = useState("");
-  const [activeTab, setActiveTab] = useState(() => getDefaultTabForRole(userRole));
+  const [activeTab, setActiveTab] = useState(() =>
+    getDefaultTabForRole(userRole),
+  );
   const [shareTrackingItem, setShareTrackingItem] = useState(null);
 
   useEffect(() => {
-    if (userRole && userRole !== 'superadmin') {
+    if (userRole && userRole !== "superadmin") {
       setActiveTab(getDefaultTabForRole(userRole));
     }
   }, [userRole]);
@@ -115,9 +319,21 @@ export default function Antrean({
   const [sumberOptions, setSumberOptions] = useState(() => {
     try {
       const cached = localStorage.getItem("konveksi_sumber_permintaan");
-      return cached ? JSON.parse(cached) : ['PO Pelanggan', 'Marketplace / Toko', 'Stok Gudang', 'Rencana Internal'];
+      return cached
+        ? JSON.parse(cached)
+        : [
+            "PO Pelanggan",
+            "Marketplace / Toko",
+            "Stok Gudang",
+            "Rencana Internal",
+          ];
     } catch (_) {
-      return ['PO Pelanggan', 'Marketplace / Toko', 'Stok Gudang', 'Rencana Internal'];
+      return [
+        "PO Pelanggan",
+        "Marketplace / Toko",
+        "Stok Gudang",
+        "Rencana Internal",
+      ];
     }
   });
 
@@ -249,7 +465,7 @@ export default function Antrean({
   // Form Penyerahan ke Tim Cutting
   const initialCuttingForm = {
     tglSerahCutting: new Date().toISOString().slice(0, 10),
-    timCutting: "Tim Cutting 1 (Budi Santoso)",
+    timCutting: "",
     customTimCutting: "",
     tarifCutting: 1500, // Default 1500 per instruksi user
     catatanCutting: "",
@@ -261,7 +477,7 @@ export default function Antrean({
   const [jahitTargetItems, setJahitTargetItems] = useState([]);
   const initialJahitForm = {
     tglSerahJahit: new Date().toISOString().slice(0, 10),
-    timJahit: "Tim Jahit 1 (Siti Aminah)",
+    timJahit: "",
     customTimJahit: "",
     tarifJahit: 3500, // Default tarif jahit
     catatanJahit: "",
@@ -273,7 +489,7 @@ export default function Antrean({
   const [qcTargetItems, setQcTargetItems] = useState([]);
   const initialQcForm = {
     tglSerahQc: new Date().toISOString().slice(0, 10),
-    timQc: "Tim QC 1 (Inspeksi Jahitan & Pola)",
+    timQc: "",
     catatanQc: "",
     statusQc: "Pemeriksaan",
   };
@@ -287,7 +503,7 @@ export default function Antrean({
     qtyRejectQc: 0,
     catatanRejectQc: "",
     tglSerahFinishing: new Date().toISOString().slice(0, 10),
-    timFinishing: "Tim Finishing & Packing 1 (Uap & Lipat)",
+    timFinishing: "",
     catatanFinishing: "",
   };
   const [finishingForm, setFinishingForm] = useState(initialFinishingForm);
@@ -318,7 +534,7 @@ export default function Antrean({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // List Tim Cutting dari Master Karyawan
+  // List Tim Cutting dari Master Karyawan Database
   const cuttingEmployees = useMemo(() => {
     const list = employees.filter((e) => {
       const b = (e.bagian || "").toLowerCase();
@@ -327,7 +543,7 @@ export default function Antrean({
     return list.length > 0 ? list : employees;
   }, [employees]);
 
-  // List Tim Jahit: Diambil langsung dari Data Karyawan (bagian Penjahit / Jahit)
+  // List Tim Jahit: Diambil langsung dari Master Karyawan Database (bagian Penjahit / Jahit)
   const jahitEmployees = useMemo(() => {
     const list = employees.filter((e) => {
       const b = (e.bagian || "").toLowerCase();
@@ -336,7 +552,7 @@ export default function Antrean({
     return list.length > 0 ? list : employees;
   }, [employees]);
 
-  // List Tim QC dari Master Karyawan
+  // List Tim QC dari Master Karyawan Database
   const qcEmployees = useMemo(() => {
     const list = employees.filter((e) => {
       const b = (e.bagian || "").toLowerCase();
@@ -345,7 +561,7 @@ export default function Antrean({
     return list.length > 0 ? list : employees;
   }, [employees]);
 
-  // List Tim Finishing: Khusus dari Master Tim Finishing (TIDAK BOLEH campur Penjahit!)
+  // List Tim Finishing: Khusus dari Master Tim Finishing Database
   const finishingEmployees = useMemo(() => {
     if (timFinishingList.length > 0) {
       return timFinishingList.map((f) => ({
@@ -359,20 +575,7 @@ export default function Antrean({
       const b = (e.bagian || "").toLowerCase();
       return b.includes("finish") || b.includes("pack");
     });
-    if (fromEmp.length > 0) return fromEmp;
-    return [
-      {
-        id: 1,
-        nama: "Tim Finishing & Packing 1 (Uap & Lipat)",
-        bagian: "Finishing",
-      },
-      {
-        id: 2,
-        nama: "Tim Finishing 2 (Hangtag & Plastik OPP)",
-        bagian: "Finishing",
-      },
-      { id: 3, nama: "Gudang Packing Akhir", bagian: "Packing" },
-    ];
+    return fromEmp;
   }, [timFinishingList, employees]);
 
   // Default Tarif Cutting dari Master Jasa
@@ -418,6 +621,7 @@ export default function Antrean({
     defaultName = "",
     defaultSatuan = "Pcs",
     defaultHarga = 0,
+    defaultKode = "",
   ) => {
     if (!formData.sku) {
       Swal.fire({
@@ -430,15 +634,22 @@ export default function Antrean({
     }
     let matchedHarga = defaultHarga;
     let matchedSatuan = defaultSatuan;
-    if (defaultName) {
+    let matchedKode = defaultKode;
+    let matchedStok = 0;
+    if (defaultName || defaultKode) {
       const match = bahan.find(
         (b) =>
-          (b.namaBahan || "").toLowerCase() === defaultName.toLowerCase() ||
-          (b.kodeBahan || "").toLowerCase() === defaultName.toLowerCase(),
+          (defaultKode && b.kodeBahan === defaultKode) ||
+          (b.namaBahan || "").toLowerCase() ===
+            (defaultName || "").toLowerCase() ||
+          (b.kodeBahan || "").toLowerCase() ===
+            (defaultName || "").toLowerCase(),
       );
       if (match) {
         matchedHarga = Number(match.harga || 0);
         matchedSatuan = match.satuan || defaultSatuan;
+        matchedKode = match.kodeBahan || "";
+        matchedStok = Number(match.stok ?? 0);
       }
     }
 
@@ -448,20 +659,46 @@ export default function Antrean({
         ...(prev.kebutuhanBahan || []),
         {
           id: Date.now() + Math.random(),
+          kodeBahan: matchedKode,
           namaBahan: defaultName,
-          qty: prev.qty ? Number(prev.qty) : 1,
+          qty: 1,
           satuan: matchedSatuan,
           hargaSatuan: matchedHarga,
+          stokSaatIni: matchedStok,
           catatan: "",
         },
       ],
     }));
   };
 
+  const handleSelectMasterBahan = (index, selectedBahan) => {
+    setFormData((prev) => {
+      const list = [...(prev.kebutuhanBahan || [])];
+      list[index] = {
+        ...list[index],
+        kodeBahan: selectedBahan.kodeBahan || "",
+        namaBahan: selectedBahan.namaBahan || "",
+        satuan: selectedBahan.satuan || list[index]?.satuan || "Pcs",
+        hargaSatuan: Number(selectedBahan.harga || 0),
+        stokSaatIni: Number(selectedBahan.stok ?? 0),
+      };
+      return { ...prev, kebutuhanBahan: list };
+    });
+  };
+
   const handleUpdateKebutuhanBahan = (index, field, value) => {
     setFormData((prev) => {
       const list = [...(prev.kebutuhanBahan || [])];
-      const cur = { ...list[index], [field]: value };
+      let valToSet = value;
+      if (field === "hargaSatuan") {
+        if (typeof value === "string") {
+          const raw = value.replace(/\D/g, "");
+          valToSet = raw ? Number(raw) : 0;
+        } else {
+          valToSet = Number(value) || 0;
+        }
+      }
+      const cur = { ...list[index], [field]: valToSet };
       if (field === "namaBahan") {
         const match = bahan.find(
           (b) =>
@@ -678,7 +915,7 @@ export default function Antrean({
       tglSerahCutting: new Date().toISOString().slice(0, 10),
       timCutting: cuttingEmployees[0]?.nama
         ? `Tim ${cuttingEmployees[0].nama}`
-        : "Tim Cutting 1 (Budi Santoso)",
+        : "Tim Cutting",
       customTimCutting: "",
       tarifCutting: defaultTarifCutting || 1500,
       catatanCutting: "",
@@ -798,7 +1035,7 @@ export default function Antrean({
       tglSerahJahit: new Date().toISOString().slice(0, 10),
       timJahit: jahitEmployees[0]?.nama
         ? `Tim ${jahitEmployees[0].nama}`
-        : "Tim Jahit 1 (Siti Aminah)",
+        : "Tim Jahit",
       customTimJahit: "",
       tarifJahit: defaultTarifJahit || 3500,
       catatanJahit: "",
@@ -909,9 +1146,7 @@ export default function Antrean({
     setQcTargetItems(items);
     setQcForm({
       tglSerahQc: new Date().toISOString().slice(0, 10),
-      timQc: qcEmployees[0]?.nama
-        ? `Tim ${qcEmployees[0].nama} (QC)`
-        : "Tim QC 1 (Inspeksi Jahitan & Pola)",
+      timQc: qcEmployees[0]?.nama ? `Tim ${qcEmployees[0].nama}` : "Tim QC",
       catatanQc: "",
       statusQc: "Pemeriksaan",
     });
@@ -1015,8 +1250,9 @@ export default function Antrean({
       (acc, curr) => acc + (Number(curr.qty) || 0),
       0,
     );
-    const defaultTim =
-      finishingEmployees[0]?.nama || "Tim Finishing & Packing 1 (Uap & Lipat)";
+    const defaultTim = finishingEmployees[0]?.nama
+      ? `Tim ${finishingEmployees[0].nama}`
+      : "Tim Finishing & Packing";
     setFinishingForm({
       qtyPassQc: totalQty,
       qtyRejectQc: 0,
@@ -1529,6 +1765,19 @@ export default function Antrean({
       });
       setIsModalOpen(false);
 
+      // Simpan resep bahan otomatis ke database & cache browser
+      if (formData.sku && formData.kebutuhanBahan?.length > 0) {
+        try {
+          localStorage.setItem(
+            `konveksi_resep_${formData.sku}`,
+            JSON.stringify(formData.kebutuhanBahan),
+          );
+          api
+            .saveResepBahan(formData.sku, formData.kebutuhanBahan, true)
+            .catch(() => {});
+        } catch (_) {}
+      }
+
       try {
         const saved = await api.createAntrean(newRecord);
         if (saved && saved.id) {
@@ -1768,7 +2017,7 @@ export default function Antrean({
               <span className="px-2 py-0.5 rounded-md bg-white/25 text-white text-[10.5px] font-black">
                 TAHAP 1 SOP
               </span>
-              {userRole && userRole !== 'superadmin' && (
+              {userRole && userRole !== "superadmin" && (
                 <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[10.5px] font-black uppercase tracking-wider shadow-xs">
                   Akses {userRole}
                 </span>
@@ -2606,42 +2855,42 @@ export default function Antrean({
         />
       )}
 
-      {/* 7. MODAL FORM TAMBAH / EDIT ANTREAN (FULL SCREEN VIEW - COMPACT & RAPI) */}
+      {/* 7. MODAL FORM TAMBAH / EDIT ANTREAN (FULL SCREEN MODERN & LEGA) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#edf1f7] flex flex-col overflow-hidden animate-fade-in font-sans">
-          {/* Modal Top Header Full Screen */}
-          <div className="bg-gradient-to-r from-[#0284c7] via-[#0369a1] to-[#075985] text-white px-3 py-1.5 flex items-center justify-between shadow-xs shrink-0">
-            <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-[#f8fafc] flex flex-col overflow-hidden animate-fade-in font-sans">
+          {/* Header Full Screen (Clean Dark Modern Slate) */}
+          <div className="bg-[#0b1329] text-white px-4 py-2.5 flex items-center justify-between shadow-sm shrink-0 border-b border-slate-800">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="flex items-center gap-1.5 px-2.5 py-0.5 bg-white/15 hover:bg-white/25 text-white rounded-md text-xs font-bold transition-all cursor-pointer border border-white/20 shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all cursor-pointer border border-white/15 shadow-xs"
                 title="Kembali ke Daftar Antrean"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Kembali</span>
               </button>
 
-              <div className="h-3.5 w-px bg-white/30 hidden sm:block"></div>
+              <div className="h-4 w-px bg-white/20 hidden sm:block"></div>
 
               <div className="flex items-center gap-2">
-                <div className="w-5.5 h-5.5 rounded-md bg-white/20 flex items-center justify-center text-white shrink-0">
-                  <ListOrdered className="w-3.5 h-3.5" />
+                <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
+                  <ListOrdered className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5 leading-none">
-                    <h3 className="font-extrabold text-[13px] tracking-tight text-white">
+                  <div className="flex items-center gap-2 leading-none">
+                    <h3 className="font-extrabold text-sm text-white">
                       {modalMode === "create"
                         ? "Pendaftaran Antrean Permintaan Baru"
                         : "Edit Lembar Antrean Produksi"}
                     </h3>
-                    <span className="px-1.5 py-0.2 rounded bg-white/20 text-white font-mono text-[9px] font-extrabold border border-white/25">
+                    <span className="px-1.5 py-0.2 rounded bg-sky-500/30 text-sky-300 font-mono text-[9px] font-extrabold border border-sky-400/30">
                       STEP 1 SOP
                     </span>
                   </div>
-                  <p className="text-[9.5px] text-sky-100/90 mt-0.5 leading-none">
-                    Formulir pendaftaran permintaan masuk sebelum rencana
-                    cutting & alokasi kebutuhan bahan
+                  <p className="text-[10.5px] text-slate-400 mt-0.5 leading-none">
+                    Pendaftaran batch kerja produksi pabrik & alokasi kebutuhan
+                    bahan baku
                   </p>
                 </div>
               </div>
@@ -2650,838 +2899,1028 @@ export default function Antrean({
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="w-6.5 h-6.5 rounded-md bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-all cursor-pointer border border-white/20"
-              title="Tutup Form Halaman Penuh"
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors border border-white/15"
+              title="Tutup Form"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Scrollable Form Body Full Screen 100% Width (COMPACT) */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-2.5 w-full">
+          {/* Scrollable Form Body Full Screen Responsif 2-Kolom */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
             <form
               id="form-antrean-fullscreen"
               onSubmit={handleSubmit}
-              className="w-full space-y-1.5 text-xs"
+              noValidate
+              className="max-w-7xl mx-auto space-y-4 text-xs"
             >
-              {/* SECTION 1: DOKUMEN & REGISTRASI ANTREAN */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Hash className="w-3 h-3 text-[#0284c7]" />
-                    Informasi Dokumen & Registrasi
-                  </span>
-                  <span className="text-[9.5px] text-slate-400">
-                    Otomatis / Manual
-                  </span>
-                </div>
+              {/* GRID CONTAINER UTAMA 2-KOLOM RESPONSIF */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                {/* KOLOM KIRI (7/12): Model Produk & Kebutuhan Bahan */}
+                <div className="lg:col-span-7 space-y-4">
+                  {/* CARD 1: PILIH MODEL PRODUK (SKU) */}
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-sky-100 text-[#0284c7] flex items-center justify-center">
+                          <Shirt className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-xs text-slate-900">
+                            Pilih Produk Konveksi (SKU){" "}
+                            <span className="text-rose-500">*</span>
+                          </h4>
+                          <p className="text-[10px] text-slate-400">
+                            Tersedia {products.length} SKU katalog model pakaian
+                          </p>
+                        </div>
+                      </div>
+                      {selectedProduct && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProductComboboxOpen(true);
+                            setProductComboboxSearch("");
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#0284c7] font-bold text-[11px] cursor-pointer transition-colors border border-sky-200/60"
+                        >
+                          Ganti Produk
+                        </button>
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      No Antrian <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        value={formData.noAntrian}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            noAntrian: e.target.value,
-                          })
-                        }
-                        className="w-full h-7 px-2 rounded border border-slate-300 font-mono font-bold text-[#0284c7] bg-sky-50/40 text-xs focus:outline-none focus:border-[#0284c7] focus:bg-white transition-all"
-                      />
+                    {/* Combobox Trigger Button & Dropdown Container */}
+                    <div className="relative" ref={comboboxRef}>
                       <button
                         type="button"
                         onClick={() =>
-                          setFormData({
-                            ...formData,
-                            noAntrian: generateNoAntrian(),
-                          })
+                          setIsProductComboboxOpen((prev) => !prev)
                         }
-                        className="absolute right-1 top-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500 hover:text-[#0284c7] hover:bg-white cursor-pointer transition-all"
-                        title="Acak / Generate Baru"
+                        className={`w-full h-10 px-3 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                          isProductComboboxOpen
+                            ? "border-[#0284c7] ring-2 ring-[#0284c7]/15 bg-white"
+                            : selectedProduct
+                              ? "border-sky-300 bg-sky-50/30 hover:bg-sky-50/60"
+                              : "border-slate-200 bg-slate-50/70 hover:bg-white hover:border-[#0284c7]"
+                        }`}
                       >
-                        Auto
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      Tgl Masuk Antrean <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.tglMasuk}
-                      onChange={(e) =>
-                        setFormData({ ...formData, tglMasuk: e.target.value })
-                      }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7] transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[10.5px] font-bold text-slate-700">
-                        Sumber Permintaan{" "}
-                        <span className="text-rose-500">*</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingSumberIndex(null);
-                          setSumberInputText("");
-                          setIsSumberModalOpen(true);
-                        }}
-                        className="text-[9.5px] text-[#0284c7] hover:text-[#0369a1] font-bold flex items-center gap-1 cursor-pointer hover:underline"
-                        title="Kelola Opsi Sumber Permintaan (Tambah, Edit, Hapus)"
-                      >
-                        <Settings className="w-2.5 h-2.5" />
-                        <span>Kelola Sumber</span>
-                      </button>
-                    </div>
-                    <select
-                      value={formData.sumberPermintaan}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          sumberPermintaan: e.target.value,
-                        })
-                      }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs bg-white text-slate-800 font-medium focus:outline-none focus:border-[#0284c7] transition-all cursor-pointer"
-                    >
-                      {sumberOptions.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      No Referensi (PO / Invoice / Nota)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.noReff}
-                      onChange={(e) =>
-                        setFormData({ ...formData, noReff: e.target.value })
-                      }
-                      placeholder="mis: PO-2026-CLIENT-08"
-                      className="w-full h-7 px-2 rounded border border-slate-300 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7] focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 2: SEARCHABLE PRODUCT SELECT (COMBOBOX) */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5 relative">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Tag className="w-3 h-3 text-[#0284c7]" />
-                    Pilih Produk Konveksi (Searchable SKU){" "}
-                    <span className="text-rose-500">*</span>
-                  </span>
-                  <span className="px-1.5 py-0.2 rounded bg-sky-100 text-[#0284c7] text-[9.5px] font-bold border border-sky-200">
-                    {products.length} Model Terdaftar
-                  </span>
-                </div>
-
-                {/* Combobox Trigger Button & Dropdown Container */}
-                <div className="relative" ref={comboboxRef}>
-                  <button
-                    type="button"
-                    onClick={() => setIsProductComboboxOpen((prev) => !prev)}
-                    className={`w-full h-7.5 px-2.5 rounded border text-left flex items-center justify-between transition-all cursor-pointer ${
-                      isProductComboboxOpen
-                        ? "border-[#0284c7] ring-1 ring-[#0284c7]/20 bg-white"
-                        : "border-slate-300 bg-white hover:border-[#0284c7] shadow-2xs"
-                    }`}
-                  >
-                    {selectedProduct ? (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono font-extrabold text-[10.5px] text-[#0284c7] bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 shrink-0">
-                          {selectedProduct.sku}
-                        </span>
-                        <span className="font-bold text-slate-900 text-xs truncate">
-                          {getProdName(selectedProduct)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 truncate shrink-0">
-                          ({selectedProduct.varian || "Polos"} -{" "}
-                          {selectedProduct.ukuran || "All Size"})
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400 font-medium text-xs">
-                        -- Ketik atau Pilih Produk / SKU --
-                      </span>
-                    )}
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-                        isProductComboboxOpen ? "rotate-180 text-[#0284c7]" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {/* POP-OVER DROPDOWN DENGAN SEARCH INPUT */}
-                  {isProductComboboxOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-xl z-50 overflow-hidden animate-scale-in">
-                      {/* Search Bar Input inside Combobox */}
-                      <div className="p-1.5 border-b border-slate-200 bg-slate-50 flex items-center gap-1.5">
-                        <Search className="w-3 h-3 text-slate-400 shrink-0" />
-                        <input
-                          type="text"
-                          autoFocus
-                          placeholder="Cari SKU, Nama Baju, Kategori, atau Varian Warna..."
-                          value={productComboboxSearch}
-                          onChange={(e) =>
-                            setProductComboboxSearch(e.target.value)
-                          }
-                          className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400"
-                        />
-                        {productComboboxSearch && (
-                          <button
-                            type="button"
-                            onClick={() => setProductComboboxSearch("")}
-                            className="p-0.5 hover:bg-slate-200 rounded text-slate-400"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* List Item Hasil Pencarian */}
-                      <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 p-1">
-                        {filteredComboboxProducts.length === 0 ? (
-                          <div className="py-4 text-center text-slate-400 text-xs">
-                            <Shirt className="w-5 h-5 mx-auto mb-1 text-slate-300" />
-                            <p className="font-semibold text-slate-500">
-                              Produk tidak ditemukan
-                            </p>
+                        {selectedProduct ? (
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span
+                              className="w-4 h-4 rounded-full border border-slate-300 shrink-0 shadow-2xs"
+                              style={{
+                                backgroundColor:
+                                  selectedProduct.warnaHex ||
+                                  selectedProduct.warna_hex ||
+                                  "#cbd5e1",
+                              }}
+                            />
+                            <div className="flex items-center gap-2 truncate">
+                              <span className="font-mono font-black text-xs text-[#0284c7] bg-white px-2 py-0.5 rounded-md border border-sky-200">
+                                {selectedProduct.sku}
+                              </span>
+                              <span className="font-extrabold text-slate-900 text-xs truncate">
+                                {getProdName(selectedProduct)}
+                              </span>
+                              <span className="text-[11px] text-slate-500 truncate">
+                                • {selectedProduct.kategori || "Kaos"} (
+                                {selectedProduct.varian || "Polos"} /{" "}
+                                {selectedProduct.ukuran || "All Size"})
+                              </span>
+                            </div>
                           </div>
                         ) : (
-                          filteredComboboxProducts.map((p) => {
-                            const isSelected = formData.sku === p.sku;
-                            const prodName = getProdName(p);
-                            const bahan = getProdBahan(p);
-
-                            return (
-                              <button
-                                key={p.id || p.sku}
-                                type="button"
-                                onClick={() => {
-                                  setFormData({ ...formData, sku: p.sku });
-                                  setIsProductComboboxOpen(false);
-                                  setProductComboboxSearch("");
-                                }}
-                                className={`w-full p-1.5 rounded text-left transition-colors flex items-center justify-between gap-2 cursor-pointer ${
-                                  isSelected
-                                    ? "bg-sky-50/80 border border-sky-300/60"
-                                    : "hover:bg-slate-100/80 border border-transparent"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div
-                                    className="w-6 h-6 rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs"
-                                    style={{
-                                      backgroundColor:
-                                        p.warnaHex || p.warna_hex || "#f1f5f9",
-                                    }}
-                                  >
-                                    <Shirt className="w-3 h-3 text-slate-700/80" />
-                                  </div>
-
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5 leading-none">
-                                      <span className="font-mono font-bold text-[9.5px] text-[#0284c7] bg-white px-1 py-0.2 rounded border border-sky-200">
-                                        {p.sku}
-                                      </span>
-                                      <span className="font-bold text-xs text-slate-900 truncate">
-                                        {prodName}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-[9.5px] text-slate-500 mt-0.5 truncate">
-                                      <span>{p.kategori || "Kaos"}</span>
-                                      <span>•</span>
-                                      <span>
-                                        {p.varian || "Polos"} (
-                                        {p.ukuran || "All Size"})
-                                      </span>
-                                      {bahan && bahan !== "-" && (
-                                        <>
-                                          <span>•</span>
-                                          <span className="font-mono text-cyan-700">
-                                            Kain: {bahan}
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {isSelected && (
-                                  <div className="w-4 h-4 rounded-full bg-[#0284c7] text-white flex items-center justify-center shrink-0">
-                                    <Check className="w-2.5 h-2.5 stroke-[2.5]" />
-                                  </div>
-                                )}
-                              </button>
-                            );
-                          })
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <Search className="w-4 h-4 text-slate-400" />
+                            <span className="text-xs font-medium">
+                              -- Cari & Pilih Produk (SKU) --
+                            </span>
+                          </div>
                         )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Highlight Card Produk yang Terpilih (COMPACT) */}
-                {selectedProduct && (
-                  <div className="bg-[#f8fafc] rounded border border-[#cbd5e1] p-2 shadow-2xs grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
-                        Model Produk
-                      </span>
-                      <span className="font-bold text-slate-900 truncate block mt-0.5 text-xs">
-                        {getProdName(selectedProduct)}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
-                        Kategori
-                      </span>
-                      <span className="font-semibold text-slate-700 block mt-0.5 text-xs">
-                        {selectedProduct.kategori || "-"}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
-                        Varian / Size
-                      </span>
-                      <span className="font-semibold text-slate-700 block mt-0.5 text-xs">
-                        {selectedProduct.varian || "Polos"} /{" "}
-                        {selectedProduct.ukuran || "All Size"}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">
-                        Kebutuhan Kain
-                      </span>
-                      <span className="font-mono font-bold text-[#0284c7] block mt-0.5 truncate text-xs">
-                        {getProdBahan(selectedProduct)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 3: TARGET PRODUKSI, PRIORITAS, DAN DEADLINE */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Boxes className="w-3 h-3 text-[#0284c7]" />
-                    Target Kuantitas & Parameter Waktu
-                  </span>
-                  <span className="text-[9.5px] text-slate-400">
-                    Wajib diisi
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {/* Qty Input with Quick Chips */}
-                  <div>
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      Target Qty (Pcs) <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            qty: Math.max(1, Number(prev.qty || 1) - 10),
-                          }))
-                        }
-                        className="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-l border border-slate-300 border-r-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
-                      >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={formData.qty}
-                        onChange={(e) =>
-                          setFormData({ ...formData, qty: e.target.value })
-                        }
-                        className="w-full h-7 px-2 text-center border-y border-slate-300 font-mono font-extrabold text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            qty: Number(prev.qty || 0) + 10,
-                          }))
-                        }
-                        className="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-r border border-slate-300 border-l-0 font-bold flex items-center justify-center cursor-pointer transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    {/* Quick Add Chips */}
-                    <div className="flex items-center gap-1 mt-1">
-                      {[50, 100, 200, 500].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, qty: val })}
-                          className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all cursor-pointer ${
-                            Number(formData.qty) === val
-                              ? "bg-[#0284c7] text-white shadow-2xs"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        <ChevronDown
+                          className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                            isProductComboboxOpen
+                              ? "rotate-180 text-[#0284c7]"
+                              : ""
                           }`}
-                        >
-                          {val}
-                        </button>
-                      ))}
+                        />
+                      </button>
+
+                      {/* POP-OVER DROPDOWN DENGAN SEARCH INPUT */}
+                      {isProductComboboxOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-scale-in">
+                          {/* Search Bar Input inside Combobox */}
+                          <div className="p-2 border-b border-slate-100 bg-slate-50/70 flex items-center gap-2">
+                            <Search className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="Ketik SKU, nama baju, warna, atau ukuran..."
+                              value={productComboboxSearch}
+                              onChange={(e) =>
+                                setProductComboboxSearch(e.target.value)
+                              }
+                              className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400"
+                            />
+                            {productComboboxSearch && (
+                              <button
+                                type="button"
+                                onClick={() => setProductComboboxSearch("")}
+                                className="p-0.5 hover:bg-slate-200 rounded text-slate-400"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* List Item Hasil Pencarian */}
+                          <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 p-1">
+                            {filteredComboboxProducts.length === 0 ? (
+                              <div className="py-4 text-center text-slate-400 text-xs">
+                                <Shirt className="w-5 h-5 mx-auto mb-1 text-slate-300" />
+                                <p className="font-semibold text-slate-500">
+                                  Produk tidak ditemukan
+                                </p>
+                              </div>
+                            ) : (
+                              filteredComboboxProducts.map((p) => {
+                                const isSelected = formData.sku === p.sku;
+                                const prodName = getProdName(p);
+                                const bahan = getProdBahan(p);
+
+                                return (
+                                  <button
+                                    key={p.id || p.sku}
+                                    type="button"
+                                    onClick={() => {
+                                      // Auto-load resep bahan produk jika tersedia
+                                      let autoBahan = [];
+                                      if (
+                                        Array.isArray(p.kebutuhanBahan) &&
+                                        p.kebutuhanBahan.length > 0
+                                      ) {
+                                        autoBahan = p.kebutuhanBahan;
+                                      } else if (
+                                        typeof p.kebutuhanBahan === "string"
+                                      ) {
+                                        try {
+                                          const parsed = JSON.parse(
+                                            p.kebutuhanBahan,
+                                          );
+                                          if (
+                                            Array.isArray(parsed) &&
+                                            parsed.length > 0
+                                          )
+                                            autoBahan = parsed;
+                                        } catch (_) {}
+                                      }
+                                      if (autoBahan.length === 0 && p.sku) {
+                                        try {
+                                          const cached = localStorage.getItem(
+                                            `konveksi_resep_${p.sku}`,
+                                          );
+                                          if (cached) {
+                                            const parsed = JSON.parse(cached);
+                                            if (
+                                              Array.isArray(parsed) &&
+                                              parsed.length > 0
+                                            )
+                                              autoBahan = parsed;
+                                          }
+                                        } catch (_) {}
+                                      }
+                                      const reconciledBahan = autoBahan.map(
+                                        (r, i) => {
+                                          const match = (bahan || []).find(
+                                            (m) =>
+                                              (r.kodeBahan &&
+                                                m.kodeBahan === r.kodeBahan) ||
+                                              (
+                                                m.namaBahan || ""
+                                              ).toLowerCase() ===
+                                                (
+                                                  r.namaBahan || ""
+                                                ).toLowerCase(),
+                                          );
+                                          return {
+                                            id: Date.now() + i + Math.random(),
+                                            kodeBahan:
+                                              match?.kodeBahan ||
+                                              r.kodeBahan ||
+                                              "",
+                                            namaBahan:
+                                              match?.namaBahan ||
+                                              r.namaBahan ||
+                                              "",
+                                            satuan:
+                                              match?.satuan ||
+                                              r.satuan ||
+                                              "Pcs",
+                                            hargaSatuan: Number(
+                                              match?.harga ??
+                                                r.hargaSatuan ??
+                                                0,
+                                            ),
+                                            stokSaatIni: Number(
+                                              match?.stok ?? 0,
+                                            ),
+                                            qty: Number(
+                                              r.qty || r.qtyPerPcs || 1,
+                                            ),
+                                            catatan: r.catatan || "",
+                                          };
+                                        },
+                                      );
+
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        sku: p.sku,
+                                        kebutuhanBahan:
+                                          reconciledBahan.length > 0
+                                            ? reconciledBahan
+                                            : prev.kebutuhanBahan || [],
+                                      }));
+                                      setIsProductComboboxOpen(false);
+                                      setProductComboboxSearch("");
+                                    }}
+                                    className={`w-full p-1.5 rounded text-left transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                                      isSelected
+                                        ? "bg-sky-50/80 border border-sky-300/60"
+                                        : "hover:bg-slate-100/80 border border-transparent"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div
+                                        className="w-6 h-6 rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs"
+                                        style={{
+                                          backgroundColor:
+                                            p.warnaHex ||
+                                            p.warna_hex ||
+                                            "#f1f5f9",
+                                        }}
+                                      >
+                                        <Shirt className="w-3 h-3 text-slate-700/80" />
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5 leading-none">
+                                          <span className="font-mono font-bold text-[9.5px] text-[#0284c7] bg-white px-1 py-0.2 rounded border border-sky-200">
+                                            {p.sku}
+                                          </span>
+                                          <span className="font-bold text-xs text-slate-900 truncate">
+                                            {prodName}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-[9.5px] text-slate-500 mt-0.5 truncate">
+                                          <span>{p.kategori || "Kaos"}</span>
+                                          <span>•</span>
+                                          <span>
+                                            {p.varian || "Polos"} (
+                                            {p.ukuran || "All Size"})
+                                          </span>
+                                          {bahan && bahan !== "-" && (
+                                            <>
+                                              <span>•</span>
+                                              <span className="font-mono text-cyan-700">
+                                                Kain: {bahan}
+                                              </span>
+                                            </>
+                                          )}
+                                          {Number(p.harga || 0) > 0 && (
+                                            <>
+                                              <span>•</span>
+                                              <span className="font-mono font-bold text-emerald-700">
+                                                Rp{" "}
+                                                {Number(p.harga).toLocaleString(
+                                                  "id-ID",
+                                                )}
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {isSelected && (
+                                      <div className="w-4 h-4 rounded-full bg-[#0284c7] text-white flex items-center justify-center shrink-0">
+                                        <Check className="w-2.5 h-2.5 stroke-[2.5]" />
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Preview Info Produk Terpilih */}
+                    {selectedProduct && (
+                      <div className="bg-gradient-to-r from-sky-50/70 via-indigo-50/30 to-white rounded-xl p-3 border border-sky-100/80 flex flex-wrap items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white shadow-xs"
+                            style={{
+                              backgroundColor:
+                                selectedProduct.warnaHex ||
+                                selectedProduct.warna_hex ||
+                                "#e2e8f0",
+                            }}
+                          >
+                            <Shirt className="w-5 h-5 text-slate-700/80" />
+                          </div>
+                          <div>
+                            <span className="font-mono font-black text-xs text-[#0284c7]">
+                              {selectedProduct.sku}
+                            </span>
+                            <div className="font-extrabold text-xs text-slate-900">
+                              {getProdName(selectedProduct)}
+                            </div>
+                            <div className="text-[10.5px] text-slate-500 mt-0.5">
+                              {selectedProduct.kategori || "-"} •{" "}
+                              {selectedProduct.varian || "Polos"} (
+                              {selectedProduct.ukuran || "All Size"})
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {getProdBahan(selectedProduct) !== "-" && (
+                            <span className="px-2.5 py-1 rounded-lg bg-white border border-sky-100 text-[#0284c7] font-mono text-xs font-bold shadow-2xs">
+                              Kain: {getProdBahan(selectedProduct)}
+                            </span>
+                          )}
+                          {Number(selectedProduct.harga || 0) > 0 && (
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono text-xs font-bold shadow-2xs">
+                              Jual: Rp{" "}
+                              {Number(selectedProduct.harga).toLocaleString(
+                                "id-ID",
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Prioritas Radio Pills */}
-                  <div>
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      Tingkat Prioritas
-                    </label>
-                    <div className="grid grid-cols-3 gap-1">
-                      {[
-                        {
-                          id: "Urgent",
-                          label: "Urgent",
-                          icon: Flame,
-                          activeClass:
-                            "bg-rose-500 text-white border-rose-600 shadow-2xs",
-                          inactiveClass:
-                            "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
-                        },
-                        {
-                          id: "Normal",
-                          label: "Normal",
-                          icon: Clock,
-                          activeClass:
-                            "bg-[#0284c7] text-white border-[#0369a1] shadow-2xs",
-                          inactiveClass:
-                            "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
-                        },
-                        {
-                          id: "Low",
-                          label: "Low",
-                          icon: Sparkles,
-                          activeClass:
-                            "bg-slate-700 text-white border-slate-800 shadow-2xs",
-                          inactiveClass:
-                            "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200",
-                        },
-                      ].map((prio) => {
-                        const Icon = prio.icon;
-                        const isSelected = formData.prioritas === prio.id;
-                        return (
+                  {/* CARD 2: KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (BOM) */}
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+                          <Layers className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-extrabold text-xs text-slate-900">
+                              Kebutuhan Bahan & Aksesoris Produksi
+                            </h4>
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">
+                              {formData.kebutuhanBahan?.length || 0} Terdaftar
+                            </span>
+                          </div>
+                          <p className="text-[10.5px] text-slate-400">
+                            Bahan baku per Pcs otomatis tersimpan & memotong
+                            stok saat cutting
+                          </p>
+                        </div>
+                      </div>
+
+                      {formData.sku && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddKebutuhanBahan("", "Pcs")}
+                          className="px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>+ Tambah Bahan</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {!formData.sku ? (
+                      <div className="py-8 px-4 text-center bg-slate-50/70 rounded-2xl border border-slate-100 text-slate-400 text-xs space-y-1.5">
+                        <Boxes className="w-7 h-7 text-slate-300 mx-auto" />
+                        <p className="font-bold text-slate-700">
+                          Pilih Produk (SKU) Terlebih Dahulu
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Rincian kebutuhan bahan baku (kain, kancing, benang)
+                          dapat diinput setelah SKU dipilih di atas.
+                        </p>
+                      </div>
+                    ) : !formData.kebutuhanBahan ||
+                      formData.kebutuhanBahan.length === 0 ? (
+                      <div className="py-6 px-4 text-center bg-slate-50/70 rounded-2xl border border-slate-100 text-slate-500 text-xs space-y-1">
+                        <p className="font-bold text-slate-700">
+                          Belum ada bahan baku terdaftar untuk produk ini.
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Klik tombol <strong>+ Tambah Bahan</strong> di kanan
+                          atas untuk memilih bahan dari Master Database.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-2xs">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                              <th className="py-2.5 px-3 text-center w-8">
+                                No
+                              </th>
+                              <th className="py-2.5 px-3 min-w-[220px]">
+                                Bahan Baku (Database)
+                              </th>
+                              <th className="py-2.5 px-2 text-center w-20">
+                                Qty/Pcs
+                              </th>
+                              <th className="py-2.5 px-2 w-24">Satuan</th>
+                              <th className="py-2.5 px-3 text-right w-28">
+                                Harga Satuan
+                              </th>
+                              <th className="py-2.5 px-3 text-right w-28">
+                                Subtotal
+                              </th>
+                              <th className="py-2.5 px-3 min-w-[120px]">
+                                Catatan / Spek
+                              </th>
+                              <th className="py-2.5 px-2 text-center w-10"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white">
+                            {formData.kebutuhanBahan.map((item, idx) => {
+                              const itemQty = Number(item.qty) || 0;
+                              const itemHarga = Number(item.hargaSatuan) || 0;
+                              const itemSubtotal = itemQty * itemHarga;
+                              return (
+                                <tr
+                                  key={item.id || idx}
+                                  className="hover:bg-sky-50/30 transition-colors"
+                                >
+                                  <td className="py-2 px-3 text-center font-bold text-slate-400 text-[11px]">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="py-2 px-3">
+                                    <SearchableBahanSelectDesktop
+                                      masterBahan={bahan}
+                                      selectedKode={item.kodeBahan}
+                                      selectedNama={item.namaBahan}
+                                      onSelect={(selected) =>
+                                        handleSelectMasterBahan(idx, selected)
+                                      }
+                                    />
+                                  </td>
+                                  <td className="py-2 px-2">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      placeholder="1"
+                                      value={item.qty ?? ""}
+                                      onChange={(e) =>
+                                        handleUpdateKebutuhanBahan(
+                                          idx,
+                                          "qty",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="w-full h-8 px-2 text-center font-mono font-bold rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#0284c7] focus:ring-1 focus:ring-[#0284c7]"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-2">
+                                    <select
+                                      value={item.satuan || "Pcs"}
+                                      onChange={(e) =>
+                                        handleUpdateKebutuhanBahan(
+                                          idx,
+                                          "satuan",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="w-full h-8 px-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                                    >
+                                      <option value="Pcs">Pcs</option>
+                                      <option value="Meter">Meter</option>
+                                      <option value="Yard">Yard</option>
+                                      <option value="Kg">Kg</option>
+                                      <option value="Roll">Roll</option>
+                                      <option value="Cone">Cone</option>
+                                      <option value="Pasang">Pasang</option>
+                                      <option value="Lusin">Lusin</option>
+                                      <option value="Gross">Gross</option>
+                                      <option value="Lembar">Lembar</option>
+                                      <option value="Set">Set</option>
+                                      {item.satuan &&
+                                        ![
+                                          "Pcs",
+                                          "Meter",
+                                          "Yard",
+                                          "Kg",
+                                          "Roll",
+                                          "Cone",
+                                          "Pasang",
+                                          "Lusin",
+                                          "Gross",
+                                          "Lembar",
+                                          "Set",
+                                        ].includes(item.satuan) && (
+                                          <option value={item.satuan}>
+                                            {item.satuan}
+                                          </option>
+                                        )}
+                                    </select>
+                                  </td>
+                                  <td className="py-2 px-3">
+                                    <div className="relative">
+                                      <span className="absolute left-2.5 top-2 text-[10px] text-slate-400 font-bold pointer-events-none">
+                                        Rp
+                                      </span>
+                                      <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="0"
+                                        value={
+                                          item.hargaSatuan !== undefined &&
+                                          item.hargaSatuan !== "" &&
+                                          item.hargaSatuan !== null &&
+                                          Number(item.hargaSatuan) > 0
+                                            ? Number(
+                                                item.hargaSatuan,
+                                              ).toLocaleString("id-ID")
+                                            : item.hargaSatuan === 0 ||
+                                                item.hargaSatuan === "0"
+                                              ? "0"
+                                              : ""
+                                        }
+                                        onChange={(e) =>
+                                          handleUpdateKebutuhanBahan(
+                                            idx,
+                                            "hargaSatuan",
+                                            e.target.value,
+                                          )
+                                        }
+                                        className="w-full h-8 pl-7 pr-2 text-right font-mono font-bold rounded-lg border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-right font-mono font-bold text-xs text-slate-900">
+                                    Rp {itemSubtotal.toLocaleString("id-ID")}
+                                  </td>
+                                  <td className="py-2 px-3">
+                                    <input
+                                      type="text"
+                                      placeholder="mis: warna senada..."
+                                      value={item.catatan || ""}
+                                      onChange={(e) =>
+                                        handleUpdateKebutuhanBahan(
+                                          idx,
+                                          "catatan",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="w-full h-8 px-2.5 rounded-lg border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-[#0284c7]"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-2 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteKebutuhanBahan(idx)
+                                      }
+                                      className="p-1 text-slate-300 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                                      title="Hapus Bahan"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* KOLOM KANAN (5/12): Target, Dokumen, Status, dan Kalkulator HPP */}
+                <div className="lg:col-span-5 space-y-4">
+                  {/* CARD 3: TARGET KUANTITAS & PARAMETER WAKTU */}
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                        <Boxes className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-extrabold text-xs text-slate-900">
+                        Target Kuantitas & Parameter Waktu
+                      </h4>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Target Qty Produksi (Pcs){" "}
+                          <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="flex items-center gap-2">
                           <button
-                            key={prio.id}
                             type="button"
                             onClick={() =>
-                              setFormData({ ...formData, prioritas: prio.id })
+                              setFormData((prev) => ({
+                                ...prev,
+                                qty: Math.max(1, Number(prev.qty || 1) - 10),
+                              }))
                             }
-                            className={`h-7 px-1 rounded border text-[10px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                              isSelected ? prio.activeClass : prio.inactiveClass
-                            }`}
+                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors"
                           >
-                            <Icon className="w-2.5 h-2.5 shrink-0" />
-                            <span>{prio.label}</span>
+                            -
                           </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                          <input
+                            type="number"
+                            min="1"
+                            required
+                            value={formData.qty}
+                            onChange={(e) =>
+                              setFormData({ ...formData, qty: e.target.value })
+                            }
+                            className="flex-1 h-9 px-3 text-center rounded-xl border border-slate-200 font-mono font-black text-sm text-slate-900 focus:outline-none focus:border-[#0284c7]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                qty: Number(prev.qty || 0) + 10,
+                              }))
+                            }
+                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
 
-                  {/* Deadline Picker */}
-                  <div>
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      Deadline Target <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.deadline}
-                      onChange={(e) =>
-                        setFormData({ ...formData, deadline: e.target.value })
-                      }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7] transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 4: KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (Kancing, Resleting, Kain, dll.) */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 flex-wrap gap-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-[#0284c7]" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-800">
-                      Kebutuhan Bahan & Aksesoris Produksi
-                    </span>
-                    <span className="px-1.5 py-0.2 rounded bg-sky-100 text-[#0284c7] font-bold text-[9px] border border-sky-200">
-                      {formData.kebutuhanBahan?.length || 0} Bahan Terdaftar
-                    </span>
-                  </div>
-
-                  {/* Quick Preset Buttons */}
-                  {formData.sku && (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className="text-[9px] font-bold text-slate-400">
-                        Tambah Cepat:
-                      </span>
-                      {[
-                        { label: "+ Kancing", nama: "Kancing", satuan: "Pcs" },
-                        {
-                          label: "+ Resleting",
-                          nama: "Resleting",
-                          satuan: "Pcs",
-                        },
-                        {
-                          label: "+ Karet",
-                          nama: "Karet Elastis",
-                          satuan: "Meter",
-                        },
-                        {
-                          label: "+ Benang",
-                          nama: "Benang Jahit",
-                          satuan: "Cone",
-                        },
-                        {
-                          label: "+ Hangtag",
-                          nama: "Hangtag / Label",
-                          satuan: "Pcs",
-                        },
-                      ].map((preset) => (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() =>
-                            handleAddKebutuhanBahan(preset.nama, preset.satuan)
-                          }
-                          className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-[#0284c7] border border-slate-300 transition-colors cursor-pointer"
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => handleAddKebutuhanBahan("", "Pcs")}
-                        className="px-2 py-0.5 rounded text-[9.5px] font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-                      >
-                        <Plus className="w-2.5 h-2.5 stroke-[3]" />
-                        <span>Tambah Bahan</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Datalist Master Bahan untuk rekomendasi autocomplete */}
-                <datalist id="list-master-bahan">
-                  {bahan.map((b) => (
-                    <option
-                      key={b.id || b.kodeBahan}
-                      value={b.namaBahan || b.kodeBahan}
-                    >
-                      {b.kodeBahan} - Stok: {b.stok || 0} {b.satuan}
-                    </option>
-                  ))}
-                </datalist>
-
-                {/* Tabel Kebutuhan Bahan atau Empty Notice */}
-                {!formData.sku ? (
-                  <div className="py-4 px-3 text-center bg-slate-50/80 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs space-y-1">
-                    <Boxes className="w-5 h-5 text-slate-400 mx-auto" />
-                    <p className="font-bold text-slate-700">Pilih Produk (SKU) Terlebih Dahulu</p>
-                    <p className="text-[10px] text-slate-400">
-                      Kebutuhan bahan baku baru dapat diisi setelah produk dipilih.
-                    </p>
-                  </div>
-                ) : (!formData.kebutuhanBahan ||
-                formData.kebutuhanBahan.length === 0) ? (
-                  <div className="py-3 px-3 text-center bg-slate-50/80 border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs">
-                    <p className="font-semibold text-slate-700">
-                      Belum ada rincian bahan/aksesoris khusus.
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Klik salah satu tombol <strong>Tambah Cepat</strong> (+
-                      Kancing, + Resleting, + Karet, dll.) di kanan atas untuk
-                      mencatat kebutuhan bahan produksi.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto border border-slate-300 rounded-lg shadow-2xs">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-700 text-[10px] font-black uppercase border-b border-slate-300">
-                          <th className="py-1 px-2 w-8 text-center border-r border-slate-200">
-                            No
-                          </th>
-                          <th className="py-1 px-2 min-w-[180px] border-r border-slate-200">
-                            Nama Bahan / Aksesoris
-                          </th>
-                          <th className="py-1 px-2 w-20 text-center border-r border-slate-200">
-                            Qty
-                          </th>
-                          <th className="py-1 px-2 w-24 border-r border-slate-200">
-                            Satuan
-                          </th>
-                          <th className="py-1 px-2 w-28 text-right border-r border-slate-200">
-                            Harga Satuan
-                          </th>
-                          <th className="py-1 px-2 w-28 text-right border-r border-slate-200">
-                            Subtotal Bahan
-                          </th>
-                          <th className="py-1 px-2 min-w-[140px] border-r border-slate-200">
-                            Catatan / Spek
-                          </th>
-                          <th className="py-1 px-2 w-10 text-center">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 bg-white">
-                        {formData.kebutuhanBahan.map((item, idx) => {
-                          const itemQty = Number(item.qty) || 0;
-                          const itemHarga = Number(item.hargaSatuan) || 0;
-                          const itemSubtotal = itemQty * itemHarga;
-
-                          return (
-                            <tr
-                              key={item.id || idx}
-                              className="hover:bg-sky-50/40 transition-colors"
+                        <div className="flex items-center gap-1.5 mt-2">
+                          {[50, 100, 200, 500].map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() =>
+                                setFormData({ ...formData, qty: val })
+                              }
+                              className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
+                                Number(formData.qty) === val
+                                  ? "bg-[#0284c7] text-white shadow-xs"
+                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              }`}
                             >
-                              <td className="py-1 px-2 text-center font-bold text-slate-400 text-[10.5px] border-r border-slate-200">
-                                {idx + 1}
-                              </td>
-                              <td className="py-1 px-2 border-r border-slate-200">
-                                <input
-                                  type="text"
-                                  list="list-master-bahan"
-                                  required
-                                  placeholder="cth: Kancing Batok, Resleting..."
-                                  value={item.namaBahan || ""}
-                                  onChange={(e) =>
-                                    handleUpdateKebutuhanBahan(
-                                      idx,
-                                      "namaBahan",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full h-6.5 px-2 rounded border border-slate-300 text-xs text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7]"
-                                />
-                              </td>
-                              <td className="py-1 px-2 border-r border-slate-200">
-                                <input
-                                  type="number"
-                                  min="0.01"
-                                  step="any"
-                                  required
-                                  placeholder="0"
-                                  value={item.qty ?? ""}
-                                  onChange={(e) =>
-                                    handleUpdateKebutuhanBahan(
-                                      idx,
-                                      "qty",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full h-6.5 px-1.5 text-center font-mono font-bold rounded border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
-                                />
-                              </td>
-                              <td className="py-1 px-2 border-r border-slate-200">
-                                <select
-                                  value={item.satuan || "Pcs"}
-                                  onChange={(e) =>
-                                    handleUpdateKebutuhanBahan(
-                                      idx,
-                                      "satuan",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full h-6.5 px-1 rounded border border-slate-300 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                                >
-                                  <option value="Pcs">Pcs</option>
-                                  <option value="Buah">Buah</option>
-                                  <option value="Meter">Meter</option>
-                                  <option value="Yard">Yard</option>
-                                  <option value="Kg">Kg</option>
-                                  <option value="Roll">Roll</option>
-                                  <option value="Cone">Cone</option>
-                                  <option value="Pasang">Pasang</option>
-                                  <option value="Lusin">Lusin</option>
-                                  <option value="Gross">Gross</option>
-                                  <option value="Lembar">Lembar</option>
-                                  <option value="Set">Set</option>
-                                </select>
-                              </td>
-                              <td className="py-1 px-2 border-r border-slate-200">
-                                <div className="relative">
-                                  <span className="absolute left-1.5 top-1 text-[10px] text-slate-400 font-bold">
-                                    Rp
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="any"
-                                    placeholder="0"
-                                    value={item.hargaSatuan ?? ""}
-                                    onChange={(e) =>
-                                      handleUpdateKebutuhanBahan(
-                                        idx,
-                                        "hargaSatuan",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="w-full h-6.5 pl-6 pr-1.5 text-right font-mono font-bold rounded border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
-                                  />
-                                </div>
-                              </td>
-                              <td className="py-1 px-2 text-right font-mono font-bold text-xs text-slate-900 border-r border-slate-200 bg-slate-50/50">
-                                Rp {itemSubtotal.toLocaleString("id-ID")}
-                              </td>
-                              <td className="py-1 px-2 border-r border-slate-200">
-                                <input
-                                  type="text"
-                                  placeholder="mis: warna senada..."
-                                  value={item.catatan || ""}
-                                  onChange={(e) =>
-                                    handleUpdateKebutuhanBahan(
-                                      idx,
-                                      "catatan",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full h-6.5 px-2 rounded border border-slate-300 text-xs text-slate-700 focus:outline-none focus:border-[#0284c7]"
-                                />
-                              </td>
-                              <td className="py-1 px-2 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleDeleteKebutuhanBahan(idx)
-                                  }
-                                  className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="Hapus Bahan"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* KALKULATOR RINGKASAN HPP OTOMATIS (KOMPREHENSIF) */}
-                <div className="mt-2 bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 text-white rounded-lg p-2.5 shadow-md border border-slate-700 font-sans">
-                  <div className="flex items-center justify-between border-b border-white/15 pb-1.5 mb-2 flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                        ⚡
+                              {val} Pcs
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <span className="font-black text-xs uppercase tracking-wider text-emerald-400">
-                        Kalkulator HPP Otomatis (Harga Pokok Produksi)
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-slate-300 font-medium">
-                      Biaya Bahan + Ongkos Borongan (Cutting, Jahit, Finishing)
-                    </span>
-                  </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    {/* 1. Biaya Bahan & Aksesoris */}
-                    <div className="bg-white/10 rounded-lg p-2 border border-white/10">
-                      <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
-                        1. Total Biaya Bahan
-                      </span>
-                      <span className="font-mono font-bold text-sm text-sky-300 block mt-0.5">
-                        Rp{" "}
-                        {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
-                      </span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        {formData.kebutuhanBahan?.length || 0}{" "}
-                        Material/Aksesoris
-                      </span>
-                    </div>
-
-                    {/* 2. Total Upah Borongan */}
-                    <div className="bg-white/10 rounded-lg p-2 border border-white/10">
-                      <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
-                        2. Total Upah Borongan
-                      </span>
-                      <span className="font-mono font-bold text-sm text-amber-300 block mt-0.5">
-                        Rp{" "}
-                        {hppCalculation.totalUpahBorongan.toLocaleString(
-                          "id-ID",
-                        )}
-                      </span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        Potong, Jahit, Finishing
-                      </span>
-                    </div>
-
-                    {/* 3. Total HPP Batch */}
-                    <div className="bg-white/10 rounded-lg p-2 border border-white/10">
-                      <span className="text-[9.5px] uppercase font-bold text-slate-300 block">
-                        3. Total HPP ({formData.qty || 0} Pcs)
-                      </span>
-                      <span className="font-mono font-black text-sm text-white block mt-0.5">
-                        Rp {hppCalculation.totalHpp.toLocaleString("id-ID")}
-                      </span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">
-                        Biaya Keseluruhan Batch
-                      </span>
-                    </div>
-
-                    {/* 4. HPP PER PCS (HIGHLIGHTED) */}
-                    <div className="bg-emerald-500/20 rounded-lg p-2 border-2 border-emerald-400/80 flex flex-col justify-between">
-                      <span className="text-[9.5px] uppercase font-black text-emerald-300 block tracking-wider">
-                        ★ ESTIMASI HPP / PCS
-                      </span>
-                      <span className="font-mono font-black text-base sm:text-lg text-emerald-400 block leading-tight mt-0.5">
-                        Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")}
-                      </span>
-                      <span className="text-[9px] text-emerald-200/80 block mt-0.5 font-semibold">
-                        Modal Bersih per Pcs
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Analisis Profit & Margin jika ada harga jual */}
-                  {hppCalculation.hargaJual > 0 && (
-                    <div className="mt-2 pt-2 border-t border-white/15 flex items-center justify-between text-xs flex-wrap gap-2 text-slate-300">
-                      <div className="flex items-center gap-1.5">
-                        <span>Harga Jual Produk:</span>
-                        <strong className="text-white font-mono">
-                          Rp {hppCalculation.hargaJual.toLocaleString("id-ID")}
-                        </strong>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Tingkat Prioritas Pengerjaan
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            {
+                              id: "Urgent",
+                              label: "Urgent",
+                              icon: Flame,
+                              activeClass: "bg-rose-500 text-white shadow-xs",
+                              inactiveClass:
+                                "bg-rose-50 text-rose-700 hover:bg-rose-100/80",
+                            },
+                            {
+                              id: "Normal",
+                              label: "Normal",
+                              icon: Clock,
+                              activeClass: "bg-[#0284c7] text-white shadow-xs",
+                              inactiveClass:
+                                "bg-sky-50 text-sky-800 hover:bg-sky-100/80",
+                            },
+                            {
+                              id: "Low",
+                              label: "Low",
+                              icon: Sparkles,
+                              activeClass: "bg-slate-700 text-white shadow-xs",
+                              inactiveClass:
+                                "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                            },
+                          ].map((prio) => {
+                            const Icon = prio.icon;
+                            const isSelected = formData.prioritas === prio.id;
+                            return (
+                              <button
+                                key={prio.id}
+                                type="button"
+                                onClick={() =>
+                                  setFormData({
+                                    ...formData,
+                                    prioritas: prio.id,
+                                  })
+                                }
+                                className={`h-8 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                  isSelected
+                                    ? prio.activeClass
+                                    : prio.inactiveClass
+                                }`}
+                              >
+                                <Icon className="w-3.5 h-3.5 shrink-0" />
+                                <span>{prio.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Deadline Target Selesai{" "}
+                          <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={formData.deadline}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              deadline: e.target.value,
+                            })
+                          }
+                          className="w-full h-9 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CARD 4: DOKUMEN & REGISTRASI ANTREAN */}
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span>Estimasi Margin Laba:</span>
+                        <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center">
+                          <Hash className="w-3.5 h-3.5" />
+                        </div>
+                        <h4 className="font-extrabold text-xs text-slate-900">
+                          Informasi Dokumen & Registrasi
+                        </h4>
+                      </div>
+                      <span className="font-mono font-bold text-[10px] text-slate-400">
+                        {formData.noAntrian}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                            No Antrian <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              value={formData.noAntrian}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  noAntrian: e.target.value,
+                                })
+                              }
+                              className="w-full h-8 px-2.5 rounded-xl border border-slate-200 font-mono font-bold text-[#0284c7] bg-slate-50 text-xs focus:bg-white focus:border-[#0284c7] focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  noAntrian: generateNoAntrian(),
+                                })
+                              }
+                              className="absolute right-1 top-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-500 hover:text-[#0284c7] cursor-pointer"
+                              title="Generate Acak Baru"
+                            >
+                              Auto
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                            Tgl Masuk <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            required
+                            value={formData.tglMasuk}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                tglMasuk: e.target.value,
+                              })
+                            }
+                            className="w-full h-8 px-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[10.5px] font-bold text-slate-700">
+                              Sumber Permintaan{" "}
+                              <span className="text-rose-500">*</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingSumberIndex(null);
+                                setSumberInputText("");
+                                setIsSumberModalOpen(true);
+                              }}
+                              className="text-[9.5px] text-[#0284c7] hover:underline font-bold"
+                            >
+                              Kelola
+                            </button>
+                          </div>
+                          <select
+                            value={formData.sumberPermintaan}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                sumberPermintaan: e.target.value,
+                              })
+                            }
+                            className="w-full h-8 px-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                          >
+                            {sumberOptions.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                            No Referensi (PO / Invoice)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.noReff}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                noReff: e.target.value,
+                              })
+                            }
+                            placeholder="mis: PO-CLIENT-08"
+                            className="w-full h-8 px-2.5 rounded-xl border border-slate-200 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2.5">
+                        <div className="col-span-1">
+                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                            Status Awal
+                          </label>
+                          <select
+                            value={formData.status}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                status: e.target.value,
+                              })
+                            }
+                            className="w-full h-8 px-2 rounded-xl border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                          >
+                            <option value="Menunggu Cutting">
+                              Menunggu Cutting
+                            </option>
+                            <option value="Proses Cutting">
+                              Proses Cutting
+                            </option>
+                            <option value="Proses Jahit">Proses Jahit</option>
+                            <option value="Proses QC">Proses QC</option>
+                            <option value="Proses Finishing">
+                              Proses Finishing
+                            </option>
+                            <option value="Selesai">Selesai</option>
+                            <option value="Dibatalkan">Dibatalkan</option>
+                          </select>
+                        </div>
+
+                        <div className="col-span-2">
+                          <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                            Catatan SOP / Instruksi Produksi
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.catatan}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                catatan: e.target.value,
+                              })
+                            }
+                            placeholder="mis: Sablon DTF dada, jahit rantai pundak..."
+                            className="w-full h-8 px-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CARD 5: KALKULATOR HPP OTOMATIS (MODERN DASHBOARD CARD) */}
+                  <div className="bg-[#0b1329] text-white rounded-2xl p-4 shadow-md border border-slate-800 space-y-3 font-sans">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                          ⚡
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-xs text-emerald-400">
+                            Kalkulator HPP Otomatis
+                          </h4>
+                          <p className="text-[10px] text-slate-400">
+                            Biaya Bahan + Upah (Potong, Jahit, Finishing)
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-white/10 text-slate-300 text-[10px] font-mono">
+                        Batch: {formData.qty || 0} Pcs
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-white/5 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 block font-semibold">
+                          1. Bahan Baku
+                        </span>
+                        <span className="font-mono font-bold text-xs text-sky-300 block mt-0.5">
+                          Rp{" "}
+                          {hppCalculation.totalBiayaBahan.toLocaleString(
+                            "id-ID",
+                          )}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 block font-semibold">
+                          2. Upah Borongan
+                        </span>
+                        <span className="font-mono font-bold text-xs text-amber-300 block mt-0.5">
+                          Rp{" "}
+                          {hppCalculation.totalUpahBorongan.toLocaleString(
+                            "id-ID",
+                          )}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 block font-semibold">
+                          3. Total Batch
+                        </span>
+                        <span className="font-mono font-bold text-xs text-white block mt-0.5">
+                          Rp {hppCalculation.totalHpp.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Estimasi HPP per Pcs (Prominent Emerald Glow Banner) */}
+                    <div className="bg-emerald-500/15 border border-emerald-400/40 rounded-xl p-3 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-black text-emerald-300 block tracking-wider">
+                          ★ ESTIMASI HPP / PCS
+                        </span>
+                        <span className="text-[10px] text-emerald-200/80">
+                          Modal bersih per pcs siap jual
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-black text-lg text-emerald-400 block leading-tight">
+                          Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")}
+                        </span>
+                        <span className="text-[9.5px] text-emerald-300/80 font-semibold font-mono">
+                          / Pcs
+                        </span>
+                      </div>
+                    </div>
+
+                    {hppCalculation.hargaJual > 0 && (
+                      <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
+                        <span>
+                          Harga Jual:{" "}
+                          <strong className="text-white font-mono">
+                            Rp{" "}
+                            {hppCalculation.hargaJual.toLocaleString("id-ID")}
+                          </strong>
+                        </span>
                         <span
-                          className={`px-2 py-0.5 rounded font-mono font-extrabold text-xs ${
+                          className={`px-2 py-0.5 rounded-lg font-mono font-extrabold text-[11px] ${
                             hppCalculation.profitPerPcs >= 0
                               ? "bg-emerald-500 text-white"
                               : "bg-rose-500 text-white"
@@ -3492,70 +3931,19 @@ export default function Antrean({
                           {hppCalculation.profitPerPcs.toLocaleString(
                             "id-ID",
                           )}{" "}
-                          / Pcs ({hppCalculation.marginPersen}%)
+                          ({hppCalculation.marginPersen}%)
                         </span>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* SECTION 5: STATUS ALUR & CATATAN KHUSUS */}
-              <div className="bg-white rounded-lg border border-[#cbd5e1] p-2 shadow-2xs space-y-1.5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-[#0284c7]" />
-                    Status Tahapan & Catatan SOP
-                  </span>
-                  <span className="text-[9.5px] text-slate-400">
-                    Instruksi Produksi
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-1">
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      Status Tahapan
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) =>
-                        setFormData({ ...formData, status: e.target.value })
-                      }
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] transition-all cursor-pointer"
-                    >
-                      <option value="Menunggu Cutting">Menunggu Cutting</option>
-                      <option value="Proses Cutting">Proses Cutting</option>
-                      <option value="Proses Jahit">Proses Jahit</option>
-                      <option value="Proses QC">Proses QC</option>
-                      <option value="Proses Finishing">Proses Finishing</option>
-                      <option value="Selesai">Selesai</option>
-                      <option value="Dibatalkan">Dibatalkan</option>
-                    </select>
-                  </div>
-
-                  <div className="col-span-2">
-                    <label className="block text-[10.5px] font-bold text-slate-700 mb-0.5">
-                      Catatan SOP / Instruksi Produksi
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.catatan}
-                      onChange={(e) =>
-                        setFormData({ ...formData, catatan: e.target.value })
-                      }
-                      placeholder="mis: Sablon DTF dada 10cm, jahit rantai pundak, kemasan satuan..."
-                      className="w-full h-7 px-2 rounded border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7] transition-all"
-                    />
+                    )}
                   </div>
                 </div>
               </div>
             </form>
           </div>
 
-          {/* Bottom Bar Full Screen 100% Width (COMPACT) */}
-          <div className="bg-white border-t border-[#cbd5e1] px-3 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-xs shrink-0 w-full">
-            <div className="flex items-center gap-2.5 text-xs">
+          {/* Bottom Bar Full Screen (Floating Clean Bar) */}
+          <div className="bg-white border-t border-slate-200 px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm shrink-0 w-full">
+            <div className="flex items-center gap-3 text-xs flex-wrap">
               <div className="text-slate-500 font-medium">
                 No. Antrean:{" "}
                 <span className="font-mono font-bold text-slate-800">
@@ -3569,22 +3957,29 @@ export default function Antrean({
                   {Number(formData.qty || 0).toLocaleString("id-ID")} Pcs
                 </strong>
               </div>
+              <span className="text-slate-300 hidden sm:inline">•</span>
+              <div className="text-slate-700">
+                Estimasi HPP:{" "}
+                <strong className="text-emerald-700 font-mono font-bold">
+                  Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")} / Pcs
+                </strong>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="h-7 px-3 rounded text-slate-600 hover:bg-slate-100 border border-slate-300 font-bold text-xs cursor-pointer transition-colors"
+                className="h-8.5 px-4 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs cursor-pointer transition-colors"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 form="form-antrean-fullscreen"
-                className="h-7 px-4 rounded bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
+                className="h-8.5 px-5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#075985] text-white font-extrabold text-xs flex items-center gap-2 shadow-xs cursor-pointer transition-all active:scale-95"
               >
-                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Check className="w-4 h-4 stroke-[2.5]" />
                 <span>
                   {modalMode === "create"
                     ? "Simpan ke Antrean"

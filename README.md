@@ -6,13 +6,13 @@ Aplikasi manajemen operasional konveksi dan garmen terpadu berbasis **React + Vi
 
 ## 🚀 Ringkasan Arsitektur & Teknologi
 
-| Komponen | Spesifikasi | Keterangan |
-| :--- | :--- | :--- |
-| **Frontend** | React 19, Vite, Tailwind CSS, Lucide React, SweetAlert2 | Single Page App (Desktop + Mobile Responsive) |
-| **Backend** | Node.js (ES Modules), Express.js (Port `3001`) | RESTful API modular di `server/` |
-| **Database** | MySQL Server 8 (Database: `konveksi`, Port `3306`) | Connection Pool via `mysql2/promise` |
-| **State & Sync** | Direct API Sync + URL Hash Routing | Auto-sync Desktop & Mobile (`#antrean`, `#divisi-cutting`, dll) |
-| **Live Tracking**| Customer Tracking via URL Hash | `#tracking/{noAntrian}` (Tanpa login untuk pelanggan) |
+| Komponen          | Spesifikasi                                             | Keterangan                                                      |
+| :---------------- | :------------------------------------------------------ | :-------------------------------------------------------------- |
+| **Frontend**      | React 19, Vite, Tailwind CSS, Lucide React, SweetAlert2 | Single Page App (Desktop + Mobile Responsive)                   |
+| **Backend**       | Node.js (ES Modules), Express.js (Port `3001`)          | RESTful API modular di `server/`                                |
+| **Database**      | MySQL Server 8 (Database: `konveksi`, Port `3306`)      | Connection Pool via `mysql2/promise`                            |
+| **State & Sync**  | Direct API Sync + URL Hash Routing                      | Auto-sync Desktop & Mobile (`#antrean`, `#divisi-cutting`, dll) |
+| **Live Tracking** | Customer Tracking via URL Hash                          | `#tracking/{noAntrian}` (Tanpa login untuk pelanggan)           |
 
 ---
 
@@ -25,7 +25,7 @@ flowchart LR
     JAHIT --> QC["4. Divisi QC\n(Pass & Reject Sortir)"]
     QC --> FINISHING["5. Finishing\n(Setrika Uap & Packing)"]
     FINISHING --> MASUK_GUDANG["6. Gudang Jadi\n(Tambah Stok Siap Jual)"]
-    
+
     CUTTING -.-> KEUANGAN["Penggajian Upah Borongan\n& Potong Kasbon Otomatis"]
     JAHIT -.-> KEUANGAN
     QC -.-> KEUANGAN
@@ -33,6 +33,7 @@ flowchart LR
 ```
 
 ### Detail Tahapan:
+
 1. **Tahap 1: SPK (Surat Perintah Kerja) Produksi**
    - **Aktor**: Admin Gudang / Super Admin (`src/views/desktop/Antrean.jsx` atau `PermintaanProduksiGudang.jsx`).
    - **Tindakan**: Mendaftarkan nomor batch SPK (`ANT-YYYYMMDD-XXX`), memilih model SKU, target kuantiti, prioritas (`Urgent`/`Normal`), deadline, dan **alokasi resep bahan baku per pcs** (BOM - Bill of Materials).
@@ -74,14 +75,14 @@ flowchart LR
 
 Konfigurasi role didefinisikan pada [src/constants/userRoles.js](file:///g:/Konveksi/src/constants/userRoles.js):
 
-| Role Key | Nama Role | Hak Akses Menu Utama | Default Menu | Akun Bawaan (User / Pass) |
-| :--- | :--- | :--- | :--- | :--- |
-| `superadmin` | Super Admin | Seluruh Menu Sistem & Pengaturan Keuangan | `dashboard` | `admin` / `123456` |
-| `gudang` | Admin Gudang | SPK Produksi, Mutasi Gudang Jadi, Master Bahan, Mutasi Bahan, Laporan Stok | `permintaan-produksi` | `gudang` / `123456` |
-| `cutting` | Admin Cutting | Dashboard, Divisi Cutting, Master Bahan, Mutasi Bahan | `divisi-cutting` | `cutting` / `123456` |
-| `jahit` | Admin Jahit | Dashboard, Divisi Jahit, Master Penjahit | `divisi-jahit` | `jahit` / `123456` |
-| `qc` | Admin QC | Dashboard, Divisi QC | `divisi-qc` | `qc` / `123456` |
-| `finishing` | Admin Finishing | Dashboard, Divisi Finishing, Mutasi Gudang Jadi | `divisi-finishing` | `finishing` / `123456` |
+| Role Key     | Nama Role       | Hak Akses Menu Utama                                                       | Default Menu          | Akun Bawaan (User / Pass) |
+| :----------- | :-------------- | :------------------------------------------------------------------------- | :-------------------- | :------------------------ |
+| `superadmin` | Super Admin     | Seluruh Menu Sistem & Pengaturan Keuangan                                  | `dashboard`           | `admin` / `123456`        |
+| `gudang`     | Admin Gudang    | SPK Produksi, Mutasi Gudang Jadi, Master Bahan, Mutasi Bahan, Laporan Stok | `permintaan-produksi` | `gudang` / `123456`       |
+| `cutting`    | Admin Cutting   | Dashboard, Divisi Cutting, Master Bahan, Mutasi Bahan                      | `divisi-cutting`      | `cutting` / `123456`      |
+| `jahit`      | Admin Jahit     | Dashboard, Divisi Jahit, Master Penjahit                                   | `divisi-jahit`        | `jahit` / `123456`        |
+| `qc`         | Admin QC        | Dashboard, Divisi QC                                                       | `divisi-qc`           | `qc` / `123456`           |
+| `finishing`  | Admin Finishing | Dashboard, Divisi Finishing, Mutasi Gudang Jadi                            | `divisi-finishing`    | `finishing` / `123456`    |
 
 ---
 
@@ -155,26 +156,27 @@ konveksi/
 
 Tabel-tabel utama di database MySQL:
 
-| Nama Tabel | Fungsi Utama | Kolom Kunci |
-| :--- | :--- | :--- |
-| `users` | Akun pengguna sistem dan role | `id`, `username`, `password`, `role`, `status` |
-| `categories` | Kelompok produk & tarif standar potong | `id`, `kode`, `nama`, `harga_potong`, `status` |
-| `products` | Master SKU pakaian, varian, ukuran, HPP | `id`, `sku_induk`, `sku`, `nama_produk`, `stok`, `hpp`, `kebutuhan_bahan` |
-| `bahan` | Master kain, benang, kancing, aksesoris | `id`, `kode_bahan`, `nama_bahan`, `satuan`, `stok`, `harga` |
-| `mutasi_bahan` | Header mutasi keluar/masuk bahan baku | `id`, `no_bukti`, `tgl`, `jenis_mutasi` (`MASUK`/`KELUAR`) |
-| `mutasi_bahan_item` | Detail item bahan yang dimutasi | `id`, `mutasi_id`, `kode_bahan`, `qty`, `harga`, `total` |
-| `antrean` | Core SPK produksi & riwayat 6 tahapan | `id`, `no_antrian`, `sku`, `qty`, `status`, `tgl_serah_cutting`, `tim_cutting`, `tarif_cutting`, `tgl_serah_jahit`, `tim_jahit`, `tarif_jahit`, `qty_pass_qc`, `qty_reject_qc`, `kebutuhan_bahan`, `total_hpp` |
-| `mutasi_gudang_jadi` | Riwayat stok barang jadi masuk/keluar | `id`, `no_mutasi`, `sku`, `qty`, `jenis_mutasi`, `lokasi_rak`, `petugas` |
-| `employees` | Database tenaga kerja (potong, jahit, qc, finishing) | `id`, `nik`, `nama`, `bagian`, `kategori` (`Harian`/`Borongan`/`Makloon`) |
-| `pembayaran_upah` | Transaksi pembayaran upah borongan per batch | `id`, `no_pembayaran`, `no_antrian`, `tahapan`, `nama_petugas`, `total_upah`, `potongan_kasbon`, `total_bersih`, `status_bayar` |
-| `kasbon` | Data pinjaman dana karyawan | `id`, `no_kasbon`, `nama_petugas`, `nominal`, `terbayar`, `sisa`, `status` |
-| `kasbon_pembayaran` | Log pemotongan kasbon dari slip upah | `id`, `kasbon_id`, `pembayaran_upah_id`, `nominal_potong`, `tgl_potong` |
+| Nama Tabel           | Fungsi Utama                                         | Kolom Kunci                                                                                                                                                                                                    |
+| :------------------- | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `users`              | Akun pengguna sistem dan role                        | `id`, `username`, `password`, `role`, `status`                                                                                                                                                                 |
+| `categories`         | Kelompok produk & tarif standar potong               | `id`, `kode`, `nama`, `harga_potong`, `status`                                                                                                                                                                 |
+| `products`           | Master SKU pakaian, varian, ukuran, HPP              | `id`, `sku_induk`, `sku`, `nama_produk`, `stok`, `hpp`, `kebutuhan_bahan`                                                                                                                                      |
+| `bahan`              | Master kain, benang, kancing, aksesoris              | `id`, `kode_bahan`, `nama_bahan`, `satuan`, `stok`, `harga`                                                                                                                                                    |
+| `mutasi_bahan`       | Header mutasi keluar/masuk bahan baku                | `id`, `no_bukti`, `tgl`, `jenis_mutasi` (`MASUK`/`KELUAR`)                                                                                                                                                     |
+| `mutasi_bahan_item`  | Detail item bahan yang dimutasi                      | `id`, `mutasi_id`, `kode_bahan`, `qty`, `harga`, `total`                                                                                                                                                       |
+| `antrean`            | Core SPK produksi & riwayat 6 tahapan                | `id`, `no_antrian`, `sku`, `qty`, `status`, `tgl_serah_cutting`, `tim_cutting`, `tarif_cutting`, `tgl_serah_jahit`, `tim_jahit`, `tarif_jahit`, `qty_pass_qc`, `qty_reject_qc`, `kebutuhan_bahan`, `total_hpp` |
+| `mutasi_gudang_jadi` | Riwayat stok barang jadi masuk/keluar                | `id`, `no_mutasi`, `sku`, `qty`, `jenis_mutasi`, `lokasi_rak`, `petugas`                                                                                                                                       |
+| `employees`          | Database tenaga kerja (potong, jahit, qc, finishing) | `id`, `nik`, `nama`, `bagian`, `kategori` (`Harian`/`Borongan`/`Makloon`)                                                                                                                                      |
+| `pembayaran_upah`    | Transaksi pembayaran upah borongan per batch         | `id`, `no_pembayaran`, `no_antrian`, `tahapan`, `nama_petugas`, `total_upah`, `potongan_kasbon`, `total_bersih`, `status_bayar`                                                                                |
+| `kasbon`             | Data pinjaman dana karyawan                          | `id`, `no_kasbon`, `nama_petugas`, `nominal`, `terbayar`, `sisa`, `status`                                                                                                                                     |
+| `kasbon_pembayaran`  | Log pemotongan kasbon dari slip upah                 | `id`, `kasbon_id`, `pembayaran_upah_id`, `nominal_potong`, `tgl_potong`                                                                                                                                        |
 
 ---
 
 ## 🛠️ Perintah Pengoperasian & Deployment
 
 ### 1. Lingkungan Pengembangan Lokal (Local Dev):
+
 ```bash
 # Terminal 1: Backend Server (Port 3001)
 npm run server
@@ -184,6 +186,7 @@ npm run dev
 ```
 
 ### 2. Deployment Produksi di VPS Linux:
+
 ```bash
 # Masuk ke direktori proyek
 cd /var/www/html/project/konveksi
@@ -196,6 +199,7 @@ pm2 restart konveksi
 
 > **Tips Automasi Server**:
 > Pasang Git Hook `post-merge` di VPS agar setiap menjalankan `git pull`, server otomatis mengeksekusi `npm run build` dan `pm2 restart konveksi`:
+>
 > ```bash
 > cat << 'EOF' > .git/hooks/post-merge
 > #!/bin/bash

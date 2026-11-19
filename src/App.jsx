@@ -488,6 +488,8 @@ export default function App() {
               antreanList={antreanList}
               setAntreanList={setAntreanList}
               products={products}
+              bahan={bahan}
+              jasa={jasa}
               mutasiGudangJadiList={mutasiGudangJadiList}
               setMutasiGudangJadiList={setMutasiGudangJadiList}
               onNavigateToMutasiGudang={() => setActiveMenu('mutasi-gudang-jadi')}

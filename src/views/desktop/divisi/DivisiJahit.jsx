@@ -889,11 +889,6 @@ export default function DivisiJahit({
                 })
               )}
             </tbody>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
           </table>
         </div>
 

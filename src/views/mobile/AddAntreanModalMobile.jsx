@@ -688,11 +688,6 @@ export default function AddAntreanModalMobile({
         };
       });
 
-    if (isGudang && cleanKebutuhan.length === 0) {
-      alert('Mohon pilih minimal 1 bahan baku dari master bahan yang diperlukan!');
-      return;
-    }
-
     setIsSubmitting(true);
     const selectedProd = products.find((p) => p.sku === form.sku);
     const prefix = isGudang ? 'SPK' : 'ANT';
@@ -779,7 +774,7 @@ export default function AddAntreanModalMobile({
         </div>
 
         {/* Form Isi */}
-        <form onSubmit={handleSubmit} className="p-3.5 space-y-3.5 text-xs overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} noValidate className="p-3.5 space-y-3.5 text-xs overflow-y-auto flex-1">
           {/* Searchable SKU Dropdown */}
           <SearchableProductSelectMobile
             products={products}
@@ -918,23 +913,6 @@ export default function AddAntreanModalMobile({
               </div>
             ) : (
               <>
-                {/* Quick Chips dari Master Bahan Baku */}
-                {masterBahanList.length > 0 && (
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[10px]">
-                    <span className="text-amber-900/80 font-bold shrink-0 text-[9.5px]">Dari Master:</span>
-                    {masterBahanList.slice(0, 8).map((m) => (
-                      <button
-                        key={m.id || m.kodeBahan}
-                        type="button"
-                        onClick={() => handleAddBahanRow(m)}
-                        className="px-2 py-0.5 rounded-md bg-white border border-amber-300 text-amber-900 font-bold shrink-0 hover:bg-amber-100 active:scale-95 transition-all cursor-pointer shadow-2xs"
-                      >
-                        + {m.namaBahan}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
                 {/* Daftar Input Bahan */}
                 <div className="space-y-2">
                   {kebutuhanBahan.map((b, idx) => {
@@ -978,12 +956,11 @@ export default function AddAntreanModalMobile({
                             <div className="relative flex items-center">
                               <input
                                 type="number"
-                                step="0.01"
-                                min="0.001"
-                                placeholder="1.5"
+                                step="any"
+                                min="0"
+                                placeholder="1"
                                 value={b.qtyPerPcs}
                                 onChange={(e) => handleUpdateQtyPerPcs(idx, e.target.value)}
-                                required
                                 className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-amber-600 focus:outline-none"
                               />
                               <span className="absolute right-2 text-[10px] text-slate-400 font-semibold pointer-events-none">
@@ -1034,7 +1011,7 @@ export default function AddAntreanModalMobile({
 
                   {kebutuhanBahan.length === 0 && (
                     <div className="p-3 bg-white rounded-xl border border-dashed border-amber-300 text-center text-[11px] text-amber-800">
-                      Belum ada bahan baku dipilih. Klik <b>+ Bahan</b> atau pilih cepat dari master di atas.
+                      Belum ada bahan baku dipilih. Klik <b>+ Bahan</b> untuk menambahkan kebutuhan bahan.
                     </div>
                   )}
                 </div>

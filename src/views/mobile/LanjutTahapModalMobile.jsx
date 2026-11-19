@@ -575,11 +575,6 @@ export default function LanjutTahapModalMobile({
                   label="Tarif Potong / Pcs:"
                   value={tarifCutting}
                   disabled={true}
-                  badge={
-                    <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-bold">
-                      Otomatis Master
-                    </span>
-                  }
                   required
                 />
               </div>

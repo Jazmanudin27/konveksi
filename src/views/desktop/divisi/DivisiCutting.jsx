@@ -842,24 +842,18 @@ export default function DivisiCutting({
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-extrabold text-slate-700">
-                      Ongkos Cutting / Pcs (Rp) *
-                    </label>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[9.5px] font-black">
-                      <Lock className="w-2.5 h-2.5" />
-                      <span>Otomatis Master</span>
-                    </span>
-                  </div>
+                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
+                    Ongkos Cutting / Pcs (Rp) *
+                  </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-xs font-black text-slate-400 select-none">
                       Rp
                     </span>
                     <input
-                      type="number"
+                      type="text"
                       readOnly
                       disabled
-                      value={approvalForm.tarifCutting}
+                      value={Number(approvalForm.tarifCutting || 0).toLocaleString('id-ID')}
                       className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-100 font-mono font-black text-slate-700 text-xs text-right cursor-not-allowed select-none shadow-2xs"
                     />
                   </div>

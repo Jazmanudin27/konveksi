@@ -68,6 +68,7 @@ function SearchableBahanSelectDesktop({
   masterBahan = [],
   selectedKode = "",
   selectedNama = "",
+  disabledKodes = [],
   onSelect,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -259,24 +260,43 @@ function SearchableBahanSelectDesktop({
                   selectedBahan &&
                   (selectedBahan.kodeBahan === m.kodeBahan ||
                     selectedBahan.namaBahan === m.namaBahan);
+                const isAlreadySelected =
+                  !isSelected &&
+                  (disabledKodes.includes(m.kodeBahan) ||
+                    disabledKodes.some(
+                      (dk) =>
+                        String(dk).toLowerCase() ===
+                        (m.namaBahan || "").toLowerCase(),
+                    ));
                 const stokVal = Number(m.stok ?? 0);
                 return (
                   <button
                     key={m.id || m.kodeBahan}
                     type="button"
+                    disabled={isAlreadySelected}
                     onClick={() => {
+                      if (isAlreadySelected) return;
                       onSelect(m);
                       setIsOpen(false);
                     }}
-                    className={`w-full p-2 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                      isSelected
-                        ? "bg-sky-100/80 text-sky-950 font-bold"
-                        : "hover:bg-sky-50 text-slate-800"
+                    className={`w-full p-2 text-left flex items-center justify-between gap-2 transition-colors ${
+                      isAlreadySelected
+                        ? "bg-slate-50 text-slate-400 opacity-60 cursor-not-allowed"
+                        : isSelected
+                          ? "bg-sky-100/80 text-sky-950 font-bold cursor-pointer"
+                          : "hover:bg-sky-50 text-slate-800 cursor-pointer"
                     }`}
                   >
                     <div className="min-w-0">
-                      <div className="font-extrabold text-xs truncate">
-                        {m.namaBahan}
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className={`font-extrabold text-xs truncate ${isAlreadySelected ? "text-slate-400 line-through" : ""}`}>
+                          {m.namaBahan}
+                        </span>
+                        {isAlreadySelected && (
+                          <span className="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 text-[9px] font-black border border-amber-300 shrink-0">
+                            Sudah Ada di SPK
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
                         <span className="bg-white px-1 py-0.2 rounded border border-slate-200 text-slate-700">
@@ -285,9 +305,11 @@ function SearchableBahanSelectDesktop({
                         <span>•</span>
                         <span
                           className={
-                            stokVal <= 10
-                              ? "text-rose-600 font-bold"
-                              : "text-emerald-700 font-semibold"
+                            isAlreadySelected
+                              ? "text-slate-400"
+                              : stokVal <= 10
+                                ? "text-rose-600 font-bold"
+                                : "text-emerald-700 font-semibold"
                           }
                         >
                           Stok: {stokVal} {m.satuan}
@@ -302,9 +324,13 @@ function SearchableBahanSelectDesktop({
                         ) : null}
                       </div>
                     </div>
-                    {isSelected && (
+                    {isSelected ? (
                       <Check className="w-4 h-4 text-[#0284c7] shrink-0" />
-                    )}
+                    ) : isAlreadySelected ? (
+                      <span className="text-[9.5px] font-bold text-amber-600 shrink-0">
+                        Dipakai
+                      </span>
+                    ) : null}
                   </button>
                 );
               })
@@ -694,6 +720,21 @@ export default function Antrean({
       });
       return;
     }
+
+    // Cegah menambah baris jika masih ada baris bahan yang belum dipilih
+    const hasEmptyRow = (formData.kebutuhanBahan || []).some(
+      (b) => !b.kodeBahan && !b.namaBahan,
+    );
+    if (hasEmptyRow) {
+      Swal.fire({
+        icon: "info",
+        title: "Pilih Bahan Terlebih Dahulu",
+        text: "Silakan tentukan bahan pada baris yang masih kosong sebelum menambah baris baru.",
+        confirmButtonColor: "#0284c7",
+      });
+      return;
+    }
+
     let matchedHarga = defaultHarga;
     let matchedSatuan = defaultSatuan;
     let matchedKode = defaultKode;
@@ -712,6 +753,25 @@ export default function Antrean({
         matchedSatuan = match.satuan || defaultSatuan;
         matchedKode = match.kodeBahan || "";
         matchedStok = Number(match.stok ?? 0);
+      }
+    }
+
+    // Jika defaultName/defaultKode sudah ada di list, jangan tambahkan duplikat
+    if (matchedKode || defaultName) {
+      const alreadyExists = (formData.kebutuhanBahan || []).some(
+        (b) =>
+          (matchedKode && b.kodeBahan === matchedKode) ||
+          (defaultName &&
+            (b.namaBahan || "").toLowerCase() === defaultName.toLowerCase()),
+      );
+      if (alreadyExists) {
+        Swal.fire({
+          icon: "warning",
+          title: "Bahan Baku Sudah Ada",
+          text: `Bahan "${defaultName || matchedKode}" sudah ada di dalam SPK ini. Tidak boleh ada bahan baku yang sama.`,
+          confirmButtonColor: "#0284c7",
+        });
+        return;
       }
     }
 
@@ -734,6 +794,27 @@ export default function Antrean({
   };
 
   const handleSelectMasterBahan = (index, selectedBahan) => {
+    // Validasi ketat: Tidak boleh ada bahan baku yang sama dalam satu produk / SPK
+    const isDuplicate = (formData.kebutuhanBahan || []).some((item, i) => {
+      if (i === index) return false;
+      return (
+        (selectedBahan.kodeBahan && item.kodeBahan === selectedBahan.kodeBahan) ||
+        (selectedBahan.namaBahan &&
+          (item.namaBahan || "").toLowerCase() ===
+            selectedBahan.namaBahan.toLowerCase())
+      );
+    });
+
+    if (isDuplicate) {
+      Swal.fire({
+        icon: "warning",
+        title: "Bahan Baku Sudah Dipilih!",
+        text: `Bahan "${selectedBahan.namaBahan}" sudah digunakan di baris lain. Tidak boleh ada bahan baku yang sama dalam satu produk/SPK. Silakan ubah Qty pada baris yang sudah ada.`,
+        confirmButtonColor: "#0284c7",
+      });
+      return;
+    }
+
     setFormData((prev) => {
       const list = [...(prev.kebutuhanBahan || [])];
       list[index] = {
@@ -1794,6 +1875,28 @@ export default function Antrean({
         icon: "warning",
         title: "Qty Tidak Valid",
         text: "Target kuantiti produksi harus lebih dari 0.",
+      });
+      return;
+    }
+
+    // Validasi ketat: Tidak boleh ada bahan baku yang sama (duplikat) dalam satu SPK / produk
+    const seenBahanKeys = new Set();
+    const duplicateBahanNames = [];
+    for (const b of formData.kebutuhanBahan || []) {
+      const key = (b.kodeBahan || b.namaBahan || "").trim().toLowerCase();
+      if (!key) continue;
+      if (seenBahanKeys.has(key)) {
+        duplicateBahanNames.push(b.namaBahan || b.kodeBahan);
+      } else {
+        seenBahanKeys.add(key);
+      }
+    }
+    if (duplicateBahanNames.length > 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Bahan Baku Duplikat Terdeteksi",
+        text: `Terdapat bahan yang sama dalam SPK ini: "${duplicateBahanNames.join(", ")}". Tidak boleh ada bahan baku yang sama dalam satu SPK/Produk. Harap hapus salah satu baris atau gabungkan Qty-nya.`,
+        confirmButtonColor: "#0284c7",
       });
       return;
     }
@@ -2976,866 +3079,910 @@ export default function Antrean({
               noValidate
               className="w-full space-y-2 text-xs pb-3"
             >
-                  {/* CARD 1: PRODUK & TARGET JUMLAH (COMPACT 100% WIDTH) */}
-                  <div className="bg-white rounded-xl border border-slate-200/80 p-2.5 sm:p-3 shadow-2xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-md bg-sky-100 text-[#0284c7] flex items-center justify-center text-[9.5px] font-black">
-                          1
-                        </span>
-                        <div>
-                          <h4 className="font-extrabold text-xs text-slate-900 leading-none">
-                            Pilih Model Produk & Target Produksi{" "}
-                            <span className="text-rose-500">*</span>
-                          </h4>
-                        </div>
-                      </div>
-                      {selectedProduct && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsProductComboboxOpen(true);
-                            setProductComboboxSearch("");
-                          }}
-                          className="px-2 py-0.5 rounded-md bg-sky-50 hover:bg-sky-100 text-[#0284c7] font-bold text-[10.5px] cursor-pointer transition-colors border border-sky-200/60"
-                        >
-                          Ganti Produk
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Combobox Trigger Button & Dropdown Container */}
-                    <div className="relative" ref={comboboxRef}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setIsProductComboboxOpen((prev) => !prev)
-                        }
-                        className={`w-full h-8 px-2.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
-                          isProductComboboxOpen
-                            ? "border-[#0284c7] ring-1 ring-[#0284c7]/20 bg-white"
-                            : selectedProduct
-                              ? "border-sky-300 bg-sky-50/20 hover:bg-sky-50/50"
-                              : "border-slate-200 bg-slate-50/70 hover:bg-white hover:border-[#0284c7]"
-                        }`}
-                      >
-                        {selectedProduct ? (
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span
-                              className="w-4 h-4 rounded-full border border-slate-300 shrink-0 shadow-2xs"
-                              style={{
-                                backgroundColor:
-                                  selectedProduct.warnaHex ||
-                                  selectedProduct.warna_hex ||
-                                  "#cbd5e1",
-                              }}
-                            />
-                            <div className="flex items-center gap-2 truncate">
-                              <span className="font-mono font-black text-xs text-[#0284c7] bg-white px-2 py-0.5 rounded-md border border-sky-200">
-                                {selectedProduct.sku}
-                              </span>
-                              <span className="font-extrabold text-slate-900 text-xs truncate">
-                                {getProdName(selectedProduct)}
-                              </span>
-                              <span className="text-[11px] text-slate-500 truncate">
-                                • {selectedProduct.kategori || "Kaos"} (
-                                {selectedProduct.varian || "Polos"} /{" "}
-                                {selectedProduct.ukuran || "All Size"})
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Search className="w-4 h-4 text-slate-400" />
-                            <span className="text-xs font-medium">
-                              -- Cari & Pilih Produk (SKU) --
-                            </span>
-                          </div>
-                        )}
-                        <ChevronDown
-                          className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
-                            isProductComboboxOpen
-                              ? "rotate-180 text-[#0284c7]"
-                              : ""
-                          }`}
-                        />
-                      </button>
-
-                      {/* POP-OVER DROPDOWN DENGAN SEARCH INPUT */}
-                      {isProductComboboxOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-scale-in">
-                          {/* Search Bar Input inside Combobox */}
-                          <div className="p-2 border-b border-slate-100 bg-slate-50/70 flex items-center gap-2">
-                            <Search className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
-                            <input
-                              type="text"
-                              autoFocus
-                              placeholder="Ketik SKU, nama baju, warna, atau ukuran..."
-                              value={productComboboxSearch}
-                              onChange={(e) =>
-                                setProductComboboxSearch(e.target.value)
-                              }
-                              className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400"
-                            />
-                            {productComboboxSearch && (
-                              <button
-                                type="button"
-                                onClick={() => setProductComboboxSearch("")}
-                                className="p-0.5 hover:bg-slate-200 rounded text-slate-400"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* List Item Hasil Pencarian */}
-                          <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 p-1">
-                            {filteredComboboxProducts.length === 0 ? (
-                              <div className="py-4 text-center text-slate-400 text-xs">
-                                <Shirt className="w-5 h-5 mx-auto mb-1 text-slate-300" />
-                                <p className="font-semibold text-slate-500">
-                                  Produk tidak ditemukan
-                                </p>
-                              </div>
-                            ) : (
-                              filteredComboboxProducts.map((p) => {
-                                const isSelected = formData.sku === p.sku;
-                                const prodName = getProdName(p);
-                                const bahan = getProdBahan(p);
-
-                                return (
-                                  <button
-                                    key={p.id || p.sku}
-                                    type="button"
-                                    onClick={() => {
-                                      // Auto-load resep bahan produk jika tersedia
-                                      let autoBahan = [];
-                                      if (
-                                        Array.isArray(p.kebutuhanBahan) &&
-                                        p.kebutuhanBahan.length > 0
-                                      ) {
-                                        autoBahan = p.kebutuhanBahan;
-                                      } else if (
-                                        typeof p.kebutuhanBahan === "string"
-                                      ) {
-                                        try {
-                                          const parsed = JSON.parse(
-                                            p.kebutuhanBahan,
-                                          );
-                                          if (
-                                            Array.isArray(parsed) &&
-                                            parsed.length > 0
-                                          )
-                                            autoBahan = parsed;
-                                        } catch (_) {}
-                                      }
-                                      if (autoBahan.length === 0 && p.sku) {
-                                        try {
-                                          const cached = localStorage.getItem(
-                                            `konveksi_resep_${p.sku}`,
-                                          );
-                                          if (cached) {
-                                            const parsed = JSON.parse(cached);
-                                            if (
-                                              Array.isArray(parsed) &&
-                                              parsed.length > 0
-                                            )
-                                              autoBahan = parsed;
-                                          }
-                                        } catch (_) {}
-                                      }
-                                      const reconciledBahan = autoBahan.map(
-                                        (r, i) => {
-                                          const match = (bahan || []).find(
-                                            (m) =>
-                                              (r.kodeBahan &&
-                                                m.kodeBahan === r.kodeBahan) ||
-                                              (
-                                                m.namaBahan || ""
-                                              ).toLowerCase() ===
-                                                (
-                                                  r.namaBahan || ""
-                                                ).toLowerCase(),
-                                          );
-                                          return {
-                                            id: Date.now() + i + Math.random(),
-                                            kodeBahan:
-                                              match?.kodeBahan ||
-                                              r.kodeBahan ||
-                                              "",
-                                            namaBahan:
-                                              match?.namaBahan ||
-                                              r.namaBahan ||
-                                              "",
-                                            satuan:
-                                              match?.satuan ||
-                                              r.satuan ||
-                                              "Pcs",
-                                            hargaSatuan: Number(
-                                              match?.harga ??
-                                                r.hargaSatuan ??
-                                                0,
-                                            ),
-                                            stokSaatIni: Number(
-                                              match?.stok ?? 0,
-                                            ),
-                                            qty: Number(
-                                              r.qty || r.qtyPerPcs || 1,
-                                            ),
-                                            catatan: r.catatan || "",
-                                          };
-                                        },
-                                      );
-
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        sku: p.sku,
-                                        kebutuhanBahan:
-                                          reconciledBahan.length > 0
-                                            ? reconciledBahan
-                                            : prev.kebutuhanBahan || [],
-                                      }));
-                                      setIsProductComboboxOpen(false);
-                                      setProductComboboxSearch("");
-                                    }}
-                                    className={`w-full p-1.5 rounded text-left transition-colors flex items-center justify-between gap-2 cursor-pointer ${
-                                      isSelected
-                                        ? "bg-sky-50/80 border border-sky-300/60"
-                                        : "hover:bg-slate-100/80 border border-transparent"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <div
-                                        className="w-6 h-6 rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs"
-                                        style={{
-                                          backgroundColor:
-                                            p.warnaHex ||
-                                            p.warna_hex ||
-                                            "#f1f5f9",
-                                        }}
-                                      >
-                                        <Shirt className="w-3 h-3 text-slate-700/80" />
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <div className="flex items-center gap-1.5 leading-none">
-                                          <span className="font-mono font-bold text-[9.5px] text-[#0284c7] bg-white px-1 py-0.2 rounded border border-sky-200">
-                                            {p.sku}
-                                          </span>
-                                          <span className="font-bold text-xs text-slate-900 truncate">
-                                            {prodName}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-[9.5px] text-slate-500 mt-0.5 truncate">
-                                          <span>{p.kategori || "Kaos"}</span>
-                                          <span>•</span>
-                                          <span>
-                                            {p.varian || "Polos"} (
-                                            {p.ukuran || "All Size"})
-                                          </span>
-                                          {bahan && bahan !== "-" && (
-                                            <>
-                                              <span>•</span>
-                                              <span className="font-mono text-cyan-700">
-                                                Kain: {bahan}
-                                              </span>
-                                            </>
-                                          )}
-                                          {Number(p.harga || 0) > 0 && (
-                                            <>
-                                              <span>•</span>
-                                              <span className="font-mono font-bold text-emerald-700">
-                                                Rp{" "}
-                                                {Number(p.harga).toLocaleString(
-                                                  "id-ID",
-                                                )}
-                                              </span>
-                                            </>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {isSelected && (
-                                      <div className="w-4 h-4 rounded-full bg-[#0284c7] text-white flex items-center justify-center shrink-0">
-                                        <Check className="w-2.5 h-2.5 stroke-[2.5]" />
-                                      </div>
-                                    )}
-                                  </button>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 1.2 Target Qty, Deadline, dan Prioritas dalam 1 Baris Sejajar Compact */}
-                    <div className="pt-2 border-t border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-                      {/* Target Qty (5 col) */}
-                      <div className="md:col-span-5 space-y-1">
-                        <label className="block text-[10.5px] font-black text-slate-700">
-                          Target Qty Produksi (Pcs) <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                qty: Math.max(1, Number(prev.qty || 1) - 10),
-                              }))
-                            }
-                            className="w-7.5 h-7.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min="1"
-                            required
-                            value={formData.qty}
-                            onChange={(e) =>
-                              setFormData({ ...formData, qty: e.target.value })
-                            }
-                            className="w-16 h-7.5 px-1.5 text-center rounded-lg border border-slate-200 font-mono font-black text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                qty: Number(prev.qty || 0) + 10,
-                              }))
-                            }
-                            className="w-7.5 h-7.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                          >
-                            +
-                          </button>
-                          {/* Quick Preset Chips */}
-                          <div className="flex items-center gap-1 flex-1">
-                            {[50, 100, 200, 500].map((val) => (
-                              <button
-                                key={val}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, qty: val })}
-                                className={`flex-1 h-7.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
-                                  Number(formData.qty) === val
-                                    ? "bg-[#0284c7] text-white shadow-2xs"
-                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                }`}
-                              >
-                                {val}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tingkat Prioritas (4 col) */}
-                      <div className="md:col-span-4 space-y-1">
-                        <label className="block text-[10.5px] font-black text-slate-700">
-                          Tingkat Prioritas
-                        </label>
-                        <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg border border-slate-200 bg-slate-50/60 shadow-2xs">
-                          {[
-                            {
-                              id: "Urgent",
-                              label: "Urgent",
-                              icon: Flame,
-                              activeClass: "bg-rose-500 text-white border border-rose-600 shadow-2xs font-extrabold",
-                              inactiveClass: "bg-white text-rose-700 border border-rose-200/90 hover:bg-rose-50 hover:border-rose-300",
-                            },
-                            {
-                              id: "Normal",
-                              label: "Normal",
-                              icon: Clock,
-                              activeClass: "bg-[#0284c7] text-white border border-[#0369a1] shadow-2xs font-extrabold",
-                              inactiveClass: "bg-white text-slate-700 border border-slate-200 hover:bg-sky-50/60 hover:text-[#0284c7] hover:border-sky-300",
-                            },
-                            {
-                              id: "Low",
-                              label: "Low",
-                              icon: Sparkles,
-                              activeClass: "bg-slate-700 text-white border border-slate-800 shadow-2xs font-extrabold",
-                              inactiveClass: "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300",
-                            },
-                          ].map((prio) => {
-                            const Icon = prio.icon;
-                            const isSelected = formData.prioritas === prio.id;
-                            return (
-                              <button
-                                key={prio.id}
-                                type="button"
-                                onClick={() =>
-                                  setFormData({
-                                    ...formData,
-                                    prioritas: prio.id,
-                                  })
-                                }
-                                className={`h-7 px-1 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                                  isSelected ? prio.activeClass : prio.inactiveClass
-                                }`}
-                              >
-                                <Icon className="w-3 h-3 shrink-0" />
-                                <span>{prio.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Deadline Target Selesai (3 col) */}
-                      <div className="md:col-span-3 space-y-1">
-                        <label className="block text-[10.5px] font-black text-slate-700">
-                          Deadline Selesai <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          required
-                          value={formData.deadline}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              deadline: e.target.value,
-                            })
-                          }
-                          className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
-                        />
-                      </div>
+              {/* CARD 1: PRODUK & TARGET JUMLAH (COMPACT 100% WIDTH) */}
+              <div className="bg-white rounded-xl border border-slate-200/80 p-2.5 sm:p-3 shadow-2xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-md bg-sky-100 text-[#0284c7] flex items-center justify-center text-[9.5px] font-black">
+                      1
+                    </span>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-900 leading-none">
+                        Pilih Model Produk & Target Produksi{" "}
+                        <span className="text-rose-500">*</span>
+                      </h4>
                     </div>
                   </div>
+                  {selectedProduct && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProductComboboxOpen(true);
+                        setProductComboboxSearch("");
+                      }}
+                      className="px-2 py-0.5 rounded-md bg-sky-50 hover:bg-sky-100 text-[#0284c7] font-bold text-[10.5px] cursor-pointer transition-colors border border-sky-200/60"
+                    >
+                      Ganti Produk
+                    </button>
+                  )}
+                </div>
 
-                  {/* CARD 2: KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (BOM) */}
-                  <div className="bg-white rounded-xl border border-slate-200/80 p-2.5 sm:p-3 shadow-2xs space-y-2">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center text-[9.5px] font-black">
-                          2
-                        </span>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-extrabold text-xs text-slate-900 leading-none">
-                              Kebutuhan Bahan Baku & Aksesoris per Pcs
-                            </h4>
-                            <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700 text-[9.5px] font-bold">
-                              {formData.kebutuhanBahan?.length || 0} Terdaftar
-                            </span>
-                          </div>
-                          <p className="text-[9.5px] text-slate-400 mt-0.5">
-                            Resep otomatis tersimpan & memotong stok gudang saat proses cutting
-                          </p>
-                        </div>
-                      </div>
-
-                      {formData.sku && (
-                        <button
-                          type="button"
-                          onClick={() => handleAddKebutuhanBahan("", "Pcs")}
-                          className="h-7 px-2.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                          <span>+ Tambah Bahan</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {!formData.sku ? (
-                      <div className="py-4 px-3 text-center bg-slate-50/70 rounded-lg border border-slate-100 text-slate-400 text-xs space-y-0.5">
-                        <Boxes className="w-5 h-5 text-slate-300 mx-auto" />
-                        <p className="font-bold text-slate-700 text-xs">Pilih Produk (SKU) Terlebih Dahulu</p>
-                        <p className="text-[10px] text-slate-400">
-                          Rincian bahan baku dapat diinput setelah SKU dipilih di atas.
-                        </p>
-                      </div>
-                    ) : !formData.kebutuhanBahan ||
-                      formData.kebutuhanBahan.length === 0 ? (
-                      <div className="py-4 px-3 text-center bg-slate-50/70 rounded-lg border border-slate-100 text-slate-500 text-xs space-y-0.5">
-                        <p className="font-bold text-slate-700 text-xs">
-                          Belum ada bahan baku terdaftar untuk produk ini.
-                        </p>
-                        <p className="text-[10px] text-slate-400">
-                          Klik tombol <strong>+ Tambah Bahan</strong> di kanan atas untuk memilih bahan dari Master Database.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto rounded-lg border border-slate-100 shadow-2xs">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="bg-slate-50 text-slate-500 text-[9.5px] font-bold uppercase tracking-wider">
-                              <th className="py-1.5 px-2 text-center w-8">No</th>
-                              <th className="py-1.5 px-2 min-w-[220px]">Bahan Baku (Database)</th>
-                              <th className="py-1.5 px-1.5 text-center w-20">Qty/Pcs</th>
-                              <th className="py-1.5 px-1.5 w-24">Satuan</th>
-                              <th className="py-1.5 px-1.5 text-center w-24">Total SPK</th>
-                              <th className="py-1.5 px-2 text-right w-28">Harga Satuan</th>
-                              <th className="py-1.5 px-2 text-right w-28">Subtotal</th>
-                              <th className="py-1.5 px-2 min-w-[130px]">Catatan / Spek</th>
-                              <th className="py-1.5 px-1 text-center w-8"></th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 bg-white">
-                            {formData.kebutuhanBahan.map((item, idx) => {
-                              const itemQty = Number(item.qty) || 0;
-                              const itemHarga = Number(item.hargaSatuan) || 0;
-                              const itemSubtotal = itemQty * itemHarga;
-                              return (
-                                <tr
-                                  key={item.id || idx}
-                                  className="hover:bg-sky-50/30 transition-colors"
-                                >
-                                  <td className="py-1 px-2 text-center font-bold text-slate-400 text-[10.5px]">
-                                    {idx + 1}
-                                  </td>
-                                  <td className="py-1 px-2">
-                                    <SearchableBahanSelectDesktop
-                                      masterBahan={bahan}
-                                      selectedKode={item.kodeBahan}
-                                      selectedNama={item.namaBahan}
-                                      onSelect={(selected) =>
-                                        handleSelectMasterBahan(idx, selected)
-                                      }
-                                    />
-                                  </td>
-                                  <td className="py-1 px-1.5">
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="any"
-                                      placeholder="1"
-                                      value={item.qty ?? ""}
-                                      onChange={(e) =>
-                                        handleUpdateKebutuhanBahan(
-                                          idx,
-                                          "qty",
-                                          e.target.value,
-                                        )
-                                      }
-                                      className="w-full h-7.5 px-1.5 text-center font-mono font-bold rounded-md border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
-                                    />
-                                  </td>
-                                  <td className="py-1 px-1.5">
-                                    <select
-                                      value={item.satuan || "Pcs"}
-                                      onChange={(e) =>
-                                        handleUpdateKebutuhanBahan(
-                                          idx,
-                                          "satuan",
-                                          e.target.value,
-                                        )
-                                      }
-                                      className="w-full h-7.5 px-1.5 rounded-md border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                                    >
-                                      <option value="Pcs">Pcs</option>
-                                      <option value="Meter">Meter</option>
-                                      <option value="Yard">Yard</option>
-                                      <option value="Kg">Kg</option>
-                                      <option value="Roll">Roll</option>
-                                      <option value="Cone">Cone</option>
-                                      <option value="Pasang">Pasang</option>
-                                      <option value="Lusin">Lusin</option>
-                                      <option value="Gross">Gross</option>
-                                      <option value="Lembar">Lembar</option>
-                                      <option value="Set">Set</option>
-                                      {item.satuan &&
-                                        ![
-                                          "Pcs",
-                                          "Meter",
-                                          "Yard",
-                                          "Kg",
-                                          "Roll",
-                                          "Cone",
-                                          "Pasang",
-                                          "Lusin",
-                                          "Gross",
-                                          "Lembar",
-                                          "Set",
-                                        ].includes(item.satuan) && (
-                                          <option value={item.satuan}>
-                                            {item.satuan}
-                                          </option>
-                                        )}
-                                    </select>
-                                  </td>
-                                  <td className="py-1 px-1.5 text-center">
-                                    <span className="font-mono font-bold text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                                      {Number(((Number(item.qty) || 0) * (Number(formData.qty) || 0)).toFixed(2))} {item.satuan || "Pcs"}
-                                    </span>
-                                  </td>
-                                  <td className="py-1 px-2">
-                                    <div className="relative">
-                                      <span className="absolute left-2 top-1.5 text-[9.5px] text-slate-400 font-bold pointer-events-none">
-                                        Rp
-                                      </span>
-                                      <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        placeholder="0"
-                                        value={
-                                          item.hargaSatuan !== undefined &&
-                                          item.hargaSatuan !== "" &&
-                                          item.hargaSatuan !== null &&
-                                          Number(item.hargaSatuan) > 0
-                                            ? Number(
-                                                item.hargaSatuan,
-                                              ).toLocaleString("id-ID")
-                                            : item.hargaSatuan === 0 ||
-                                                item.hargaSatuan === "0"
-                                              ? "0"
-                                              : ""
-                                        }
-                                        onChange={(e) =>
-                                          handleUpdateKebutuhanBahan(
-                                            idx,
-                                            "hargaSatuan",
-                                            e.target.value,
-                                          )
-                                        }
-                                        className="w-full h-7.5 pl-6 pr-2 text-right font-mono font-bold rounded-md border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
-                                      />
-                                    </div>
-                                  </td>
-                                  <td className="py-1 px-2 text-right font-mono font-bold text-xs text-slate-900">
-                                    Rp {itemSubtotal.toLocaleString("id-ID")}
-                                  </td>
-                                  <td className="py-1 px-2">
-                                    <input
-                                      type="text"
-                                      placeholder="mis: warna senada..."
-                                      value={item.catatan || ""}
-                                      onChange={(e) =>
-                                        handleUpdateKebutuhanBahan(
-                                          idx,
-                                          "catatan",
-                                          e.target.value,
-                                        )
-                                      }
-                                      className="w-full h-7.5 px-2 rounded-md border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-[#0284c7]"
-                                    />
-                                  </td>
-                                  <td className="py-1 px-1 text-center">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleDeleteKebutuhanBahan(idx)
-                                      }
-                                      className="p-1 text-slate-300 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
-                                      title="Hapus Bahan"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                    {/* Subtotal Bahan Baku */}
-                    {formData.kebutuhanBahan && formData.kebutuhanBahan.length > 0 && (
-                      <div className="flex items-center justify-between pt-1 px-1 text-xs">
-                        <span className="text-slate-500 font-medium">
-                          Total Bahan Terdaftar: <strong>{formData.kebutuhanBahan.length} item</strong>
-                        </span>
-                        <div className="text-right">
-                          <span className="text-slate-500 mr-2">Estimasi Biaya Bahan:</span>
-                          <span className="font-mono font-black text-xs text-[#0284c7]">
-                            Rp {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
+                {/* Combobox Trigger Button & Dropdown Container */}
+                <div className="relative" ref={comboboxRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsProductComboboxOpen((prev) => !prev)}
+                    className={`w-full h-8 px-2.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
+                      isProductComboboxOpen
+                        ? "border-[#0284c7] ring-1 ring-[#0284c7]/20 bg-white"
+                        : selectedProduct
+                          ? "border-sky-300 bg-sky-50/20 hover:bg-sky-50/50"
+                          : "border-slate-200 bg-slate-50/70 hover:bg-white hover:border-[#0284c7]"
+                    }`}
+                  >
+                    {selectedProduct ? (
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className="w-4 h-4 rounded-full border border-slate-300 shrink-0 shadow-2xs"
+                          style={{
+                            backgroundColor:
+                              selectedProduct.warnaHex ||
+                              selectedProduct.warna_hex ||
+                              "#cbd5e1",
+                          }}
+                        />
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-mono font-black text-xs text-[#0284c7] bg-white px-2 py-0.5 rounded-md border border-sky-200">
+                            {selectedProduct.sku}
+                          </span>
+                          <span className="font-extrabold text-slate-900 text-xs truncate">
+                            {getProdName(selectedProduct)}
+                          </span>
+                          <span className="text-[11px] text-slate-500 truncate">
+                            • {selectedProduct.kategori || "Kaos"} (
+                            {selectedProduct.varian || "Polos"} /{" "}
+                            {selectedProduct.ukuran || "All Size"})
                           </span>
                         </div>
                       </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <Search className="w-4 h-4 text-slate-400" />
+                        <span className="text-xs font-medium">
+                          -- Cari & Pilih Produk (SKU) --
+                        </span>
+                      </div>
                     )}
+                    <ChevronDown
+                      className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                        isProductComboboxOpen ? "rotate-180 text-[#0284c7]" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* POP-OVER DROPDOWN DENGAN SEARCH INPUT */}
+                  {isProductComboboxOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-scale-in">
+                      {/* Search Bar Input inside Combobox */}
+                      <div className="p-2 border-b border-slate-100 bg-slate-50/70 flex items-center gap-2">
+                        <Search className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="Ketik SKU, nama baju, warna, atau ukuran..."
+                          value={productComboboxSearch}
+                          onChange={(e) =>
+                            setProductComboboxSearch(e.target.value)
+                          }
+                          className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400"
+                        />
+                        {productComboboxSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setProductComboboxSearch("")}
+                            className="p-0.5 hover:bg-slate-200 rounded text-slate-400"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* List Item Hasil Pencarian */}
+                      <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 p-1">
+                        {filteredComboboxProducts.length === 0 ? (
+                          <div className="py-4 text-center text-slate-400 text-xs">
+                            <Shirt className="w-5 h-5 mx-auto mb-1 text-slate-300" />
+                            <p className="font-semibold text-slate-500">
+                              Produk tidak ditemukan
+                            </p>
+                          </div>
+                        ) : (
+                          filteredComboboxProducts.map((p) => {
+                            const isSelected = formData.sku === p.sku;
+                            const prodName = getProdName(p);
+                            const bahan = getProdBahan(p);
+
+                            return (
+                              <button
+                                key={p.id || p.sku}
+                                type="button"
+                                onClick={() => {
+                                  // Auto-load resep bahan produk jika tersedia
+                                  let autoBahan = [];
+                                  if (
+                                    Array.isArray(p.kebutuhanBahan) &&
+                                    p.kebutuhanBahan.length > 0
+                                  ) {
+                                    autoBahan = p.kebutuhanBahan;
+                                  } else if (
+                                    typeof p.kebutuhanBahan === "string"
+                                  ) {
+                                    try {
+                                      const parsed = JSON.parse(
+                                        p.kebutuhanBahan,
+                                      );
+                                      if (
+                                        Array.isArray(parsed) &&
+                                        parsed.length > 0
+                                      )
+                                        autoBahan = parsed;
+                                    } catch (_) {}
+                                  }
+                                  if (autoBahan.length === 0 && p.sku) {
+                                    try {
+                                      const cached = localStorage.getItem(
+                                        `konveksi_resep_${p.sku}`,
+                                      );
+                                      if (cached) {
+                                        const parsed = JSON.parse(cached);
+                                        if (
+                                          Array.isArray(parsed) &&
+                                          parsed.length > 0
+                                        )
+                                          autoBahan = parsed;
+                                      }
+                                    } catch (_) {}
+                                  }
+                                  const reconciledBahan = autoBahan.map(
+                                    (r, i) => {
+                                      const match = (bahan || []).find(
+                                        (m) =>
+                                          (r.kodeBahan &&
+                                            m.kodeBahan === r.kodeBahan) ||
+                                          (m.namaBahan || "").toLowerCase() ===
+                                            (r.namaBahan || "").toLowerCase(),
+                                      );
+                                      return {
+                                        id: Date.now() + i + Math.random(),
+                                        kodeBahan:
+                                          match?.kodeBahan || r.kodeBahan || "",
+                                        namaBahan:
+                                          match?.namaBahan || r.namaBahan || "",
+                                        satuan:
+                                          match?.satuan || r.satuan || "Pcs",
+                                        hargaSatuan: Number(
+                                          match?.harga ?? r.hargaSatuan ?? 0,
+                                        ),
+                                        stokSaatIni: Number(match?.stok ?? 0),
+                                        qty: Number(r.qty || r.qtyPerPcs || 1),
+                                        catatan: r.catatan || "",
+                                      };
+                                    },
+                                  );
+
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    sku: p.sku,
+                                    kebutuhanBahan:
+                                      reconciledBahan.length > 0
+                                        ? (() => {
+                                            const unique = [];
+                                            for (const it of reconciledBahan) {
+                                              const k = (it.kodeBahan || it.namaBahan || "").trim().toLowerCase();
+                                              if (!k) continue;
+                                              const ex = unique.find(
+                                                (u) => (u.kodeBahan || u.namaBahan || "").trim().toLowerCase() === k,
+                                              );
+                                              if (ex) {
+                                                ex.qty = Number(
+                                                  (
+                                                    Number(ex.qty || 0) +
+                                                    Number(it.qty || 1)
+                                                  ).toFixed(2),
+                                                );
+                                              } else {
+                                                unique.push({ ...it });
+                                              }
+                                            }
+                                            return unique;
+                                          })()
+                                        : prev.kebutuhanBahan || [],
+                                  }));
+                                  setIsProductComboboxOpen(false);
+                                  setProductComboboxSearch("");
+                                }}
+                                className={`w-full p-1.5 rounded text-left transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                                  isSelected
+                                    ? "bg-sky-50/80 border border-sky-300/60"
+                                    : "hover:bg-slate-100/80 border border-transparent"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div
+                                    className="w-6 h-6 rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs"
+                                    style={{
+                                      backgroundColor:
+                                        p.warnaHex || p.warna_hex || "#f1f5f9",
+                                    }}
+                                  >
+                                    <Shirt className="w-3 h-3 text-slate-700/80" />
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5 leading-none">
+                                      <span className="font-mono font-bold text-[9.5px] text-[#0284c7] bg-white px-1 py-0.2 rounded border border-sky-200">
+                                        {p.sku}
+                                      </span>
+                                      <span className="font-bold text-xs text-slate-900 truncate">
+                                        {prodName}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[9.5px] text-slate-500 mt-0.5 truncate">
+                                      <span>{p.kategori || "Kaos"}</span>
+                                      <span>•</span>
+                                      <span>
+                                        {p.varian || "Polos"} (
+                                        {p.ukuran || "All Size"})
+                                      </span>
+                                      {bahan && bahan !== "-" && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="font-mono text-cyan-700">
+                                            Kain: {bahan}
+                                          </span>
+                                        </>
+                                      )}
+                                      {Number(p.harga || 0) > 0 && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="font-mono font-bold text-emerald-700">
+                                            Rp{" "}
+                                            {Number(p.harga).toLocaleString(
+                                              "id-ID",
+                                            )}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {isSelected && (
+                                  <div className="w-4 h-4 rounded-full bg-[#0284c7] text-white flex items-center justify-center shrink-0">
+                                    <Check className="w-2.5 h-2.5 stroke-[2.5]" />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 1.2 Target Qty, Deadline, dan Prioritas dalam 1 Baris Sejajar Compact */}
+                <div className="pt-2 border-t border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
+                  {/* Target Qty (5 col) */}
+                  <div className="md:col-span-5 space-y-1">
+                    <label className="block text-[10.5px] font-black text-slate-700">
+                      Target Qty Produksi (Pcs){" "}
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            qty: Math.max(1, Number(prev.qty || 1) - 10),
+                          }))
+                        }
+                        className="w-7.5 h-7.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={formData.qty}
+                        onChange={(e) =>
+                          setFormData({ ...formData, qty: e.target.value })
+                        }
+                        className="w-16 h-7.5 px-1.5 text-center rounded-lg border border-slate-200 font-mono font-black text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            qty: Number(prev.qty || 0) + 10,
+                          }))
+                        }
+                        className="w-7.5 h-7.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                      >
+                        +
+                      </button>
+                      {/* Quick Preset Chips */}
+                      <div className="flex items-center gap-1 flex-1">
+                        {[50, 100, 200, 500].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() =>
+                              setFormData({ ...formData, qty: val })
+                            }
+                            className={`flex-1 h-7.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
+                              Number(formData.qty) === val
+                                ? "bg-[#0284c7] text-white shadow-2xs"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
+                          >
+                            {val}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* CARD 3: DOKUMEN & INFORMASI TAMBAHAN (1 BARIS RINGKAS 100% WIDTH) */}
-                  <div className="bg-white rounded-xl border border-slate-200/80 p-2.5 sm:p-3 shadow-2xs space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-md bg-indigo-100 text-indigo-800 flex items-center justify-center text-[9.5px] font-black">
-                        3
-                      </span>
-                      <h4 className="font-extrabold text-xs text-slate-900 leading-none">
-                        Dokumen & Catatan Tambahan (Opsional)
-                      </h4>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
-                          No Antrian
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            required
-                            value={formData.noAntrian}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                noAntrian: e.target.value,
-                              })
-                            }
-                            className="w-full h-7.5 px-2 rounded-lg border border-slate-200 font-mono font-bold text-[#0284c7] bg-slate-50 text-xs focus:bg-white focus:border-[#0284c7] focus:outline-none"
-                          />
+                  {/* Tingkat Prioritas (4 col) */}
+                  <div className="md:col-span-4 space-y-1">
+                    <label className="block text-[10.5px] font-black text-slate-700">
+                      Tingkat Prioritas
+                    </label>
+                    <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg border border-slate-200 bg-slate-50/60 shadow-2xs">
+                      {[
+                        {
+                          id: "Urgent",
+                          label: "Urgent",
+                          icon: Flame,
+                          activeClass:
+                            "bg-rose-500 text-white border border-rose-600 shadow-2xs font-extrabold",
+                          inactiveClass:
+                            "bg-white text-rose-700 border border-rose-200/90 hover:bg-rose-50 hover:border-rose-300",
+                        },
+                        {
+                          id: "Normal",
+                          label: "Normal",
+                          icon: Clock,
+                          activeClass:
+                            "bg-[#0284c7] text-white border border-[#0369a1] shadow-2xs font-extrabold",
+                          inactiveClass:
+                            "bg-white text-slate-700 border border-slate-200 hover:bg-sky-50/60 hover:text-[#0284c7] hover:border-sky-300",
+                        },
+                        {
+                          id: "Low",
+                          label: "Low",
+                          icon: Sparkles,
+                          activeClass:
+                            "bg-slate-700 text-white border border-slate-800 shadow-2xs font-extrabold",
+                          inactiveClass:
+                            "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300",
+                        },
+                      ].map((prio) => {
+                        const Icon = prio.icon;
+                        const isSelected = formData.prioritas === prio.id;
+                        return (
                           <button
+                            key={prio.id}
                             type="button"
                             onClick={() =>
                               setFormData({
                                 ...formData,
-                                noAntrian: generateNoAntrian(),
+                                prioritas: prio.id,
                               })
                             }
-                            className="absolute right-1 top-1 px-1 py-0.2 rounded text-[8.5px] font-bold text-slate-500 hover:text-[#0284c7] cursor-pointer"
-                            title="Generate Acak Baru"
+                            className={`h-7 px-1 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                              isSelected ? prio.activeClass : prio.inactiveClass
+                            }`}
                           >
-                            Auto
+                            <Icon className="w-3 h-3 shrink-0" />
+                            <span>{prio.label}</span>
                           </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
-                          Tgl Masuk
-                        </label>
-                        <input
-                          type="date"
-                          required
-                          value={formData.tglMasuk}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              tglMasuk: e.target.value,
-                            })
-                          }
-                          className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-0.5">
-                          <label className="text-[10px] font-bold text-slate-700">
-                            Sumber
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingSumberIndex(null);
-                              setSumberInputText("");
-                              setIsSumberModalOpen(true);
-                            }}
-                            className="text-[9px] text-[#0284c7] hover:underline font-bold"
-                          >
-                            Kelola
-                          </button>
-                        </div>
-                        <select
-                          value={formData.sumberPermintaan}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              sumberPermintaan: e.target.value,
-                            })
-                          }
-                          className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                        >
-                          {sumberOptions.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
-                          No Referensi / PO
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.noReff}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              noReff: e.target.value,
-                            })
-                          }
-                          placeholder="mis: PO-CLIENT-08"
-                          className="w-full h-7.5 px-2 rounded-lg border border-slate-200 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
-                          Catatan SOP
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.catatan}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              catatan: e.target.value,
-                            })
-                          }
-                          placeholder="mis: Sablon DTF dada, jahit rantai..."
-                          className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
-                        />
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* CARD 4: KALKULATOR HPP & RINGKASAN BIAYA (COMPACT STRIP) */}
-                  <div className="bg-[#0b1329] text-white rounded-xl p-2.5 shadow-2xs border border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9.5px] font-bold">
-                          ⚡
-                        </span>
-                        <h4 className="font-extrabold text-xs text-emerald-400">
-                          Kalkulator Estimasi HPP
+                  {/* Deadline Target Selesai (3 col) */}
+                  <div className="md:col-span-3 space-y-1">
+                    <label className="block text-[10.5px] font-black text-slate-700">
+                      Deadline Selesai <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.deadline}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          deadline: e.target.value,
+                        })
+                      }
+                      className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: KEBUTUHAN BAHAN & AKSESORIS PRODUKSI (BOM) */}
+              <div className="bg-white rounded-xl border border-slate-200/80 p-2.5 sm:p-3 shadow-2xs space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center text-[9.5px] font-black">
+                      2
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-extrabold text-xs text-slate-900 leading-none">
+                          Kebutuhan Bahan Baku & Aksesoris per Pcs
                         </h4>
-                      </div>
-                      <span className="px-1.5 py-0.2 rounded-full bg-white/10 text-slate-300 font-mono text-[9.5px]">
-                        Batch: {Number(formData.qty || 0).toLocaleString("id-ID")} Pcs
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                      <div className="bg-white/5 rounded-lg p-2">
-                        <span className="text-[9.5px] text-slate-400 block">
-                          Biaya Bahan Baku
-                        </span>
-                        <span className="font-mono font-bold text-xs text-sky-300 block mt-0.5">
-                          Rp {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
+                        <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700 text-[9.5px] font-bold">
+                          {formData.kebutuhanBahan?.length || 0} Terdaftar
                         </span>
                       </div>
-                      <div className="bg-white/5 rounded-lg p-2">
-                        <span className="text-[9.5px] text-slate-400 block">
-                          Upah Borongan Pabrik
-                        </span>
-                        <span className="font-mono font-bold text-xs text-amber-300 block mt-0.5">
-                          Rp {hppCalculation.totalUpahBorongan.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-2">
-                        <span className="text-[9.5px] text-slate-400 block">
-                          Total Biaya Batch
-                        </span>
-                        <span className="font-mono font-bold text-xs text-slate-100 block mt-0.5">
-                          Rp {hppCalculation.totalHpp.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-2 flex flex-col justify-between">
-                        <span className="text-[9px] uppercase font-black text-emerald-300 tracking-wider">
-                          ★ ESTIMASI HPP / PCS
-                        </span>
-                        <span className="font-mono font-black text-sm text-emerald-400 mt-0.5">
-                          Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")}
-                        </span>
-                      </div>
+                      <p className="text-[9.5px] text-slate-400 mt-0.5">
+                        Resep otomatis tersimpan & memotong stok gudang saat
+                        proses cutting
+                      </p>
                     </div>
                   </div>
+
+                  {formData.sku && (
+                    <button
+                      type="button"
+                      onClick={() => handleAddKebutuhanBahan("", "Pcs")}
+                      className="h-7 px-2.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>+ Tambah Bahan</span>
+                    </button>
+                  )}
+                </div>
+
+                {!formData.sku ? (
+                  <div className="py-4 px-3 text-center bg-slate-50/70 rounded-lg border border-slate-100 text-slate-400 text-xs space-y-0.5">
+                    <Boxes className="w-5 h-5 text-slate-300 mx-auto" />
+                    <p className="font-bold text-slate-700 text-xs">
+                      Pilih Produk (SKU) Terlebih Dahulu
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Rincian bahan baku dapat diinput setelah SKU dipilih di
+                      atas.
+                    </p>
+                  </div>
+                ) : !formData.kebutuhanBahan ||
+                  formData.kebutuhanBahan.length === 0 ? (
+                  <div className="py-4 px-3 text-center bg-slate-50/70 rounded-lg border border-slate-100 text-slate-500 text-xs space-y-0.5">
+                    <p className="font-bold text-slate-700 text-xs">
+                      Belum ada bahan baku terdaftar untuk produk ini.
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Klik tombol <strong>+ Tambah Bahan</strong> di kanan atas
+                      untuk memilih bahan dari Master Database.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-slate-100 shadow-2xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-500 text-[9.5px] font-bold uppercase tracking-wider">
+                          <th className="py-1.5 px-2 text-center w-8">No</th>
+                          <th className="py-1.5 px-2 min-w-[220px]">
+                            Bahan Baku (Database)
+                          </th>
+                          <th className="py-1.5 px-1.5 text-center w-20">
+                            Qty/Pcs
+                          </th>
+                          <th className="py-1.5 px-1.5 w-24">Satuan</th>
+                          <th className="py-1.5 px-1.5 text-center w-24">
+                            Total SPK
+                          </th>
+                          <th className="py-1.5 px-2 text-right w-28">
+                            Harga Satuan
+                          </th>
+                          <th className="py-1.5 px-2 text-right w-28">
+                            Subtotal
+                          </th>
+                          <th className="py-1.5 px-2 min-w-[130px]">
+                            Catatan / Spek
+                          </th>
+                          <th className="py-1.5 px-1 text-center w-8"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {formData.kebutuhanBahan.map((item, idx) => {
+                          const itemQty = Number(item.qty) || 0;
+                          const itemHarga = Number(item.hargaSatuan) || 0;
+                          const itemSubtotal = itemQty * itemHarga;
+                          return (
+                            <tr
+                              key={item.id || idx}
+                              className="hover:bg-sky-50/30 transition-colors"
+                            >
+                              <td className="py-1 px-2 text-center font-bold text-slate-400 text-[10.5px]">
+                                {idx + 1}
+                              </td>
+                              <td className="py-1 px-2">
+                                <SearchableBahanSelectDesktop
+                                  masterBahan={bahan}
+                                  selectedKode={item.kodeBahan}
+                                  selectedNama={item.namaBahan}
+                                  disabledKodes={(formData.kebutuhanBahan || [])
+                                    .filter((_, otherIdx) => otherIdx !== idx)
+                                    .map((b) => b.kodeBahan || b.namaBahan)
+                                    .filter(Boolean)}
+                                  onSelect={(selected) =>
+                                    handleSelectMasterBahan(idx, selected)
+                                  }
+                                />
+                              </td>
+                              <td className="py-1 px-1.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  placeholder="1"
+                                  value={item.qty ?? ""}
+                                  onChange={(e) =>
+                                    handleUpdateKebutuhanBahan(
+                                      idx,
+                                      "qty",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full h-7.5 px-1.5 text-center font-mono font-bold rounded-md border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
+                                />
+                              </td>
+                              <td className="py-1 px-1.5">
+                                <select
+                                  value={item.satuan || "Pcs"}
+                                  onChange={(e) =>
+                                    handleUpdateKebutuhanBahan(
+                                      idx,
+                                      "satuan",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full h-7.5 px-1.5 rounded-md border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                                >
+                                  <option value="Pcs">Pcs</option>
+                                  <option value="Meter">Meter</option>
+                                  <option value="Yard">Yard</option>
+                                  <option value="Kg">Kg</option>
+                                  <option value="Roll">Roll</option>
+                                  <option value="Cone">Cone</option>
+                                  <option value="Pasang">Pasang</option>
+                                  <option value="Lusin">Lusin</option>
+                                  <option value="Gross">Gross</option>
+                                  <option value="Lembar">Lembar</option>
+                                  <option value="Set">Set</option>
+                                  {item.satuan &&
+                                    ![
+                                      "Pcs",
+                                      "Meter",
+                                      "Yard",
+                                      "Kg",
+                                      "Roll",
+                                      "Cone",
+                                      "Pasang",
+                                      "Lusin",
+                                      "Gross",
+                                      "Lembar",
+                                      "Set",
+                                    ].includes(item.satuan) && (
+                                      <option value={item.satuan}>
+                                        {item.satuan}
+                                      </option>
+                                    )}
+                                </select>
+                              </td>
+                              <td className="py-1 px-1.5 text-center">
+                                <span className="font-mono font-bold text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                                  {Number(
+                                    (
+                                      (Number(item.qty) || 0) *
+                                      (Number(formData.qty) || 0)
+                                    ).toFixed(2),
+                                  )}{" "}
+                                  {item.satuan || "Pcs"}
+                                </span>
+                              </td>
+                              <td className="py-1 px-2">
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1.5 text-[9.5px] text-slate-400 font-bold pointer-events-none">
+                                    Rp
+                                  </span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="0"
+                                    value={
+                                      item.hargaSatuan !== undefined &&
+                                      item.hargaSatuan !== "" &&
+                                      item.hargaSatuan !== null &&
+                                      Number(item.hargaSatuan) > 0
+                                        ? Number(
+                                            item.hargaSatuan,
+                                          ).toLocaleString("id-ID")
+                                        : item.hargaSatuan === 0 ||
+                                            item.hargaSatuan === "0"
+                                          ? "0"
+                                          : ""
+                                    }
+                                    onChange={(e) =>
+                                      handleUpdateKebutuhanBahan(
+                                        idx,
+                                        "hargaSatuan",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full h-7.5 pl-6 pr-2 text-right font-mono font-bold rounded-md border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-1 px-2 text-right font-mono font-bold text-xs text-slate-900">
+                                Rp {itemSubtotal.toLocaleString("id-ID")}
+                              </td>
+                              <td className="py-1 px-2">
+                                <input
+                                  type="text"
+                                  placeholder="mis: warna senada..."
+                                  value={item.catatan || ""}
+                                  onChange={(e) =>
+                                    handleUpdateKebutuhanBahan(
+                                      idx,
+                                      "catatan",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full h-7.5 px-2 rounded-md border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-[#0284c7]"
+                                />
+                              </td>
+                              <td className="py-1 px-1 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteKebutuhanBahan(idx)
+                                  }
+                                  className="p-1 text-slate-300 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="Hapus Bahan"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Subtotal Bahan Baku */}
+                {formData.kebutuhanBahan &&
+                  formData.kebutuhanBahan.length > 0 && (
+                    <div className="flex items-center justify-between pt-1 px-1 text-xs">
+                      <span className="text-slate-500 font-medium">
+                        Total Bahan Terdaftar:{" "}
+                        <strong>{formData.kebutuhanBahan.length} item</strong>
+                      </span>
+                      <div className="text-right">
+                        <span className="text-slate-500 mr-2">
+                          Estimasi Biaya Bahan:
+                        </span>
+                        <span className="font-mono font-black text-xs text-[#0284c7]">
+                          Rp{" "}
+                          {hppCalculation.totalBiayaBahan.toLocaleString(
+                            "id-ID",
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* CARD 3: DOKUMEN & INFORMASI TAMBAHAN (1 BARIS RINGKAS 100% WIDTH) */}
+              <div className="bg-white rounded-xl border border-slate-200/80 p-2.5 sm:p-3 shadow-2xs space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-md bg-indigo-100 text-indigo-800 flex items-center justify-center text-[9.5px] font-black">
+                    3
+                  </span>
+                  <h4 className="font-extrabold text-xs text-slate-900 leading-none">
+                    Dokumen & Catatan Tambahan (Opsional)
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                      No Antrian
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={formData.noAntrian}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            noAntrian: e.target.value,
+                          })
+                        }
+                        className="w-full h-7.5 px-2 rounded-lg border border-slate-200 font-mono font-bold text-[#0284c7] bg-slate-50 text-xs focus:bg-white focus:border-[#0284c7] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            noAntrian: generateNoAntrian(),
+                          })
+                        }
+                        className="absolute right-1 top-1 px-1 py-0.2 rounded text-[8.5px] font-bold text-slate-500 hover:text-[#0284c7] cursor-pointer"
+                        title="Generate Acak Baru"
+                      >
+                        Auto
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                      Tgl Masuk
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.tglMasuk}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tglMasuk: e.target.value,
+                        })
+                      }
+                      className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#0284c7]"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[10px] font-bold text-slate-700">
+                        Sumber
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingSumberIndex(null);
+                          setSumberInputText("");
+                          setIsSumberModalOpen(true);
+                        }}
+                        className="text-[9px] text-[#0284c7] hover:underline font-bold"
+                      >
+                        Kelola
+                      </button>
+                    </div>
+                    <select
+                      value={formData.sumberPermintaan}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sumberPermintaan: e.target.value,
+                        })
+                      }
+                      className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                    >
+                      {sumberOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                      No Referensi / PO
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.noReff}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          noReff: e.target.value,
+                        })
+                      }
+                      placeholder="mis: PO-CLIENT-08"
+                      className="w-full h-7.5 px-2 rounded-lg border border-slate-200 font-mono text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                      Catatan SOP
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.catatan}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          catatan: e.target.value,
+                        })
+                      }
+                      placeholder="mis: Sablon DTF dada, jahit rantai..."
+                      className="w-full h-7.5 px-2 rounded-lg border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0284c7]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 4: KALKULATOR HPP & RINGKASAN BIAYA (COMPACT STRIP) */}
+              <div className="bg-[#0b1329] text-white rounded-xl p-2.5 shadow-2xs border border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9.5px] font-bold">
+                      ⚡
+                    </span>
+                    <h4 className="font-extrabold text-xs text-emerald-400">
+                      Kalkulator Estimasi HPP
+                    </h4>
+                  </div>
+                  <span className="px-1.5 py-0.2 rounded-full bg-white/10 text-slate-300 font-mono text-[9.5px]">
+                    Batch: {Number(formData.qty || 0).toLocaleString("id-ID")}{" "}
+                    Pcs
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-white/5 rounded-lg p-2">
+                    <span className="text-[9.5px] text-slate-400 block">
+                      Biaya Bahan Baku
+                    </span>
+                    <span className="font-mono font-bold text-xs text-sky-300 block mt-0.5">
+                      Rp{" "}
+                      {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-2">
+                    <span className="text-[9.5px] text-slate-400 block">
+                      Upah Borongan Pabrik
+                    </span>
+                    <span className="font-mono font-bold text-xs text-amber-300 block mt-0.5">
+                      Rp{" "}
+                      {hppCalculation.totalUpahBorongan.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-2">
+                    <span className="text-[9.5px] text-slate-400 block">
+                      Total Biaya Batch
+                    </span>
+                    <span className="font-mono font-bold text-xs text-slate-100 block mt-0.5">
+                      Rp {hppCalculation.totalHpp.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-2 flex flex-col justify-between">
+                    <span className="text-[9px] uppercase font-black text-emerald-300 tracking-wider">
+                      ★ ESTIMASI HPP / PCS
+                    </span>
+                    <span className="font-mono font-black text-sm text-emerald-400 mt-0.5">
+                      Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </form>
           </div>
 

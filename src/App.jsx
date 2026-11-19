@@ -543,6 +543,9 @@ export default function App() {
               setAntreanList={setAntreanList}
               products={products}
               employees={employees}
+              jasa={jasa}
+              currentUser={currentUser}
+              userRole={userRole}
             />
           )}
           {activeMenu === 'divisi-qc' && (

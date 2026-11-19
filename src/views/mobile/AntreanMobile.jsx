@@ -335,8 +335,8 @@ export default function AntreanMobile({
                     <Share2 className="w-3.5 h-3.5 text-emerald-700" />
                   </button>
 
-                  {/* Admin Gudang hanya input permintaan, tidak ada tombol serah cutting */}
-                  {!isGudang && item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
+                  {/* Admin Gudang & Admin Cutting (saat sedang cutting) tidak serahkan ke jahit */}
+                  {!isGudang && (!isCutting || !isSedangCutting) && item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
                     <button
                       onClick={() => onNextStatus(item)}
                       className={`text-[10.5px] font-bold active:scale-95 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer text-white ${
@@ -351,7 +351,7 @@ export default function AntreanMobile({
                       {isSedangCutting && <Shirt className="w-3 h-3 stroke-[2.5]" />}
                       <span>
                         {isTungguCutting && 'Proses Cutting'}
-                        {isSedangCutting && 'Serahkan ke Penjahit'}
+                        {isSedangCutting && 'Ambil Jahitan'}
                         {item.status === 'Proses Jahit' && 'Serah QC'}
                         {item.status === 'Proses QC' && 'Serah Finishing'}
                         {item.status === 'Proses Finishing' && 'Masuk Gudang'}

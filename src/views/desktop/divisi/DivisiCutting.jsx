@@ -275,7 +275,7 @@ export default function DivisiCutting({
               </span>
             </div>
             <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
-              Kelola antrean pemotongan pola bahan, approval permintaan baru, dan serah terima ke penjahit
+              Kelola antrean pemotongan pola bahan, approval permintaan baru, dan pemotongan kain untuk penjahit
             </p>
           </div>
         </div>
@@ -684,14 +684,13 @@ export default function DivisiCutting({
                           )}
 
                           {item.status === 'Proses Cutting' && (
-                            <button
-                              onClick={() => handleOpenSerahJahit(item)}
-                              className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                              title="Selesaikan Cutting & Serahkan ke Penjahit"
+                            <span
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-50 text-[#0284c7] border border-sky-200 font-bold text-xs"
+                              title="Kain dalam pemotongan dan siap diambil langsung oleh penjahit"
                             >
-                              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Serah Jahit</span>
-                            </button>
+                              <Scissors className="w-3.5 h-3.5 text-[#0284c7] animate-pulse" />
+                              <span>Siap Diambil Jahit</span>
+                            </span>
                           )}
 
                           <button

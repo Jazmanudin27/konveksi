@@ -41,13 +41,13 @@ flowchart LR
 
 2. **Tahap 2: Divisi Cutting (Pola & Potong Kain)**
    - **Aktor**: Admin Cutting (`src/views/desktop/divisi/DivisiCutting.jsx`).
-   - **Tindakan**: Approval SPK, input tanggal mulai, menentukan ongkos potong/pc, menugaskan tim pemotong, dan mengecek ketersediaan gulungan kain dari gudang bahan.
+   - **Tindakan**: Approval SPK, input tanggal mulai potong, ongkos potong otomatis dari master produk, dan pemotongan kain. Kain yang sedang/selesai dipotong langsung siap diambil penjahit tanpa perlu tombol serah terima manual.
    - **Status**: Berubah menjadi `Proses Cutting`. Tercatat upah borongan cutting di antrean.
 
 3. **Tahap 3: Divisi Jahit (Sewing & Makloon)**
-   - **Aktor**: Admin Jahit (`src/views/desktop/divisi/DivisiJahit.jsx`).
-   - **Tindakan**: Menerima potongan pola dari cutting, input tanggal serah jahit, tarif jahit/pc, memilih penjahit internal atau mitra makloon eksternal.
-   - **Status**: Berubah menjadi `Proses Jahit`.
+   - **Aktor**: Admin Jahit / Tukang Jahit (`src/views/desktop/divisi/DivisiJahit.jsx`).
+   - **Tindakan**: Melihat antrean kain di tab *Siap Diambil (Cutting)* lalu klik **Ambil** (1-klik). Sistem otomatis menyelesaikan cutting, mengalokasikan ke penjahit aktif, dan menerapkan tarif jahit.
+   - **Status**: Otomatis berubah menjadi `Proses Jahit`.
 
 4. **Tahap 4: Divisi QC (Quality Control & Sortir)**
    - **Aktor**: Admin QC (`src/views/desktop/divisi/DivisiQC.jsx`).

@@ -22,13 +22,56 @@ import {
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
 
-export default function DivisiJahit({ antreanList = [], setAntreanList, products = [], employees = [] }) {
-  const [activeTab, setActiveTab] = useState('proses'); // 'approval' | 'proses' | 'riwayat'
+export default function DivisiJahit({
+  antreanList = [],
+  setAntreanList,
+  products = [],
+  employees = [],
+  jasa = [],
+  currentUser = null,
+  userRole = '',
+}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
 
-  // Modal Approval (Terima & Tugaskan Penjahit)
+  // Filter daftar penjahit dari master karyawan
+  const jahitWorkers = useMemo(() => {
+    return employees.filter(
+      (e) =>
+        e.status === 'Aktif' &&
+        (String(e.bagian || '').toLowerCase().includes('jahit') ||
+          String(e.bagian || '').toLowerCase().includes('sew') ||
+          String(e.kategori || '').toLowerCase().includes('borongan'))
+    );
+  }, [employees]);
+
+  // Penjahit yang sedang aktif/mengambil pekerjaan
+  const [selectedPenjahit, setSelectedPenjahit] = useState(() => {
+    if (currentUser?.nama) return currentUser.nama;
+    return '';
+  });
+
+  useEffect(() => {
+    if (currentUser?.nama) {
+      setSelectedPenjahit(currentUser.nama);
+    } else if (!selectedPenjahit && jahitWorkers.length > 0) {
+      setSelectedPenjahit(jahitWorkers[0].nama);
+    }
+  }, [currentUser, jahitWorkers]);
+
+  // Tab aktif: default ke 'ambil' jika ada antrean dari cutting yang siap diambil
+  const [activeTab, setActiveTab] = useState(() => {
+    const hasAmbil = antreanList.some(
+      (i) =>
+        i.status === 'Proses Cutting' ||
+        i.status === 'Sedang Diproses' ||
+        i.status === 'Menunggu Jahit'
+    );
+    return hasAmbil ? 'ambil' : 'proses';
+  });
+
+  // Modal Approval (Terima & Tugaskan Penjahit Manual)
   const [approvalModalItem, setApprovalModalItem] = useState(null);
   const [approvalForm, setApprovalForm] = useState({
     tglSerahJahit: new Date().toISOString().slice(0, 10),
@@ -46,33 +89,28 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
     catatanQc: 'Jahitan selesai, siap inspeksi kualitas.'
   });
 
-  // Filter daftar penjahit dari master karyawan
-  const jahitWorkers = useMemo(() => {
-    return employees.filter(
-      (e) =>
-        e.status === 'Aktif' &&
-        (String(e.bagian || '').toLowerCase().includes('jahit') ||
-          String(e.bagian || '').toLowerCase().includes('sew') ||
-          String(e.kategori || '').toLowerCase().includes('borongan'))
-    );
-  }, [employees]);
-
   // Filter Data Khusus Divisi Jahit
   const jahitData = useMemo(() => {
     return antreanList.filter((item) => {
       const isReturQc =
         item.status === 'Proses Jahit' &&
-        (Number(item.qtyRejectQc) > 0 || String(item.statusQc || '').includes('Reject') || String(item.statusQc || '').includes('Perbaikan'));
+        (Number(item.qtyRejectQc) > 0 ||
+          String(item.statusQc || '').includes('Reject') ||
+          String(item.statusQc || '').includes('Perbaikan'));
 
-      if (activeTab === 'retur') {
-        return isReturQc;
-      }
-      if (activeTab === 'approval') {
-        // Antrean yang diserahkan dari cutting dan perlu konfirmasi penjahit
-        return item.status === 'Menunggu Jahit' || (item.status === 'Proses Jahit' && !item.timJahit);
+      if (activeTab === 'ambil') {
+        // Tampilkan antrean yang sedang proses cutting & siap diambil penjahit
+        return (
+          item.status === 'Proses Cutting' ||
+          item.status === 'Sedang Diproses' ||
+          item.status === 'Menunggu Jahit'
+        );
       }
       if (activeTab === 'proses') {
-        return item.status === 'Proses Jahit';
+        return item.status === 'Proses Jahit' && !isReturQc;
+      }
+      if (activeTab === 'retur') {
+        return isReturQc;
       }
       if (activeTab === 'riwayat') {
         return (
@@ -101,24 +139,175 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
 
   // Statistik KPI Divisi Jahit
   const stats = useMemo(() => {
-    const proses = antreanList.filter((i) => i.status === 'Proses Jahit');
+    const ambil = antreanList.filter(
+      (i) =>
+        i.status === 'Proses Cutting' ||
+        i.status === 'Sedang Diproses' ||
+        i.status === 'Menunggu Jahit'
+    );
+    const proses = antreanList.filter(
+      (i) =>
+        i.status === 'Proses Jahit' &&
+        !(
+          Number(i.qtyRejectQc) > 0 ||
+          String(i.statusQc || '').includes('Reject') ||
+          String(i.statusQc || '').includes('Perbaikan')
+        )
+    );
     const retur = antreanList.filter(
       (i) =>
         i.status === 'Proses Jahit' &&
-        (Number(i.qtyRejectQc) > 0 || String(i.statusQc || '').includes('Reject') || String(i.statusQc || '').includes('Perbaikan'))
+        (Number(i.qtyRejectQc) > 0 ||
+          String(i.statusQc || '').includes('Reject') ||
+          String(i.statusQc || '').includes('Perbaikan'))
     );
     const riwayat = antreanList.filter((i) =>
       ['Proses QC', 'Proses Finishing', 'Selesai'].includes(i.status)
     );
+    const totalPcsAmbil = ambil.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
     const totalPcsJahit = proses.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
 
     return {
+      ambilCount: ambil.length,
+      totalPcsAmbil,
       prosesCount: proses.length,
       returCount: retur.length,
       riwayatCount: riwayat.length,
       totalPcsJahit
     };
   }, [antreanList]);
+
+  // Aksi Cepat 1-Klik: Ambil Jahitan dari Cutting
+  const handleAmbilJahit = async (item) => {
+    const finalTim =
+      selectedPenjahit ||
+      currentUser?.nama ||
+      (jahitWorkers.length > 0 ? jahitWorkers[0].nama : 'Tim Jahit 1');
+
+    const matchedProd = products.find((p) => p.sku === item.sku);
+    const matchedJasa = (jasa || []).find((j) => {
+      const n = (j.namaJasa || '').toLowerCase();
+      return n.includes('jahit') || n.includes('sew');
+    });
+    const tarif =
+      Number(item.tarifJahit) ||
+      Number(matchedProd?.hargaJahit || matchedProd?.tarifJahit) ||
+      Number(matchedJasa?.harga) ||
+      3500;
+    const qtyVal = Number(item.qty) || 1;
+    const totalBiaya = qtyVal * tarif;
+    const tglToday = new Date().toISOString().slice(0, 10);
+
+    try {
+      setLoading(true);
+      const payload = {
+        ids: [item.id],
+        tglSerahJahit: tglToday,
+        timJahit: finalTim,
+        tarifJahit: tarif,
+        catatanJahit: item.catatanJahit || `Diambil langsung dari cutting oleh ${finalTim}`,
+      };
+
+      await api.serahJahit(payload);
+
+      // Otomatis selesai cutting & update status jadi 'Proses Jahit'
+      setAntreanList((prev) => {
+        const next = prev.map((ant) =>
+          ant.id === item.id
+            ? {
+                ...ant,
+                status: 'Proses Jahit',
+                tglSerahJahit: tglToday,
+                timJahit: finalTim,
+                tarifJahit: tarif,
+                totalBiayaJahit: totalBiaya,
+                catatanJahit: payload.catatanJahit,
+              }
+            : ant
+        );
+        try {
+          localStorage.setItem('konveksi_antrean_list', JSON.stringify(next));
+        } catch (_) {}
+        return next;
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Jahitan Berhasil Diambil!',
+        text: `SPK ${item.noAntrian} (${item.namaProduk} - ${qtyVal} Pcs) telah diambil oleh ${finalTim}. Status kini: Proses Jahit.`,
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.error('Gagal Mengambil', err.message || 'Terjadi kesalahan sistem.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Ambil Semua Antrean Siap Diambil Sekaligus
+  const handleAmbilSemua = async () => {
+    if (filteredData.length === 0) return;
+    const finalTim =
+      selectedPenjahit ||
+      currentUser?.nama ||
+      (jahitWorkers.length > 0 ? jahitWorkers[0].nama : 'Tim Jahit 1');
+
+    try {
+      setLoading(true);
+      const tglToday = new Date().toISOString().slice(0, 10);
+      const ids = filteredData.map((d) => d.id);
+
+      const payload = {
+        ids,
+        tglSerahJahit: tglToday,
+        timJahit: finalTim,
+        tarifJahit: 3500,
+        catatanJahit: `Diambil sekaligus oleh ${finalTim}`,
+      };
+
+      await api.serahJahit(payload);
+
+      setAntreanList((prev) => {
+        const next = prev.map((ant) => {
+          if (ids.includes(ant.id)) {
+            const matchedProd = products.find((p) => p.sku === ant.sku);
+            const tarif =
+              Number(ant.tarifJahit) ||
+              Number(matchedProd?.hargaJahit || matchedProd?.tarifJahit) ||
+              3500;
+            return {
+              ...ant,
+              status: 'Proses Jahit',
+              tglSerahJahit: tglToday,
+              timJahit: finalTim,
+              tarifJahit: tarif,
+              totalBiayaJahit: (Number(ant.qty) || 1) * tarif,
+              catatanJahit: `Diambil sekaligus oleh ${finalTim}`,
+            };
+          }
+          return ant;
+        });
+        try {
+          localStorage.setItem('konveksi_antrean_list', JSON.stringify(next));
+        } catch (_) {}
+        return next;
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Semua Jahitan Berhasil Diambil!',
+        text: `${ids.length} batch SPK berhasil diambil oleh ${finalTim} dan masuk ke pengerjaan jahit.`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+      setActiveTab('proses');
+    } catch (err) {
+      Swal.error('Gagal Mengambil', err.message || 'Terjadi kesalahan sistem.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Buka Modal Approval Terima / Atur Penjahit
   const handleOpenApproval = (item) => {
@@ -281,6 +470,28 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
       {/* 2. STATS KPI CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div
+          onClick={() => setActiveTab('ambil')}
+          className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+            activeTab === 'ambil'
+              ? 'bg-purple-50/90 border-purple-400 ring-2 ring-purple-400/40 shadow-xs'
+              : 'bg-white border-slate-200/80 hover:border-purple-300 shadow-xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-purple-600 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
+              Siap Diambil (Cutting)
+            </span>
+            <Scissors className="w-4 h-4 text-purple-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 leading-tight">
+            {stats.ambilCount}
+          </div>
+          <p className="text-[11px] text-purple-700 font-semibold mt-0.5">
+            {stats.totalPcsAmbil.toLocaleString('id-ID')} Pcs Siap Dijahit
+          </p>
+        </div>
+
+        <div
           onClick={() => setActiveTab('proses')}
           className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
             activeTab === 'proses'
@@ -345,27 +556,33 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
             Diserahkan ke QC / Finishing
           </p>
         </div>
-
-        <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Penjahit Terdaftar
-            </span>
-            <UserCheck className="w-4 h-4 text-purple-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 leading-tight">
-            {jahitWorkers.length}
-          </div>
-          <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
-            Tenaga Jahit Aktif
-          </p>
-        </div>
       </div>
 
       {/* 3. TABS NAVIGASI WORKFLOW & PENCARIAN */}
       <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* TAB BUTTONS */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          <button
+            onClick={() => setActiveTab('ambil')}
+            className={`px-3.5 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'ambil'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs'
+                : 'bg-purple-50 text-purple-900 hover:bg-purple-100 border border-purple-200'
+            }`}
+          >
+            <Scissors className="w-4 h-4" />
+            <span>Siap Diambil (Cutting)</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                activeTab === 'ambil'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-purple-200 text-purple-900'
+              }`}
+            >
+              {stats.ambilCount}
+            </span>
+          </button>
+
           <button
             onClick={() => setActiveTab('proses')}
             className={`px-3.5 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
@@ -418,16 +635,55 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
           </button>
         </div>
 
-        {/* SEARCH BOX */}
-        <div className="relative w-full md:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Cari No Antrian / SKU / Penjahit..."
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white text-slate-900 focus:outline-none focus:border-purple-600"
-          />
+        {/* CONTROLS: PILIH PENJAHIT & SEARCH */}
+        <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+          <div className="flex items-center gap-1.5 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+            <UserCheck className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+            <span className="text-[11px] font-bold text-purple-900 whitespace-nowrap">
+              Penjahit:
+            </span>
+            <select
+              value={selectedPenjahit}
+              onChange={(e) => setSelectedPenjahit(e.target.value)}
+              className="bg-white border border-purple-300 rounded px-2 py-0.5 text-xs font-bold text-purple-950 focus:outline-none cursor-pointer"
+            >
+              {currentUser?.nama && (
+                <option value={currentUser.nama}>{currentUser.nama} (Saya)</option>
+              )}
+              {jahitWorkers.map((w) => (
+                <option key={w.id || w.nama} value={w.nama}>
+                  {w.nama}
+                </option>
+              ))}
+              {!currentUser?.nama && jahitWorkers.length === 0 && (
+                <option value="Tim Jahit 1">Tim Jahit 1</option>
+              )}
+            </select>
+          </div>
+
+          {activeTab === 'ambil' && filteredData.length > 1 && (
+            <button
+              type="button"
+              onClick={handleAmbilSemua}
+              disabled={loading}
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <span>Ambil Semua ({filteredData.length})</span>
+            </button>
+          )}
+
+          {/* SEARCH BOX */}
+          <div className="relative w-full md:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari No Antrian / SKU..."
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white text-slate-900 focus:outline-none focus:border-purple-600"
+            />
+          </div>
         </div>
       </div>
 
@@ -453,10 +709,14 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
                   <td colSpan="8" className="py-12 text-center text-slate-400">
                     <Shirt className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                     <p className="font-bold text-xs text-slate-600">
-                      Tidak ada antrean jahit pada filter ini
+                      {activeTab === 'ambil'
+                        ? 'Tidak ada antrean dari cutting yang menunggu diambil'
+                        : 'Tidak ada antrean jahit pada filter ini'}
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      Semua order jahit telah selesai atau belum ada pekerjaan masuk dari cutting.
+                      {activeTab === 'ambil'
+                        ? 'Semua kain yang dipotong sudah diambil oleh penjahit atau belum ada SPK di proses cutting.'
+                        : 'Semua order jahit telah selesai atau belum ada pekerjaan masuk.'}
                     </p>
                   </td>
                 </tr>
@@ -474,7 +734,7 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
                     <tr
                       key={item.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isReturQc ? 'bg-rose-50/40' : ''
+                        isReturQc ? 'bg-rose-50/40' : activeTab === 'ambil' ? 'bg-purple-50/20' : ''
                       }`}
                     >
                       {/* NO */}
@@ -522,14 +782,30 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
 
                       {/* NAMA PENJAHIT */}
                       <td className="py-2.5 px-3 border-r border-slate-200/60">
-                        <div className="font-bold text-slate-900 text-xs flex items-center gap-1">
-                          <UserCheck className="w-3 h-3 text-purple-600 shrink-0" />
-                          <span>{item.timJahit || '- Belum Ditugaskan -'}</span>
-                        </div>
-                        {item.tglSerahJahit && (
-                          <div className="text-[10px] text-slate-400 font-normal mt-0.5">
-                            Mulai: {item.tglSerahJahit}
+                        {activeTab === 'ambil' ? (
+                          <div className="flex flex-col">
+                            <span className="text-[10.5px] text-purple-700 font-bold flex items-center gap-1">
+                              <UserCheck className="w-3 h-3 text-purple-600 shrink-0" />
+                              <span>Diambil: {selectedPenjahit || currentUser?.nama || 'Penjahit'}</span>
+                            </span>
+                            {item.timCutting && (
+                              <span className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                Potong: {item.timCutting}
+                              </span>
+                            )}
                           </div>
+                        ) : (
+                          <>
+                            <div className="font-bold text-slate-900 text-xs flex items-center gap-1">
+                              <UserCheck className="w-3 h-3 text-purple-600 shrink-0" />
+                              <span>{item.timJahit || '- Belum Ditugaskan -'}</span>
+                            </div>
+                            {item.tglSerahJahit && (
+                              <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                                Mulai: {item.tglSerahJahit}
+                              </div>
+                            )}
+                          </>
                         )}
                       </td>
 
@@ -547,22 +823,37 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
                       <td className="py-2.5 px-3 text-center border-r border-slate-200/60">
                         <span
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
-                            isReturQc
+                            activeTab === 'ambil'
+                              ? 'bg-amber-50 text-amber-800 border-amber-300'
+                              : isReturQc
                               ? 'bg-rose-100 text-rose-800 border-rose-300'
                               : item.status === 'Proses Jahit'
                               ? 'bg-purple-50 text-purple-700 border-purple-300'
                               : 'bg-emerald-50 text-emerald-700 border-emerald-300'
                           }`}
                         >
-                          {item.status}
+                          {activeTab === 'ambil' ? 'Siap Diambil' : item.status}
                         </span>
                       </td>
 
                       {/* AKSI */}
                       <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          {/* ATUR / UBAH PENJAHIT */}
-                          {item.status === 'Proses Jahit' && (
+                          {/* TOMBOL AMBIL DI TAB SIAP DIAMBIL */}
+                          {activeTab === 'ambil' && (
+                            <button
+                              onClick={() => handleAmbilJahit(item)}
+                              disabled={loading}
+                              className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+                              title="Ambil pekerjaan ini langsung untuk dijahit"
+                            >
+                              <Check className="w-4 h-4 stroke-[3]" />
+                              <span>Ambil</span>
+                            </button>
+                          )}
+
+                          {/* ATUR / UBAH PENJAHIT & SERAH QC PADA TAB PROSES JAHIT */}
+                          {activeTab !== 'ambil' && item.status === 'Proses Jahit' && (
                             <>
                               <button
                                 onClick={() => handleOpenApproval(item)}
@@ -593,6 +884,11 @@ export default function DivisiJahit({ antreanList = [], setAntreanList, products
                           </button>
                         </div>
                       </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
                     </tr>
                   );
                 })

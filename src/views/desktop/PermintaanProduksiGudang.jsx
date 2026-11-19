@@ -14,10 +14,15 @@ import {
   Trash2,
   AlertTriangle,
   ArrowRight,
+  ArrowLeft,
+  X,
   ShieldCheck,
   Check,
   Filter,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Hash,
+  Tag,
+  Boxes
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -641,243 +646,335 @@ export default function PermintaanProduksiGudang({
         </div>
       </div>
 
-      {/* 5. MODAL FORM: INPUT PERMINTAAN PRODUKSI BARU OLEH ADMIN GUDANG */}
+      {/* 5. MODAL FORM: INPUT PERMINTAAN PRODUKSI BARU OLEH ADMIN GUDANG (FULL SCREEN DESKTOP) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Modal Header */}
-            <div className="bg-[#0b1329] text-white px-4 py-3 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Warehouse className="w-5 h-5 text-amber-400" />
-                <div>
-                  <h3 className="font-black text-sm text-white">
-                    Form Permintaan Produksi Baru (Gudang)
-                  </h3>
-                  <p className="text-[10px] text-slate-400">
-                    Otomatis mendaftarkan batch baru ke antrean kerja pabrik
-                  </p>
-                </div>
-              </div>
+        <div className="fixed inset-0 z-50 bg-[#f1f5f9] flex flex-col overflow-hidden animate-fade-in font-sans">
+          {/* Header Full Screen */}
+          <div className="bg-[#0b1329] text-white px-4 py-2.5 flex items-center justify-between shadow-sm shrink-0 border-b border-slate-800">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all cursor-pointer border border-white/15 shadow-xs"
+                title="Kembali ke Daftar Permintaan"
               >
-                ✕
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Kembali</span>
               </button>
+              <div className="h-4 w-px bg-white/20 hidden sm:block"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                  <Warehouse className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white leading-tight">
+                    Form Permintaan Produksi Baru (Gudang)
+                  </h3>
+                  <p className="text-[10.5px] text-slate-400 leading-tight">
+                    Otomatis mendaftarkan batch baru ke antrean kerja pabrik (Cutting)
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Modal Body Form */}
-            <form onSubmit={handleSubmit} className="p-4 sm:p-5 overflow-y-auto space-y-3.5 text-xs">
-              {/* No Req & Tanggal */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    No. Permintaan (Otomatis)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.noAntrian}
-                    readOnly
-                    className="w-full h-8 px-2.5 rounded-lg border border-slate-300 bg-slate-100 font-mono font-bold text-slate-800 text-xs"
-                  />
-                </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors border border-white/15"
+                title="Tutup Form"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tanggal Permintaan *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.tglMasuk}
-                    onChange={(e) => setFormData({ ...formData, tglMasuk: e.target.value })}
-                    className="w-full h-8 px-2.5 rounded-lg border border-slate-300 bg-white font-mono text-slate-800 text-xs focus:outline-none focus:border-amber-600"
-                  />
-                </div>
-              </div>
+          {/* Body Form Full Screen (Scrollable, 2 Kolom Grid Responsif Luas dan Rapi) */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
+            <form onSubmit={handleSubmit} className="max-w-6xl mx-auto space-y-4 text-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                
+                {/* KOLOM KIRI (7/12): Registrasi & Pemilihan Produk */}
+                <div className="lg:col-span-7 space-y-4">
+                  {/* Card 1: Informasi Dokumen & Registrasi */}
+                  <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                        <Hash className="w-3.5 h-3.5 text-amber-600" />
+                        Informasi Dokumen & Registrasi
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold">Gudang ➔ Produksi</span>
+                    </div>
 
-              {/* Sumber & No Reff */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tujuan Permintaan *
-                  </label>
-                  <select
-                    value={formData.sumberPermintaan}
-                    onChange={(e) => setFormData({ ...formData, sumberPermintaan: e.target.value })}
-                    className="w-full h-8 px-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:border-amber-600 cursor-pointer"
-                  >
-                    <option value="Stok Gudang">Restock Gudang Jadi</option>
-                    <option value="Pesanan Pelanggan">Pesanan Pelanggan (PO)</option>
-                    <option value="Sample / Uji Model">Sample / Uji Coba Model</option>
-                    <option value="Toko / Marketplace">Persediaan Toko / Marketplace</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    No. Referensi / PO
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="misal: PO-CLIENT-08 atau RESTOCK-BULANAN"
-                    value={formData.noReff}
-                    onChange={(e) => setFormData({ ...formData, noReff: e.target.value })}
-                    className="w-full h-8 px-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:border-amber-600"
-                  />
-                </div>
-              </div>
-
-              {/* Pilih Model Produk */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Pilih Model Produk Konveksi *
-                </label>
-                <select
-                  required
-                  value={formData.selectedProductSku}
-                  onChange={(e) => setFormData({ ...formData, selectedProductSku: e.target.value })}
-                  className="w-full h-9 px-2.5 rounded-lg border border-slate-300 bg-white text-slate-900 text-xs font-semibold focus:outline-none focus:border-amber-600 cursor-pointer"
-                >
-                  <option value="">-- Pilih Produk / SKU --</option>
-                  {products.map((p) => (
-                    <option key={p.id || p.sku} value={p.sku}>
-                      {p.sku} - {p.namaProduk || p.nama} ({p.varian || 'Polos'} - {p.ukuran || 'All Size'}) [Stok: {p.stok || 0} Pcs]
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Preview Produk yang dipilih */}
-              {formData.selectedProductSku && (
-                (() => {
-                  const curr = products.find((p) => p.sku === formData.selectedProductSku);
-                  if (!curr) return null;
-                  const stokVal = Number(curr.stok || 0);
-
-                  return (
-                    <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex items-center justify-between text-xs">
-                      <div className="space-y-0.5">
-                        <div className="font-bold text-amber-950 flex items-center gap-1.5">
-                          <Package className="w-3.5 h-3.5 text-amber-700" />
-                          <span>{curr.namaProduk || curr.nama}</span>
-                        </div>
-                        <div className="text-[11px] text-amber-800 flex items-center gap-2">
-                          <span>Kategori: {curr.kategori || '-'}</span>
-                          <span>•</span>
-                          <span>Warna: {curr.varian || '-'}</span>
-                          <span>•</span>
-                          <span>Size: {curr.ukuran || '-'}</span>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          No. Permintaan (Otomatis)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.noAntrian}
+                          readOnly
+                          className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-slate-50 font-mono font-bold text-amber-800 text-xs shadow-2xs"
+                        />
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-500 block">Sisa Stok Gudang Saat Ini:</span>
-                        <span
-                          className={`font-mono font-black text-sm px-2 py-0.5 rounded-md inline-block ${
-                            stokVal > 20
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : stokVal > 0
-                              ? 'bg-amber-200 text-amber-900'
-                              : 'bg-rose-100 text-rose-800 border border-rose-300'
-                          }`}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Tanggal Permintaan <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={formData.tglMasuk}
+                          onChange={(e) => setFormData({ ...formData, tglMasuk: e.target.value })}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white font-mono text-slate-800 text-xs focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 shadow-2xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Tujuan Permintaan <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={formData.sumberPermintaan}
+                          onChange={(e) => setFormData({ ...formData, sumberPermintaan: e.target.value })}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs font-semibold focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 shadow-2xs cursor-pointer"
                         >
-                          {stokVal} Pcs
-                        </span>
+                          <option value="Stok Gudang">Restock Gudang Jadi</option>
+                          <option value="Pesanan Pelanggan">Pesanan Pelanggan (PO)</option>
+                          <option value="Sample / Uji Model">Sample / Uji Coba Model</option>
+                          <option value="Toko / Marketplace">Persediaan Toko / Marketplace</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          No. Referensi / PO
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="misal: PO-CLIENT-08 atau RESTOCK-BULANAN"
+                          value={formData.noReff}
+                          onChange={(e) => setFormData({ ...formData, noReff: e.target.value })}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 shadow-2xs"
+                        />
                       </div>
                     </div>
-                  );
-                })()
-              )}
+                  </div>
 
-              {/* Target Kuantitas & Prioritas */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Target Kuantitas (Pcs) *
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      value={formData.qty}
-                      onChange={(e) => setFormData({ ...formData, qty: Math.max(1, Number(e.target.value)) })}
-                      className="w-full h-8 px-2.5 rounded-lg border border-slate-300 bg-white font-mono font-bold text-slate-900 text-xs focus:outline-none focus:border-amber-600"
-                    />
-                    {/* Shortcut Tombol Cepat */}
-                    {[24, 50, 100].map((quick) => (
-                      <button
-                        key={quick}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, qty: quick })}
-                        className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-bold text-slate-700 cursor-pointer"
+                  {/* Card 2: Pemilihan Model Produk Konveksi */}
+                  <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-amber-600" />
+                        Pilih Model Produk Konveksi
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-bold text-[10px] border border-amber-200">
+                        {products.length} SKU Katalog
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Pilih SKU & Nama Produk <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        required
+                        value={formData.selectedProductSku}
+                        onChange={(e) => setFormData({ ...formData, selectedProductSku: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-slate-900 text-xs font-bold focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 shadow-2xs cursor-pointer"
                       >
-                        +{quick}
-                      </button>
-                    ))}
+                        <option value="">-- Pilih Produk / SKU --</option>
+                        {products.map((p) => (
+                          <option key={p.id || p.sku} value={p.sku}>
+                            {p.sku} - {p.namaProduk || p.nama} ({p.varian || 'Polos'} - {p.ukuran || 'All Size'}) [Stok: {p.stok || 0} Pcs]
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Preview Detail Produk Terpilih */}
+                    {formData.selectedProductSku && (
+                      (() => {
+                        const curr = products.find((p) => p.sku === formData.selectedProductSku);
+                        if (!curr) return null;
+                        const stokVal = Number(curr.stok || 0);
+
+                        return (
+                          <div className="bg-amber-50/80 border border-amber-300/80 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-black text-xs text-amber-950 bg-white px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
+                                  {curr.sku}
+                                </span>
+                                <span className="font-extrabold text-sm text-slate-900">
+                                  {curr.namaProduk || curr.nama}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-600 flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-slate-700">Kategori: <b>{curr.kategori || '-'}</b></span>
+                                <span>•</span>
+                                <span>Warna: <b className="text-slate-800">{curr.varian || '-'}</b></span>
+                                <span>•</span>
+                                <span>Ukuran: <b className="text-slate-800">{curr.ukuran || '-'}</b></span>
+                                {curr.skuBahan && (
+                                  <>
+                                    <span>•</span>
+                                    <span>Bahan: <b className="text-amber-800">{curr.skuBahan}</b></span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="sm:text-right shrink-0 bg-white/80 p-2 rounded-lg border border-amber-200">
+                              <span className="text-[10px] text-slate-500 font-bold block">Sisa Stok Gudang:</span>
+                              <span
+                                className={`font-mono font-black text-sm px-2.5 py-0.5 rounded-md inline-block mt-0.5 ${
+                                  stokVal > 20
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : stokVal > 0
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : 'bg-rose-100 text-rose-800 border border-rose-300'
+                                }`}
+                              >
+                                {stokVal} Pcs
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tingkat Prioritas Pabrik *
-                  </label>
-                  <select
-                    value={formData.prioritas}
-                    onChange={(e) => setFormData({ ...formData, prioritas: e.target.value })}
-                    className="w-full h-8 px-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:border-amber-600 cursor-pointer font-bold"
-                  >
-                    <option value="Normal">Normal</option>
-                    <option value="Urgent">🔥 Urgent (Prioritas Tinggi)</option>
-                    <option value="Low">Low (Bisa Santai)</option>
-                  </select>
+                {/* KOLOM KANAN (5/12): Target Produksi, Prioritas & SOP */}
+                <div className="lg:col-span-5 space-y-4">
+                  {/* Card 3: Target Kuantitas & Parameter Waktu */}
+                  <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                        <Boxes className="w-3.5 h-3.5 text-amber-600" />
+                        Target Kuantitas & Prioritas Pabrik
+                      </span>
+                      <span className="text-[10px] text-rose-500 font-bold">Wajib Diisi</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Target Kuantitas (Pcs) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={formData.qty}
+                          onChange={(e) => setFormData({ ...formData, qty: Math.max(1, Number(e.target.value)) })}
+                          className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-mono font-black text-slate-900 text-sm focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 shadow-2xs"
+                        />
+                        {/* Tombol Preset Tambah Cepat */}
+                        {[24, 50, 100, 200].map((quick) => (
+                          <button
+                            key={quick}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, qty: quick })}
+                            className={`h-10 px-2.5 rounded-lg border text-xs font-extrabold cursor-pointer transition-all shrink-0 ${
+                              Number(formData.qty) === quick
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {quick}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Tingkat Prioritas Pabrik <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={formData.prioritas}
+                          onChange={(e) => setFormData({ ...formData, prioritas: e.target.value })}
+                          className={`w-full h-9 px-3 rounded-lg border text-xs font-bold focus:outline-none focus:border-amber-600 cursor-pointer shadow-2xs ${
+                            formData.prioritas === 'Urgent'
+                              ? 'bg-rose-50 text-rose-800 border-rose-300'
+                              : 'bg-white text-slate-800 border-slate-300'
+                          }`}
+                        >
+                          <option value="Normal">Normal</option>
+                          <option value="Urgent">🔥 Urgent (Prioritas Tinggi)</option>
+                          <option value="Low">Low (Bisa Santai)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                          <span>Target Tanggal Selesai</span>
+                          <span className="text-[10px] text-slate-400 font-normal">Deadline</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.deadline}
+                          onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white font-mono text-slate-800 text-xs focus:outline-none focus:border-amber-600 shadow-2xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Catatan Khusus & SOP */}
+                  <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-amber-600" />
+                        Catatan SOP / Instruksi untuk Pabrik
+                      </span>
+                    </div>
+
+                    <div>
+                      <textarea
+                        rows="3"
+                        placeholder="mis: kemasan polybag satuan, sablon dada warna emas, jahitan rantai rapi..."
+                        value={formData.catatan}
+                        onChange={(e) => setFormData({ ...formData, catatan: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:border-amber-600 shadow-2xs resize-none"
+                      />
+                    </div>
+
+                    {/* Ringkasan Ringkas */}
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="text-[11px] font-bold text-slate-700">
+                          Siap didaftarkan ke antrean kerja Divisi Cutting
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-black text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                        {formData.qty} Pcs
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Deadline Target Selesai */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
-                  <span>Target Tanggal Selesai (Deadline Masuk Gudang)</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Opsional</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className="w-full h-8 px-2.5 rounded-lg border border-slate-300 bg-white font-mono text-slate-800 text-xs focus:outline-none focus:border-amber-600"
-                />
-              </div>
-
-              {/* Catatan Khusus untuk Tim Produksi */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Catatan SOP / Instruksi untuk Pabrik
-                </label>
-                <textarea
-                  rows="2"
-                  placeholder="mis: kemasan polybag satuan, sablon dada warna emas, dll..."
-                  value={formData.catatan}
-                  onChange={(e) => setFormData({ ...formData, catatan: e.target.value })}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:border-amber-600"
-                />
-              </div>
-
-              {/* Footer Tombol Simpan */}
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200">
+              {/* Action Buttons Bottom Bar */}
+              <div className="pt-3 pb-6 flex items-center justify-end gap-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-bold cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer shadow-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95"
                 >
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  <Check className="w-4 h-4 stroke-[3]" />
                   <span>Kirim ke Pabrik Produksi</span>
                 </button>
               </div>

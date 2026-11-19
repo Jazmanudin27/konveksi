@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shirt, Bell, Megaphone, LogOut, Monitor, ShieldCheck, Warehouse } from 'lucide-react';
+import { Shirt, Bell, Megaphone, LogOut, Monitor, ShieldCheck, Warehouse, Scissors } from 'lucide-react';
 import { USER_ROLES } from '../../constants/userRoles';
 
 export default function MobileHeader({
@@ -14,18 +14,27 @@ export default function MobileHeader({
 }) {
   const displayCount = notificationCount > 0 ? notificationCount : activeUrgentCount;
   const isGudang = userRole === 'gudang';
+  const isCutting = userRole === 'cutting';
   const roleCfg = USER_ROLES[userRole] || USER_ROLES.superadmin;
-  const roleTitle = roleCfg?.title || (isGudang ? 'Admin Gudang' : 'Super Admin');
+  const roleTitle = roleCfg?.title || (isGudang ? 'Admin Gudang' : isCutting ? 'Admin Cutting' : 'Super Admin');
+
+  const headerGradient = isGudang
+    ? 'from-amber-700 via-orange-700 to-amber-900 border-amber-900/40'
+    : isCutting
+    ? 'from-[#0f172a] via-[#1e3a8a] to-[#2563eb] border-blue-900/40'
+    : 'from-[#064e3b] via-[#054338] to-[#04362d] border-emerald-900/40';
 
   return (
-    <header className="bg-gradient-to-b from-[#064e3b] via-[#054338] to-[#04362d] text-white px-4 pt-3.5 pb-6 rounded-b-[2rem] sm:rounded-b-[2.5rem] shadow-lg border-b border-emerald-900/40 select-none relative z-10">
+    <header className={`bg-gradient-to-b ${headerGradient} text-white px-4 pt-3.5 pb-6 rounded-b-[2rem] sm:rounded-b-[2.5rem] shadow-lg border-b select-none relative z-10`}>
       <div className="flex items-center justify-between">
         {/* Logo & Judul Brand Konveksi */}
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-11 h-11 rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
-            <div className="w-full h-full rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+            <div className="w-full h-full rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
               {isGudang ? (
-                <Warehouse className="w-5 h-5 text-[#064e3b]" />
+                <Warehouse className="w-5 h-5 text-amber-600" />
+              ) : isCutting ? (
+                <Scissors className="w-5 h-5 text-blue-600 stroke-[2.5]" />
               ) : (
                 <Shirt className="w-5 h-5 text-[#064e3b]" />
               )}
@@ -34,17 +43,19 @@ export default function MobileHeader({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="font-black text-sm sm:text-base tracking-tight text-white leading-tight truncate">
-                {isGudang ? 'Gudang Jadi' : 'Ruang Konveksi'}{' '}
-                <span className="font-medium italic text-emerald-300">Mobile</span>
+                {isGudang ? 'Gudang Jadi' : isCutting ? 'Divisi Cutting' : 'Ruang Konveksi'}{' '}
+                <span className={`font-medium italic ${isCutting ? 'text-blue-300' : isGudang ? 'text-amber-200' : 'text-emerald-300'}`}>Mobile</span>
               </h1>
             </div>
             <div className="flex items-center gap-1 mt-0.5">
               <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider border truncate ${
                 isGudang
                   ? 'bg-amber-500/25 text-amber-200 border-amber-400/40'
+                  : isCutting
+                  ? 'bg-blue-500/30 text-blue-100 border-blue-300/40'
                   : 'bg-emerald-800/80 text-emerald-200 border-emerald-600/40'
               }`}>
-                {isGudang ? 'SPK & MUTASI GUDANG' : (currentUser?.nama || roleTitle)}
+                {isGudang ? 'SPK & MUTASI GUDANG' : isCutting ? 'ADMIN CUTTING • POLA & POTONG' : (currentUser?.nama || roleTitle)}
               </span>
             </div>
           </div>

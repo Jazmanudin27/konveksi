@@ -31,7 +31,7 @@ import LanjutTahapModalMobile from './LanjutTahapModalMobile';
 import MobileNotificationModal from './MobileNotificationModal';
 
 // Helper deteksi dan resolusi route aktif dari hash URL browser
-function resolveMobileRouteFromHash(isGudang = false) {
+function resolveMobileRouteFromHash(isGudang = false, userRole = 'superadmin') {
   try {
     const hash = (typeof window !== 'undefined' ? window.location.hash : '')
       .replace('#', '')
@@ -43,7 +43,7 @@ function resolveMobileRouteFromHash(isGudang = false) {
       return { tab: 'antrean', sub: null };
     }
 
-    if (hash === 'antrean') return { tab: 'antrean', sub: null };
+    if (hash === 'antrean' || hash === 'divisi-cutting') return { tab: 'antrean', sub: null };
     if (hash === 'mutasi' || hash === 'mutasi-bahan' || hash === 'mutasi-gudang-jadi')
       return { tab: 'mutasi', sub: null };
     if (hash === 'products' || hash === 'produk') return { tab: 'produk', sub: null };
@@ -71,7 +71,11 @@ function resolveMobileRouteFromHash(isGudang = false) {
       }
     }
   } catch (_) {}
-  return isGudang ? { tab: 'antrean', sub: null } : { tab: 'home', sub: null };
+  return isGudang
+    ? { tab: 'antrean', sub: null }
+    : userRole === 'cutting'
+    ? { tab: 'antrean', sub: null }
+    : { tab: 'home', sub: null };
 }
 
 export default function MobileApp({
@@ -98,7 +102,7 @@ export default function MobileApp({
   const isGudang = userRole === 'gudang';
   // Tab Navigasi Aktif Mobile: 'home' | 'antrean' | 'mutasi' | 'produk' | 'menu'
   // Diinisialisasi langsung dari URL hash agar saat di-reload tetap di menu tersebut!
-  const [mobileRoute, setMobileRoute] = useState(() => resolveMobileRouteFromHash(isGudang));
+  const [mobileRoute, setMobileRoute] = useState(() => resolveMobileRouteFromHash(isGudang, userRole));
   const mobileTab = isGudang
     ? (mobileRoute.tab === 'mutasi' ? 'mutasi' : 'antrean')
     : mobileRoute.tab;
@@ -124,7 +128,7 @@ export default function MobileApp({
         else if (sub === 'pembayaran-upah') targetHash = 'pembayaran-upah';
         else if (sub === 'kasbon') targetHash = 'kasbon';
       } else {
-        if (tab === 'antrean') targetHash = 'antrean';
+        if (tab === 'antrean') targetHash = userRole === 'cutting' ? 'divisi-cutting' : 'antrean';
         else if (tab === 'mutasi') targetHash = 'mutasi';
         else if (tab === 'produk') targetHash = 'products';
         else if (tab === 'home') targetHash = 'dashboard';
@@ -143,7 +147,7 @@ export default function MobileApp({
   // Sinkronisasi event URL Hash (tombol browser Back / Forward / Reload)
   useEffect(() => {
     const handleHash = () => {
-      const route = resolveMobileRouteFromHash(isGudang);
+      const route = resolveMobileRouteFromHash(isGudang, userRole);
       setMobileRoute(route);
     };
 
@@ -162,7 +166,7 @@ export default function MobileApp({
           else if (activeSubView === 'laporan') targetHash = 'laporan-stok-gudang';
           else if (activeSubView === 'pembayaran-upah') targetHash = 'pembayaran-upah';
           else if (activeSubView === 'kasbon') targetHash = 'kasbon';
-        } else if (mobileTab === 'antrean') targetHash = 'antrean';
+        } else if (mobileTab === 'antrean') targetHash = userRole === 'cutting' ? 'divisi-cutting' : 'antrean';
         else if (mobileTab === 'mutasi') targetHash = 'mutasi';
         else if (mobileTab === 'produk') targetHash = 'products';
       }
@@ -173,7 +177,7 @@ export default function MobileApp({
     } catch (_) {}
 
     return () => window.removeEventListener('hashchange', handleHash);
-  }, [isGudang, mobileTab, activeSubView]);
+  }, [isGudang, userRole, mobileTab, activeSubView]);
 
   // State Modal Drawer, Tambah Antrean & Pusat Notifikasi
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -426,6 +430,7 @@ export default function MobileApp({
                   onOpenAddAntrean={() => setIsAddAntreanOpen(true)}
                   onNextStatus={handleOpenNextStatus}
                   isGudang={isGudang}
+                  userRole={userRole}
                 />
               </div>
             )}

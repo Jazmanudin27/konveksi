@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Scissors, ChevronRight, Share2, Boxes } from 'lucide-react';
+import { Search, Plus, Scissors, ChevronRight, Share2, Boxes, Shirt } from 'lucide-react';
 import ShareTrackingModal from '../../components/common/ShareTrackingModal';
 
 export default function AntreanMobile({
@@ -7,9 +7,11 @@ export default function AntreanMobile({
   onOpenAddAntrean,
   onNextStatus,
   isGudang = false,
+  userRole = 'superadmin',
 }) {
+  const isCutting = userRole === 'cutting';
   const [antreanSearch, setAntreanSearch] = useState('');
-  const [antreanFilterStatus, setAntreanFilterStatus] = useState('SEMUA');
+  const [antreanFilterStatus, setAntreanFilterStatus] = useState(isCutting ? 'Menunggu Cutting' : 'SEMUA');
   const [shareItem, setShareItem] = useState(null);
 
   const normalizedList = useMemo(() => {
@@ -130,6 +132,13 @@ export default function AntreanMobile({
         { key: 'AKTIF', label: 'Sedang Dikerjakan', count: Math.max(0, counts.aktif - counts.tunggu) },
         { key: 'Selesai Gudang', label: 'Siap Gudang', count: counts.selesai },
       ]
+    : isCutting
+    ? [
+        { key: 'Menunggu Cutting', label: 'Perlu Approval', count: counts.tunggu },
+        { key: 'Proses Cutting', label: 'Sedang Cutting', count: counts.cutting },
+        { key: 'Proses Jahit', label: 'Serah Jahit', count: counts.jahit },
+        { key: 'SEMUA', label: 'Semua Antrean', count: counts.total },
+      ]
     : [
         { key: 'SEMUA', label: 'Semua', count: counts.total },
         { key: 'AKTIF', label: 'Aktif', count: counts.aktif },
@@ -143,7 +152,7 @@ export default function AntreanMobile({
 
   return (
     <div className="space-y-3 pb-6">
-      {/* Banner Khusus SPK untuk Admin Gudang (Tanpa tombol Buat SPK di header) */}
+      {/* Banner Khusus SPK untuk Admin Gudang */}
       {isGudang && (
         <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white rounded-2xl p-3 shadow-sm border border-amber-500/40">
           <div>
@@ -157,16 +166,50 @@ export default function AntreanMobile({
         </div>
       )}
 
+      {/* Banner Khusus Divisi Cutting */}
+      {isCutting && (
+        <div className="bg-gradient-to-r from-[#0f172a] via-[#1e3a8a] to-[#2563eb] text-white rounded-2xl p-3.5 shadow-sm border border-blue-500/40 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-blue-200 shrink-0">
+                <Scissors className="w-4 h-4 stroke-[2.5]" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black tracking-tight leading-tight">
+                  Divisi Cutting & Pola Kain
+                </h2>
+                <p className="text-[10px] text-blue-100 font-medium">
+                  Pemotongan pola bahan & serah terima ke penjahit
+                </p>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-blue-400/30 text-blue-100 text-[10px] font-black border border-blue-300/30 shrink-0">
+              {counts.tunggu} Siap Potong
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Search Bar Full Width */}
       <div className="relative">
         <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
         <input
           type="text"
-          placeholder={isGudang ? "Cari No SPK, SKU, model produk..." : "Cari no antrean / SKU / nama..."}
+          placeholder={
+            isGudang
+              ? "Cari No SPK, SKU, model produk..."
+              : isCutting
+              ? "Cari no SPK / antrean, SKU, bahan..."
+              : "Cari no antrean / SKU / nama..."
+          }
           value={antreanSearch}
           onChange={(e) => setAntreanSearch(e.target.value)}
           className={`w-full bg-white pl-9 pr-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 ${
-            isGudang ? 'focus:ring-amber-500' : 'focus:ring-[#064e3b]'
+            isGudang
+              ? 'focus:ring-amber-500'
+              : isCutting
+              ? 'focus:ring-blue-500'
+              : 'focus:ring-[#064e3b]'
           }`}
         />
       </div>
@@ -181,7 +224,9 @@ export default function AntreanMobile({
               onClick={() => setAntreanFilterStatus(tab.key)}
               className={`px-3 py-1 rounded-full whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs ${
                 isSelected
-                  ? 'bg-[#064e3b] text-white shadow-xs font-extrabold'
+                  ? isCutting
+                    ? 'bg-blue-600 text-white shadow-xs font-extrabold'
+                    : 'bg-[#064e3b] text-white shadow-xs font-extrabold'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 font-bold'
               }`}
             >
@@ -202,63 +247,82 @@ export default function AntreanMobile({
 
       {/* List Kartu Antrean */}
       <div className="space-y-2.5">
-        {filteredAntrean.map((item) => (
-          <div key={item.id} className="bg-white p-3.5 rounded-3xl border border-slate-100 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  {item.noAntrian}
-                </span>
-                <span className="text-[9.5px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                  {item.sumberPermintaan || 'PO'}
-                </span>
-              </div>
-              {getStatusBadge(item.status)}
-            </div>
+        {filteredAntrean.map((item) => {
+          const isTungguCutting = item.status === 'Menunggu Cutting' || item.status === 'Draft';
+          const isSedangCutting = item.status === 'Proses Cutting';
 
-            <div>
-              <div className="font-extrabold text-xs text-slate-900 leading-snug">{item.namaProduk}</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">
-                SKU: <span className="font-mono text-slate-700 font-bold">{item.sku}</span> • {item.varian} ({item.ukuran})
-              </div>
-              {item.skuBahan && (
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  Bahan: {item.skuBahan}
+          return (
+            <div
+              key={item.id}
+              className={`bg-white p-3.5 rounded-3xl border shadow-xs space-y-2 transition-all ${
+                isTungguCutting
+                  ? 'border-blue-200 border-l-4 border-l-blue-600'
+                  : isSedangCutting
+                  ? 'border-purple-200 border-l-4 border-l-purple-600'
+                  : 'border-slate-100'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                    isTungguCutting
+                      ? 'text-blue-800 bg-blue-50 border-blue-200'
+                      : isSedangCutting
+                      ? 'text-purple-800 bg-purple-50 border-purple-200'
+                      : 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                  }`}>
+                    {item.noAntrian}
+                  </span>
+                  <span className="text-[9.5px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {item.sumberPermintaan || 'PO'}
+                  </span>
                 </div>
-              )}
+                {getStatusBadge(item.status)}
+              </div>
 
-              {/* Rincian Kebutuhan Bahan Baku per Pcs yang Diinput Gudang */}
-              {Array.isArray(item.kebutuhanBahan) && item.kebutuhanBahan.length > 0 && (
-                <div className="mt-2 p-2 bg-amber-50/80 rounded-xl border border-amber-200/80 text-[10px] space-y-1">
-                  <div className="font-black text-amber-950 flex items-center gap-1 text-[10px]">
-                    <Boxes className="w-3 h-3 text-amber-700" />
-                    <span>Kebutuhan Bahan (Per Pcs & Total {item.qty} Pcs):</span>
-                  </div>
-                  <div className="space-y-0.5 divide-y divide-amber-200/50">
-                    {item.kebutuhanBahan.map((b, bIdx) => {
-                      const total = b.totalKebutuhan || Number(((Number(b.qtyPerPcs) || 0) * (Number(item.qty) || 0)).toFixed(2));
-                      return (
-                        <div key={bIdx} className="flex items-center justify-between pt-0.5 text-slate-700">
-                          <span className="font-bold text-slate-800 truncate max-w-[170px]">• {b.namaBahan}</span>
-                          <span className="font-mono text-slate-600 shrink-0">
-                            {b.qtyPerPcs} {b.satuan}/pc
-                            <span className="text-amber-900 font-black ml-1.5 bg-amber-100/90 px-1 py-0.2 rounded border border-amber-300/60">
-                              {total} {b.satuan}
-                            </span>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
               <div>
-                <span className="text-[10px] text-slate-400">Target: </span>
-                <span className="font-black text-slate-900">{item.qty || 50} Pcs</span>
+                <div className="font-extrabold text-xs text-slate-900 leading-snug">{item.namaProduk}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  SKU: <span className="font-mono text-slate-700 font-bold">{item.sku}</span> • {item.varian} ({item.ukuran})
+                </div>
+                {item.skuBahan && (
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Bahan: {item.skuBahan}
+                  </div>
+                )}
+
+                {/* Rincian Kebutuhan Bahan Baku per Pcs yang Diinput Gudang */}
+                {Array.isArray(item.kebutuhanBahan) && item.kebutuhanBahan.length > 0 && (
+                  <div className="mt-2 p-2 bg-amber-50/80 rounded-xl border border-amber-200/80 text-[10px] space-y-1">
+                    <div className="font-black text-amber-950 flex items-center gap-1 text-[10px]">
+                      <Boxes className="w-3 h-3 text-amber-700" />
+                      <span>Kebutuhan Bahan (Per Pcs & Total {item.qty} Pcs):</span>
+                    </div>
+                    <div className="space-y-0.5 divide-y divide-amber-200/50">
+                      {item.kebutuhanBahan.map((b, bIdx) => {
+                        const total = b.totalKebutuhan || Number(((Number(b.qtyPerPcs) || 0) * (Number(item.qty) || 0)).toFixed(2));
+                        return (
+                          <div key={bIdx} className="flex items-center justify-between pt-0.5 text-slate-700">
+                            <span className="font-bold text-slate-800 truncate max-w-[170px]">• {b.namaBahan}</span>
+                            <span className="font-mono text-slate-600 shrink-0">
+                              {b.qtyPerPcs} {b.satuan}/pc
+                              <span className="text-amber-900 font-black ml-1.5 bg-amber-100/90 px-1 py-0.2 rounded border border-amber-300/60">
+                                {total} {b.satuan}
+                              </span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400">Target: </span>
+                  <span className="font-black text-slate-900">{item.qty || 50} Pcs</span>
+                </div>
 
                 {/* Aksi Cepat Buka Modal Serah Tahapan SOP & Share Tracking */}
                 <div className="flex items-center gap-1.5">
@@ -275,11 +339,19 @@ export default function AntreanMobile({
                   {!isGudang && item.status !== 'Selesai Gudang' && item.status !== 'Selesai' && (
                     <button
                       onClick={() => onNextStatus(item)}
-                      className="text-[10.5px] font-bold text-white bg-[#064e3b] hover:bg-[#043e2f] active:scale-95 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                      className={`text-[10.5px] font-bold active:scale-95 px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer text-white ${
+                        isTungguCutting
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/20'
+                          : isSedangCutting
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/20'
+                          : 'bg-[#064e3b] hover:bg-[#043e2f]'
+                      }`}
                     >
+                      {isTungguCutting && <Scissors className="w-3 h-3 stroke-[2.5]" />}
+                      {isSedangCutting && <Shirt className="w-3 h-3 stroke-[2.5]" />}
                       <span>
-                        {(item.status === 'Menunggu Cutting' || item.status === 'Draft') && 'Proses Cutting'}
-                        {item.status === 'Proses Cutting' && 'Serahkan ke Penjahit'}
+                        {isTungguCutting && 'Proses Cutting'}
+                        {isSedangCutting && 'Serahkan ke Penjahit'}
                         {item.status === 'Proses Jahit' && 'Serah QC'}
                         {item.status === 'Proses QC' && 'Serah Finishing'}
                         {item.status === 'Proses Finishing' && 'Masuk Gudang'}
@@ -288,9 +360,10 @@ export default function AntreanMobile({
                     </button>
                   )}
                 </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {filteredAntrean.length === 0 && (
           <div className="bg-white p-6 rounded-3xl border border-dashed border-slate-300 text-center text-xs text-slate-400">

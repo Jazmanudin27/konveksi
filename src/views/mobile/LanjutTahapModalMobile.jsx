@@ -12,6 +12,9 @@ import {
   Plus,
   User,
   AlertCircle,
+  Boxes,
+  Coins,
+  CalendarDays,
 } from "lucide-react";
 import { api } from "../../services/api";
 
@@ -219,6 +222,47 @@ export default function LanjutTahapModalMobile({
   const qty = Number(item.qty ?? item.targetQty ?? 0);
   const todayStr = new Date().toISOString().slice(0, 10);
 
+  // Ekstrak alokasi bahan baku SPK
+  const bahanList = useMemo(() => {
+    if (!item.kebutuhanBahan) return [];
+    if (Array.isArray(item.kebutuhanBahan)) return item.kebutuhanBahan;
+    if (typeof item.kebutuhanBahan === 'string') {
+      try {
+        return JSON.parse(item.kebutuhanBahan);
+      } catch (_) {
+        return [];
+      }
+    }
+    return [];
+  }, [item.kebutuhanBahan]);
+
+  // Tema Visual per Tahap (Cutting Biru, Jahit Ungu, QC Emerald, Finishing Amber, Gudang Rose)
+  const isCuttingStage = currentStatus === "Menunggu Cutting" || currentStatus === "Draft";
+  const isJahitStage = currentStatus === "Proses Cutting";
+  const isQcStage = currentStatus === "Proses Jahit";
+  const isFinishingStage = currentStatus === "Proses QC";
+  const isGudangStage = currentStatus === "Proses Finishing";
+
+  const headerGradient = isCuttingStage
+    ? "from-[#0f172a] via-[#1e3a8a] to-[#2563eb]"
+    : isJahitStage
+    ? "from-[#0f172a] via-[#4c1d95] to-[#7c3aed]"
+    : isQcStage
+    ? "from-[#064e3b] via-[#046a52] to-[#0f766e]"
+    : isFinishingStage
+    ? "from-[#78350f] via-[#b45309] to-[#d97706]"
+    : "from-[#881337] via-[#be123c] to-[#e11d48]";
+
+  const submitButtonGradient = isCuttingStage
+    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/25"
+    : isJahitStage
+    ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/25"
+    : isQcStage
+    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/25"
+    : isFinishingStage
+    ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-amber-500/25"
+    : "bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 shadow-rose-500/25";
+
   // Match info produk untuk default ongkos potong
   const matchedProduct = useMemo(() => {
     return products.find((p) => p.sku === item.sku) || null;
@@ -396,63 +440,94 @@ export default function LanjutTahapModalMobile({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-xs text-xs animate-in fade-in duration-150">
       <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-emerald-100 overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header Modal Melengkung Emerald */}
-        <div className="px-5 py-4 bg-gradient-to-r from-[#064e3b] via-[#046a52] to-[#0f766e] text-white flex items-center justify-between shrink-0">
+        {/* Header Modal Melengkung dengan Warna Tema Tahapan */}
+        <div className={`px-5 py-4 bg-gradient-to-r ${headerGradient} text-white flex items-center justify-between shrink-0 shadow-sm`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-emerald-200 shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-white shadow-xs shrink-0">
               {currentStatus === "Menunggu Cutting" && (
-                <Scissors className="w-5 h-5" />
+                <Scissors className="w-5 h-5 stroke-[2.5]" />
               )}
               {currentStatus === "Proses Cutting" && (
-                <Shirt className="w-5 h-5" />
+                <Shirt className="w-5 h-5 stroke-[2.5]" />
               )}
               {currentStatus === "Proses Jahit" && (
-                <CheckCircle2 className="w-5 h-5" />
+                <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
               )}
               {currentStatus === "Proses QC" && (
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 stroke-[2.5]" />
               )}
               {currentStatus === "Proses Finishing" && (
-                <Warehouse className="w-5 h-5" />
+                <Warehouse className="w-5 h-5 stroke-[2.5]" />
               )}
             </div>
             <div>
-              <h3 className="text-sm font-extrabold tracking-wide">
-                {currentStatus === "Menunggu Cutting" &&
-                  "Mulai Proses Cutting (Pola Kain)"}
-                {currentStatus === "Proses Cutting" &&
-                  "Selesaikan Cutting & Serah ke Penjahit"}
-                {currentStatus === "Proses Jahit" &&
-                  "Serah ke Pemeriksaan QC (Tahap 4)"}
-                {currentStatus === "Proses QC" &&
-                  "Hasil QC & Serah Finishing (Tahap 5)"}
-                {currentStatus === "Proses Finishing" &&
-                  "Selesai & Masuk Gudang Jadi (Tahap 6)"}
-              </h3>
-              <p className="text-[10px] text-emerald-100/90 font-medium">
-                No: {item.noAntrian || `ANT-${item.id}`} • {item.namaProduk} (
-                {qty} Pcs)
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-black tracking-wide text-white">
+                  {currentStatus === "Menunggu Cutting" &&
+                    "Mulai Proses Cutting (Pola Kain)"}
+                  {currentStatus === "Proses Cutting" &&
+                    "Selesaikan Cutting & Serah ke Penjahit"}
+                  {currentStatus === "Proses Jahit" &&
+                    "Serah ke Pemeriksaan QC (Tahap 4)"}
+                  {currentStatus === "Proses QC" &&
+                    "Hasil QC & Serah Finishing (Tahap 5)"}
+                  {currentStatus === "Proses Finishing" &&
+                    "Selesai & Masuk Gudang Jadi (Tahap 6)"}
+                </h3>
+              </div>
+              <p className="text-[10.5px] text-white/80 font-mono mt-0.5">
+                {item.noAntrian || `ANT-${item.id}`} • Target: <span className="font-bold text-white">{qty} Pcs</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/20"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/20 shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Ringkasan Singkat Kartu Order */}
-        <div className="px-5 py-2.5 bg-emerald-50/60 border-b border-emerald-100 flex items-center justify-between text-[11px]">
-          <div>
-            <span className="text-slate-500">Model: </span>
-            <span className="font-bold text-slate-800">{item.namaProduk}</span>
-            <span className="text-slate-400 font-mono ml-1">({item.sku})</span>
+        {/* Ringkasan Singkat Kartu Order & Alokasi Bahan Baku SPK */}
+        <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200/80 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="font-mono font-black text-[10.5px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-800">
+                {item.sku}
+              </span>
+              <span className="font-black text-slate-900 truncate">{item.namaProduk}</span>
+              {(item.varian || item.ukuran) && (
+                <span className="text-[10px] text-slate-500 shrink-0">
+                  ({item.varian || '-'}/{item.ukuran || '-'})
+                </span>
+              )}
+            </div>
+            <div className="font-black text-xs text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs shrink-0">
+              {qty} Pcs
+            </div>
           </div>
-          <div className="font-bold text-[#064e3b] bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-2xs">
-            Volume: {qty} Pcs
-          </div>
+
+          {/* Rincian Resep Bahan Baku jika ada */}
+          {bahanList.length > 0 && (
+            <div className="pt-1 border-t border-slate-200/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <span className="text-[9.5px] font-bold text-slate-500 uppercase flex items-center gap-1 shrink-0">
+                <Boxes className="w-3 h-3 text-amber-600" />
+                <span>Bahan SPK:</span>
+              </span>
+              {bahanList.map((b, bIdx) => {
+                const total = b.totalKebutuhan || Number(((Number(b.qtyPerPcs) || 0) * qty).toFixed(2));
+                return (
+                  <span
+                    key={bIdx}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-200 text-[10px] font-bold whitespace-nowrap shrink-0"
+                  >
+                    <span>{b.namaBahan}:</span>
+                    <b className="text-amber-950 font-black">{total} {b.satuan}</b>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Body Form Bertahap */}
@@ -810,12 +885,17 @@ export default function LanjutTahapModalMobile({
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#064e3b] to-[#047857] hover:from-[#054338] hover:to-[#03694f] active:scale-95 text-white font-extrabold shadow-md shadow-emerald-950/20 cursor-pointer transition-all flex items-center gap-1.5"
+              className={`px-5 py-2 rounded-xl ${submitButtonGradient} active:scale-95 text-white font-extrabold shadow-md cursor-pointer transition-all flex items-center gap-1.5`}
             >
               {loading ? (
                 <span>Memproses...</span>
               ) : (
                 <>
+                  {isCuttingStage && <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  {isJahitStage && <Shirt className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  {isQcStage && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  {isFinishingStage && <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  {isGudangStage && <Warehouse className="w-3.5 h-3.5 stroke-[2.5]" />}
                   <span>
                     {currentStatus === "Menunggu Cutting" &&
                       "Mulai Proses Cutting"}

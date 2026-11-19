@@ -531,6 +531,8 @@ export default function App() {
               setAntreanList={setAntreanList}
               products={products}
               employees={employees}
+              currentUser={currentUser}
+              userRole={userRole}
             />
           )}
           {activeMenu === 'divisi-jahit' && (

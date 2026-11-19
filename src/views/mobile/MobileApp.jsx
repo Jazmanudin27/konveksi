@@ -507,6 +507,7 @@ export default function MobileApp({
           item={selectedNextStatusItem}
           employees={employees}
           products={products}
+          currentUser={currentUser}
           onClose={() => setSelectedNextStatusItem(null)}
           onSuccess={handleRefreshAntrean}
         />

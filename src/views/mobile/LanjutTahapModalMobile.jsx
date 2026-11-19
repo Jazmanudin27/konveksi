@@ -25,10 +25,13 @@ function RupiahInput({
   onChange,
   placeholder = "0",
   required = false,
+  disabled = false,
+  badge = null,
 }) {
   const displayValue = Number(value || 0).toLocaleString("id-ID");
 
   const handleChange = (e) => {
+    if (disabled) return;
     const rawVal = e.target.value.replace(/\D/g, "");
     const num = rawVal ? parseInt(rawVal, 10) : 0;
     onChange(num);
@@ -36,9 +39,12 @@ function RupiahInput({
 
   return (
     <div>
-      <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-        {label}
-      </label>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-[11px] font-extrabold text-slate-700">
+          {label}
+        </label>
+        {badge}
+      </div>
       <div className="relative">
         <span className="absolute left-3 top-2.5 text-xs font-black text-slate-400 select-none">
           Rp
@@ -50,7 +56,13 @@ function RupiahInput({
           onChange={handleChange}
           placeholder={placeholder}
           required={required}
-          className="w-full h-9 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-black text-slate-900 text-sm text-right focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-colors"
+          readOnly={disabled}
+          disabled={disabled}
+          className={`w-full h-9 pl-9 pr-3 border rounded-xl font-mono font-black text-sm text-right focus:outline-none transition-colors ${
+            disabled
+              ? "bg-slate-100 text-slate-600 border-slate-200 cursor-not-allowed select-none"
+              : "bg-slate-50 border-slate-300 text-slate-900 focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
+          }`}
         />
       </div>
     </div>
@@ -213,6 +225,7 @@ export default function LanjutTahapModalMobile({
   item,
   employees = [],
   products = [],
+  currentUser = null,
   onClose,
   onSuccess,
 }) {
@@ -265,8 +278,8 @@ export default function LanjutTahapModalMobile({
 
   // Match info produk untuk default ongkos potong
   const matchedProduct = useMemo(() => {
-    return products.find((p) => p.sku === item.sku) || null;
-  }, [products, item.sku]);
+    return products.find((p) => p.sku === item.sku || p.namaProduk === item.namaProduk) || null;
+  }, [products, item.sku, item.namaProduk]);
 
   // Karyawan per bagian (fallback ke semua karyawan jika filter kosong)
   const cuttingEmployees = useMemo(() => {
@@ -323,19 +336,16 @@ export default function LanjutTahapModalMobile({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // 1. Data Cutting
-  const defaultTarifPotong =
-    matchedProduct?.hargaPotong ||
-    matchedProduct?.harga_potong ||
-    item.tarifCutting ||
-    1800;
+  // 1. Data Cutting (Otomatis Master Produk & Petugas Sesuai User Login)
+  const prodTarif = Number(matchedProduct?.hargaPotong ?? matchedProduct?.harga_potong ?? 0);
+  const defaultTarifPotong = prodTarif > 0 ? prodTarif : Number(item.tarifCutting || 700);
+  const loggedInUser = currentUser?.nama || (currentUser?.username ? `Admin Cutting (${currentUser.username})` : "Admin Cutting");
+
   const [tglSerahCutting, setTglSerahCutting] = useState(todayStr);
-  const [timCutting, setTimCutting] = useState(
-    cuttingEmployees[0]?.nama || item.timCutting || "Tim Cutting 1",
-  );
-  const [tarifCutting, setTarifCutting] = useState(defaultTarifPotong);
+  const [timCutting] = useState(loggedInUser);
+  const [tarifCutting] = useState(defaultTarifPotong);
   const [catatanCutting, setCatatanCutting] = useState(
-    item.catatanCutting || "",
+    item.catatanCutting || "Pola dan potongan presisi sesuai SOP",
   );
 
   // 2. Data Jahit
@@ -546,15 +556,6 @@ export default function LanjutTahapModalMobile({
           {(currentStatus === "Menunggu Cutting" ||
             currentStatus === "Draft") && (
             <>
-              {/* Searchable Select Petugas Cutting */}
-              <SearchableSelectMobile
-                label="Pilih Tim / Petugas Cutting:"
-                value={timCutting}
-                onChange={setTimCutting}
-                options={cuttingEmployees}
-                placeholder="Pilih atau cari petugas cutting..."
-              />
-
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
@@ -564,26 +565,31 @@ export default function LanjutTahapModalMobile({
                     type="date"
                     value={tglSerahCutting}
                     onChange={(e) => setTglSerahCutting(e.target.value)}
-                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-blue-600 focus:outline-none"
                     required
                   />
                 </div>
 
-                {/* Input Format Rupiah Rata Kanan */}
+                {/* Input Format Rupiah Read-Only / Otomatis Master Produk */}
                 <RupiahInput
                   label="Tarif Potong / Pcs:"
                   value={tarifCutting}
-                  onChange={setTarifCutting}
+                  disabled={true}
+                  badge={
+                    <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[9px] font-bold">
+                      Otomatis Master
+                    </span>
+                  }
                   required
                 />
               </div>
 
               {/* Box Total Estimasi Biaya */}
-              <div className="p-3 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-between text-xs">
-                <span className="font-bold text-sky-800">
+              <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs">
+                <span className="font-bold text-blue-800">
                   Total Biaya Cutting:
                 </span>
-                <span className="font-mono font-black text-sm text-sky-950">
+                <span className="font-mono font-black text-sm text-blue-950">
                   Rp {(qty * Number(tarifCutting)).toLocaleString("id-ID")}
                 </span>
               </div>
@@ -597,7 +603,7 @@ export default function LanjutTahapModalMobile({
                   value={catatanCutting}
                   onChange={(e) => setCatatanCutting(e.target.value)}
                   placeholder="Misal: Sisipkan label size di kerah, pola agak longgar..."
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-800 text-xs focus:bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
             </>
@@ -878,7 +884,7 @@ export default function LanjutTahapModalMobile({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-100 cursor-pointer transition-colors"
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold transition-all cursor-pointer shadow-xs"
             >
               Batal
             </button>
@@ -898,7 +904,7 @@ export default function LanjutTahapModalMobile({
                   {isGudangStage && <Warehouse className="w-3.5 h-3.5 stroke-[2.5]" />}
                   <span>
                     {currentStatus === "Menunggu Cutting" &&
-                      "Mulai Proses Cutting"}
+                      "Mulai"}
                     {currentStatus === "Proses Cutting" &&
                       "Serahkan ke Penjahit"}
                     {currentStatus === "Proses Jahit" && "Mulai QC"}

@@ -24,12 +24,20 @@ import {
   X,
   Wallet,
   CalendarDays,
-  User
+  User,
+  Lock
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
 
-export default function DivisiCutting({ antreanList = [], setAntreanList, products = [], employees = [] }) {
+export default function DivisiCutting({
+  antreanList = [],
+  setAntreanList,
+  products = [],
+  employees = [],
+  currentUser = null,
+  userRole = 'cutting'
+}) {
   const [activeTab, setActiveTab] = useState('approval'); // 'approval' | 'proses' | 'riwayat'
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -128,12 +136,14 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
 
   // Buka Modal Approval Terima Order Cutting
   const handleOpenApproval = (item) => {
-    const matchedProd = products.find((p) => p.sku === item.sku);
-    const defTarif = Number(matchedProd?.hargaPotong || item.tarifCutting || 700);
+    const matchedProd = products.find((p) => p.sku === item.sku || p.namaProduk === item.namaProduk);
+    const prodTarif = Number(matchedProd?.hargaPotong ?? matchedProd?.harga_potong ?? 0);
+    const defTarif = prodTarif > 0 ? prodTarif : Number(item.tarifCutting || 700);
+    const userLogin = currentUser?.nama || (currentUser?.username ? `Admin Cutting (${currentUser.username})` : 'Admin Cutting');
 
     setApprovalForm({
       tglSerahCutting: new Date().toISOString().slice(0, 10),
-      timCutting: cuttingWorkers.length > 0 ? cuttingWorkers[0].nama : 'Tim Cutting 1',
+      timCutting: userLogin,
       tarifCutting: defTarif,
       catatanCutting: item.catatanCutting || 'Pola dan potongan presisi sesuai SOP'
     });
@@ -832,63 +842,32 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Ongkos Cutting / Pcs (Rp) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-extrabold text-slate-700">
+                      Ongkos Cutting / Pcs (Rp) *
+                    </label>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[9.5px] font-black">
+                      <Lock className="w-2.5 h-2.5" />
+                      <span>Otomatis Master</span>
+                    </span>
+                  </div>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-xs font-black text-slate-400 select-none">
                       Rp
                     </span>
                     <input
                       type="number"
-                      required
-                      min="0"
-                      step="50"
+                      readOnly
+                      disabled
                       value={approvalForm.tarifCutting}
-                      onChange={(e) =>
-                        setApprovalForm({ ...approvalForm, tarifCutting: e.target.value })
-                      }
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 font-mono font-black text-slate-900 text-xs text-right focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-500 shadow-2xs"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-100 font-mono font-black text-slate-700 text-xs text-right cursor-not-allowed select-none shadow-2xs"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Tim / Petugas Cutting */}
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                  Petugas / Tim Pemotong *
-                </label>
-                <div className="relative">
-                  {cuttingWorkers.length > 0 ? (
-                    <select
-                      value={approvalForm.timCutting}
-                      onChange={(e) =>
-                        setApprovalForm({ ...approvalForm, timCutting: e.target.value })
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-slate-800 text-xs focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-500 shadow-2xs bg-white"
-                    >
-                      {cuttingWorkers.map((w) => (
-                        <option key={w.id} value={w.nama}>
-                          {w.nama} ({w.nik}) - Divisi Cutting
-                        </option>
-                      ))}
-                      <option value="Tim Cutting Internal">Tim Cutting Internal</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      required
-                      value={approvalForm.timCutting}
-                      onChange={(e) =>
-                        setApprovalForm({ ...approvalForm, timCutting: e.target.value })
-                      }
-                      placeholder="Masukkan nama tim pemotong..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-slate-800 text-xs focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-500 shadow-2xs"
-                    />
-                  )}
-                </div>
-              </div>
+              {/* Petugas otomatis sesuai yang login (Hidden dari form) */}
+              <input type="hidden" value={approvalForm.timCutting} />
 
               {/* Catatan Cutting */}
               <div>
@@ -922,7 +901,7 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                   <button
                     type="button"
                     onClick={() => setApprovalModalItem(null)}
-                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold transition-all cursor-pointer shadow-xs"
                   >
                     Batal
                   </button>
@@ -932,7 +911,7 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                     className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black flex items-center gap-2 shadow-md shadow-blue-500/30 active:scale-95 cursor-pointer transition-all"
                   >
                     <Scissors className="w-4 h-4 stroke-[2.5]" />
-                    <span>{loading ? 'Menyimpan...' : 'Mulai Proses Cutting'}</span>
+                    <span>{loading ? 'Menyimpan...' : 'Mulai'}</span>
                   </button>
                 </div>
               </div>

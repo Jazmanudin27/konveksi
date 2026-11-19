@@ -156,8 +156,20 @@ export default function Sidebar({
                 </div>
                 <div className="space-y-0.5">
                   <button
-                    onClick={() => handleMenuClick("permintaan-produksi")}
+                    onClick={() => handleMenuClick("antrean")}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-bold transition-all cursor-pointer text-xs ${
+                      activeMenu === "antrean"
+                        ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-sm font-black"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <ListOrdered className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>SPK</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleMenuClick("permintaan-produksi")}
+                    className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
                       activeMenu === "permintaan-produksi"
                         ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-sm font-black"
                         : "text-slate-300 hover:text-white hover:bg-slate-800/50"
@@ -503,8 +515,8 @@ export default function Sidebar({
                         : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                     }`}
                   >
-                    <ListOrdered className="w-4 h-4 shrink-0" />
-                    <span>Antrean Produksi Pabrik</span>
+                    <ListOrdered className="w-4 h-4 shrink-0 text-cyan-400" />
+                    <span>SPK</span>
                   </button>
 
                   <button

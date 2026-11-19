@@ -115,7 +115,7 @@ export default function DashboardWelcome({
             className="h-6.5 px-2.5 bg-white text-[#0369a1] hover:bg-sky-50 rounded-md text-[11px] font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1"
           >
             <Scissors className="w-3 h-3 text-[#0284c7]" />
-            <span>Antrean Produksi</span>
+            <span>SPK</span>
           </button>
         </div>
       </div>

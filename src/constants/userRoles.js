@@ -26,6 +26,7 @@ export const USER_ROLES = {
     defaultMenu: "permintaan-produksi",
     allowedMenus: [
       "dashboard",
+      "antrean",
       "permintaan-produksi",
       "mutasi-gudang-jadi",
       "bahan",

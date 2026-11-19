@@ -2177,7 +2177,7 @@ export default function Antrean({
           <div>
             <div className="flex items-center gap-2 leading-none">
               <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
-                1. Antrean Permintaan Produksi
+                1. SPK (Surat Perintah Kerja) Produksi
               </h2>
               <span className="px-2 py-0.5 rounded-md bg-white/25 text-white text-[10.5px] font-black">
                 TAHAP 1 SOP
@@ -2189,8 +2189,7 @@ export default function Antrean({
               )}
             </div>
             <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
-              Pendaftaran permintaan masuk dari PO, barang kosong, atau rencana
-              internal berelasi ke Master Produk
+              Pendaftaran Surat Perintah Kerja (SPK) masuk dari PO, restock barang, atau rencana internal
             </p>
           </div>
         </div>
@@ -2209,7 +2208,7 @@ export default function Antrean({
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-black shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            <span>+ Antrean Baru</span>
+            <span>+ SPK Baru</span>
           </button>
         </div>
       </div>
@@ -3046,16 +3045,15 @@ export default function Antrean({
                   <div className="flex items-center gap-2 leading-none">
                     <h3 className="font-extrabold text-sm text-white">
                       {modalMode === "create"
-                        ? "Pendaftaran Antrean Permintaan Baru"
-                        : "Edit Lembar Antrean Produksi"}
+                        ? "Pendaftaran SPK Permintaan Baru"
+                        : "Edit Lembar SPK Produksi"}
                     </h3>
                     <span className="px-1.5 py-0.2 rounded bg-sky-500/30 text-sky-300 font-mono text-[9px] font-extrabold border border-sky-400/30">
                       STEP 1 SOP
                     </span>
                   </div>
                   <p className="text-[10.5px] text-slate-400 mt-0.5 leading-none">
-                    Pendaftaran batch kerja produksi pabrik & alokasi kebutuhan
-                    bahan baku
+                    Pendaftaran Surat Perintah Kerja (SPK) batch produksi & alokasi bahan baku
                   </p>
                 </div>
               </div>

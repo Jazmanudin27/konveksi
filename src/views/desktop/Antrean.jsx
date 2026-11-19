@@ -72,8 +72,33 @@ function SearchableBahanSelectDesktop({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const popoverRef = useRef(null);
+  const buttonRef = useRef(null);
+  const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
+  const [coords, setCoords] = useState({
+    top: 0,
+    left: 0,
+    width: 340,
+    openUp: false,
+  });
+
+  const updateCoords = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const estimatedHeight = 280;
+    const openUp = spaceBelow < estimatedHeight && rect.top > estimatedHeight;
+
+    const left = Math.max(10, Math.min(rect.left, window.innerWidth - 350));
+    const width = Math.max(340, rect.width);
+
+    setCoords({
+      top: openUp ? rect.top - 6 : rect.bottom + 6,
+      left,
+      width,
+      openUp,
+    });
+  };
 
   const selectedBahan = useMemo(() => {
     return masterBahan.find(
@@ -103,8 +128,26 @@ function SearchableBahanSelectDesktop({
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const handleScrollOrResize = () => {
+      updateCoords();
+    };
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     function handleClickOutside(event) {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -116,12 +159,18 @@ function SearchableBahanSelectDesktop({
   }, [isOpen]);
 
   return (
-    <div className="relative w-full" ref={popoverRef}>
+    <div className="relative w-full">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => {
-          setIsOpen((prev) => !prev);
-          setQuery("");
+          if (!isOpen) {
+            updateCoords();
+            setIsOpen(true);
+            setQuery("");
+          } else {
+            setIsOpen(false);
+          }
         }}
         className={`w-full h-8 px-2.5 rounded-lg border text-left flex items-center justify-between transition-all cursor-pointer ${
           selectedBahan
@@ -162,7 +211,20 @@ function SearchableBahanSelectDesktop({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-xl border border-slate-200 p-2 space-y-1.5 w-[330px] max-w-[95vw] animate-in fade-in duration-100">
+        <div
+          ref={dropdownRef}
+          style={{
+            position: "fixed",
+            top: coords.openUp ? undefined : `${coords.top}px`,
+            bottom: coords.openUp
+              ? `${window.innerHeight - coords.top}px`
+              : undefined,
+            left: `${coords.left}px`,
+            width: `${Math.min(coords.width, window.innerWidth - 20)}px`,
+            zIndex: 99999,
+          }}
+          className="bg-white rounded-xl shadow-2xl border border-slate-200 p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-100"
+        >
           {/* Search Input Bar */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2 pointer-events-none" />

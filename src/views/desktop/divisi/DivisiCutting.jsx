@@ -15,7 +15,9 @@ import {
   Layers,
   ChevronRight,
   ShieldCheck,
-  Check
+  Check,
+  Flame,
+  Tag
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
@@ -236,222 +238,249 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
   };
 
   return (
-    <div className="w-full space-y-4">
-      {/* 1. HEADER BANNER KHUSUS DIVISI CUTTING */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white rounded-xl p-4 sm:px-6 shadow-sm border border-blue-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center shrink-0 border border-white/20 shadow-xs">
-            <Scissors className="w-6 h-6 text-white" />
+    <div className="w-full space-y-2 select-none">
+      {/* 1. HEADER BANNER KHUSUS DIVISI CUTTING (COMPACT SLIM PM STYLE PERSIS SPK) */}
+      <div className="bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white rounded-xl py-2 px-3 sm:px-4 shadow-[0_2px_4px_rgba(2,132,199,0.18)] flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 text-white">
+            <Scissors className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-black tracking-tight text-white leading-tight">
-                Divisi Cutting & Pola Kain
+            <div className="flex items-center gap-2 leading-none">
+              <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
+                2. Divisi Cutting & Pola Kain
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-blue-100 border border-white/25">
-                Admin Cutting
+              <span className="px-2 py-0.5 rounded-md bg-white/25 text-white text-[10.5px] font-black">
+                TAHAP 2 SOP
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-blue-400 text-slate-950 text-[10.5px] font-black uppercase tracking-wider shadow-xs">
+                Akses Cutting
               </span>
             </div>
-            <p className="text-xs text-blue-100/90 mt-0.5">
-              Kelola antrean pemotongan pola bahan, approval permintaan baru, dan serah terima ke penjahit.
+            <p className="text-xs text-white/90 mt-1 leading-tight font-medium">
+              Kelola antrean pemotongan pola bahan, approval permintaan baru, dan serah terima ke penjahit
             </p>
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setLoading(true);
-            api.getAntrean()
-              .then((fresh) => {
-                if (Array.isArray(fresh)) setAntreanList(fresh);
-                Swal.toast('Data cutting diperbarui');
-              })
-              .finally(() => setLoading(false));
-          }}
-          disabled={loading}
-          className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/20 active:scale-95 shrink-0 self-start md:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Segarkan Data</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button
+            onClick={() => {
+              setLoading(true);
+              api.getAntrean()
+                .then((fresh) => {
+                  if (Array.isArray(fresh)) setAntreanList(fresh);
+                  Swal.toast('Data cutting diperbarui');
+                })
+                .finally(() => setLoading(false));
+            }}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer border border-white/25"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
-      {/* 2. STATS KPI CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 2. STATS KPI CARDS (4 KARTU BER-BORDER #cbd5e1 PERSIS SPK) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <div
           onClick={() => setActiveTab('approval')}
-          className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+          className={`bg-white border rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between transition-all cursor-pointer ${
             activeTab === 'approval'
-              ? 'bg-amber-50/80 border-amber-300 ring-2 ring-amber-400/40 shadow-xs'
-              : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
+              ? 'border-amber-400 ring-2 ring-amber-400/30'
+              : 'border-[#cbd5e1] hover:border-amber-400'
           }`}
         >
-          <div className="flex items-center justify-between text-amber-600 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <div>
+            <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
               Perlu Approval
-            </span>
-            <AlertCircle className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-black text-[#0f172a] mt-0.5 leading-none">
+              {stats.menungguCount}{' '}
+              <span className="text-xs font-semibold text-slate-400">Batch</span>
+            </div>
           </div>
-          <div className="text-2xl font-black text-slate-900 leading-tight">
-            {stats.menungguCount}
+          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-4 h-4" />
           </div>
-          <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
-            Menunggu Diterima Cutting
-          </p>
         </div>
 
         <div
           onClick={() => setActiveTab('proses')}
-          className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+          className={`bg-white border rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between transition-all cursor-pointer ${
             activeTab === 'proses'
-              ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-400/40 shadow-xs'
-              : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
+              ? 'border-[#0284c7] ring-2 ring-[#0284c7]/30'
+              : 'border-[#cbd5e1] hover:border-[#0284c7]'
           }`}
         >
-          <div className="flex items-center justify-between text-blue-600 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <div>
+            <div className="text-[11px] font-bold text-[#0284c7] uppercase tracking-wider">
               Sedang Cutting
-            </span>
-            <Scissors className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-black text-[#0f172a] mt-0.5 leading-none">
+              {stats.prosesCount}{' '}
+              <span className="text-xs font-semibold text-slate-400">
+                ({stats.totalPcsProses.toLocaleString('id-ID')} Pcs)
+              </span>
+            </div>
           </div>
-          <div className="text-2xl font-black text-slate-900 leading-tight">
-            {stats.prosesCount}
+          <div className="w-8 h-8 rounded-lg bg-sky-50 text-[#0284c7] flex items-center justify-center shrink-0">
+            <Scissors className="w-4 h-4" />
           </div>
-          <p className="text-[11px] text-blue-700 font-semibold mt-0.5">
-            {stats.totalPcsProses.toLocaleString('id-ID')} Pcs Dalam Proses
-          </p>
         </div>
 
         <div
           onClick={() => setActiveTab('riwayat')}
-          className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+          className={`bg-white border rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between transition-all cursor-pointer ${
             activeTab === 'riwayat'
-              ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-400/40 shadow-xs'
-              : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
+              ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+              : 'border-[#cbd5e1] hover:border-emerald-500'
           }`}
         >
-          <div className="flex items-center justify-between text-emerald-600 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <div>
+            <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
               Selesai Cutting
-            </span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-black text-[#0f172a] mt-0.5 leading-none">
+              {stats.riwayatCount}{' '}
+              <span className="text-xs font-semibold text-slate-400">Diserahkan</span>
+            </div>
           </div>
-          <div className="text-2xl font-black text-slate-900 leading-tight">
-            {stats.riwayatCount}
-          </div>
-          <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-            Diserahkan ke Jahit / QC
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Tim Pemotong
-            </span>
-            <UserCheck className="w-4 h-4 text-indigo-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 leading-tight">
-            {cuttingWorkers.length > 0 ? cuttingWorkers.length : 'Semua'}
-          </div>
-          <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
-            Tenaga Kerja Cutting Aktif
-          </p>
-        </div>
-      </div>
-
-      {/* 3. TABS NAVIGASI WORKFLOW & PENCARIAN */}
-      <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* TAB BUTTONS */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-          <button
-            onClick={() => setActiveTab('approval')}
-            className={`px-3.5 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'approval'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Perlu Approval</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-              activeTab === 'approval' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {stats.menungguCount}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('proses')}
-            className={`px-3.5 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'proses'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Scissors className="w-4 h-4" />
-            <span>Sedang Dikerjakan</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-              activeTab === 'proses' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {stats.prosesCount}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('riwayat')}
-            className={`px-3.5 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'riwayat'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Riwayat Selesai</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-              activeTab === 'riwayat' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {stats.riwayatCount}
-            </span>
-          </button>
+          </div>
         </div>
 
-        {/* SEARCH BOX */}
-        <div className="relative w-full md:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Cari No Antrian / SKU / Produk..."
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white text-slate-900 focus:outline-none focus:border-blue-600"
-          />
+        <div className="bg-white border border-[#cbd5e1] rounded-xl p-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">
+              Tim Pemotong
+            </div>
+            <div className="text-lg sm:text-xl font-black text-[#0f172a] mt-0.5 leading-none">
+              {cuttingWorkers.length > 0 ? cuttingWorkers.length : 'Semua'}{' '}
+              <span className="text-xs font-semibold text-slate-400">Tenaga Aktif</span>
+            </div>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <UserCheck className="w-4 h-4" />
+          </div>
         </div>
       </div>
 
-      {/* 4. TABEL DATA WORKFLOW CUTTING */}
-      <div className="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+      {/* 3. TABS NAVIGASI WORKFLOW & PENCARIAN (PERSIS SPK) */}
+      <div className="bg-white border border-[#cbd5e1] rounded-xl p-2 shadow-2xs space-y-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          {[
+            {
+              id: 'approval',
+              label: 'Perlu Approval',
+              icon: ShieldCheck,
+              count: stats.menungguCount,
+              activeClass: 'bg-amber-500 text-white shadow-xs',
+              inactiveClass: 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100',
+            },
+            {
+              id: 'proses',
+              label: 'Sedang Dikerjakan',
+              icon: Scissors,
+              count: stats.prosesCount,
+              activeClass: 'bg-[#0284c7] text-white shadow-xs',
+              inactiveClass: 'bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100',
+            },
+            {
+              id: 'riwayat',
+              label: 'Riwayat Selesai',
+              icon: CheckCircle2,
+              count: stats.riwayatCount,
+              activeClass: 'bg-emerald-600 text-white shadow-xs',
+              inactiveClass: 'bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100',
+            },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isTabActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  isTabActive ? tab.activeClass : tab.inactiveClass
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    isTabActive
+                      ? 'bg-white/25 text-white'
+                      : 'bg-white text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* SEARCH BOX & FILTERS */}
+        <div className="pt-1.5 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-2">
+          <div className="relative flex-1 w-full">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari No Antrian, No Reff, SKU, Model Produk, Catatan..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#cbd5e1] rounded-lg focus:outline-none focus:border-[#0284c7] text-slate-800"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. TABEL DATA WORKFLOW CUTTING (PERSIS GAYA SPK) */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse">
             <thead>
-              <tr className="bg-[#1e293b] text-white font-bold text-xs tracking-wider uppercase">
-                <th className="py-2.5 px-3 text-center w-12 border-r border-slate-700">NO</th>
-                <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-700">NO ANTREAN & PO</th>
-                <th className="py-2.5 px-3 min-w-[200px] border-r border-slate-700">PRODUK & SKU</th>
-                <th className="py-2.5 px-3 text-right w-24 border-r border-slate-700">TARGET QTY</th>
-                <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-700">TIM CUTTING</th>
-                <th className="py-2.5 px-3 text-right w-28 border-r border-slate-700">TARIF / ONGKOS</th>
-                <th className="py-2.5 px-3 text-center w-32 border-r border-slate-700">STATUS</th>
-                <th className="py-2.5 px-3 text-center min-w-[140px]">AKSI DIVISI</th>
+              <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
+                <th className="py-2.5 px-2 text-center w-10 min-w-[40px] border-r border-[#3b4c5e] text-white font-bold">
+                  NO
+                </th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px] border-r border-[#3b4c5e] text-white font-bold">
+                  NO. ANTREAN & TGL
+                </th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[140px] border-r border-[#3b4c5e] text-white font-bold">
+                  SUMBER & REFF
+                </th>
+                <th className="py-2.5 px-3 min-w-[240px] border-r border-[#3b4c5e] text-white font-bold">
+                  RINCIAN MODEL PRODUK (SKU)
+                </th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[120px] border-r border-[#3b4c5e] text-white font-bold">
+                  TARGET & PRIORITAS
+                </th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[140px] border-r border-[#3b4c5e] text-white font-bold">
+                  TIM CUTTING
+                </th>
+                <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[120px] border-r border-[#3b4c5e] text-white font-bold">
+                  TARIF / ONGKOS
+                </th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">
+                  STATUS
+                </th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[140px] text-white font-bold">
+                  AKSI DIVISI
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200/80 font-medium text-slate-800">
+            <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-slate-400">
-                    <Scissors className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                    <p className="font-bold text-xs text-slate-600">
-                      Tidak ada antrean pada tahap ini
+                  <td colSpan="9" className="py-8 text-center text-slate-400">
+                    <Scissors className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                    <p className="text-xs font-semibold text-slate-600">
+                      Tidak ada data antrean pada tahap ini
                     </p>
                     <p className="text-[11px] text-slate-400">
                       {activeTab === 'approval'
@@ -465,106 +494,171 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                   const qtyVal = Number(item.qty) || 0;
                   const tarifVal = Number(item.tarifCutting) || 0;
                   const totalOngkos = Number(item.totalBiayaCutting) || qtyVal * tarifVal;
+                  const isUrgent = item.prioritas === 'Urgent';
 
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                      {/* NO */}
-                      <td className="py-2.5 px-3 text-center font-bold text-slate-600 border-r border-slate-200/60">
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                      {/* 1. NO */}
+                      <td className="py-2 px-2 text-center text-slate-700 font-bold text-xs sm:text-sm border-r border-slate-200/60">
                         {idx + 1}
                       </td>
 
-                      {/* NO ANTREAN & PO */}
-                      <td className="py-2.5 px-3 border-r border-slate-200/60">
-                        <div className="font-mono font-bold text-xs text-blue-600">
-                          {item.noAntrian}
-                        </div>
-                        <div className="text-[10.5px] text-slate-500 font-normal">
-                          {item.noReff || 'Internal'} • {item.tglMasuk || '-'}
+                      {/* 2. NO. ANTREAN & TGL */}
+                      <td className="py-2 px-3 border-r border-slate-200/60 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-mono font-bold text-xs sm:text-[13px] text-[#0284c7]">
+                            {item.noAntrian}
+                          </span>
+                          <div className="flex items-center gap-1.5 text-slate-600 text-xs mt-0.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="font-mono">{item.tglMasuk || '-'}</span>
+                          </div>
                         </div>
                       </td>
 
-                      {/* PRODUK & SKU */}
-                      <td className="py-2.5 px-3 border-r border-slate-200/60">
-                        <div className="font-bold text-slate-900 text-xs">
-                          {item.namaProduk || item.sku}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="font-mono text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded font-bold border border-slate-200">
-                            {item.sku}
+                      {/* 3. SUMBER & REFF */}
+                      <td className="py-2 px-3 border-r border-slate-200/60">
+                        <div className="flex flex-col min-w-0">
+                          <span
+                            className="text-xs sm:text-sm font-bold text-slate-900"
+                            title={item.sumberPermintaan}
+                          >
+                            {item.sumberPermintaan || 'Stok Gudang'}
                           </span>
-                          {item.varian && (
-                            <span className="text-[10px] text-slate-500 font-medium">
-                              ({item.varian} - {item.ukuran || 'All Size'})
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-mono mt-0.5">
+                            <span className="text-slate-500">Reff:</span>
+                            <span className="font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-300">
+                              {item.noReff || '-'}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 4. RINCIAN MODEL PRODUK (SKU) - PERSIS GAYA SPK */}
+                      <td className="py-2 px-3 border-r border-slate-200/60">
+                        <div className="flex flex-col min-w-0">
+                          {/* SKU & Nama Produk */}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-mono font-bold text-xs text-[#0284c7]">
+                              {item.sku}
+                            </span>
+                            <span
+                              className="font-bold text-slate-900 text-xs sm:text-sm truncate"
+                              title={item.namaProduk}
+                            >
+                              {item.namaProduk || "-"}
+                            </span>
+                          </div>
+
+                          {/* Kategori, Varian, Ukuran, Kain & Rincian Bahan */}
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-1 flex-wrap">
+                            {item.kategori && (
+                              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs">
+                                {item.kategori}
+                              </span>
+                            )}
+                            {(item.varian || item.ukuran) && (
+                              <span className="text-slate-700 font-medium">
+                                {item.varian || "Polos"} (
+                                {item.ukuran || "All Size"})
+                              </span>
+                            )}
+                            {item.skuBahan && item.skuBahan !== "-" && (
+                              <>
+                                <span className="text-slate-400">•</span>
+                                <span className="font-mono text-cyan-800 font-bold text-xs">
+                                  Kain: {item.skuBahan}
+                                </span>
+                              </>
+                            )}
+                            {Array.isArray(item.kebutuhanBahan) &&
+                              item.kebutuhanBahan.length > 0 && (
+                                <>
+                                  <span className="text-slate-400">•</span>
+                                  {item.kebutuhanBahan.map((b, bIdx) => (
+                                    <span
+                                      key={b.id || b.kodeBahan || bIdx}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300 font-bold text-[10.5px]"
+                                    >
+                                      <Layers className="w-3 h-3 text-amber-600 shrink-0" />
+                                      <span>
+                                        {b.namaBahan}: {b.qty || b.qtyPerPcs || 1} {b.satuan}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </>
+                              )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 5. TARGET & PRIORITAS */}
+                      <td className="py-2 px-2.5 text-center border-r border-slate-200/60 whitespace-nowrap">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="font-mono font-bold text-xs sm:text-[13px] text-slate-900">
+                            {qtyVal.toLocaleString('id-ID')} Pcs
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              isUrgent
+                                ? "bg-rose-100 text-rose-800 border border-rose-300 animate-pulse font-extrabold"
+                                : item.prioritas === "Normal"
+                                  ? "bg-blue-50 text-blue-800 border border-blue-200"
+                                  : "bg-slate-100 text-slate-700 border border-slate-200"
+                            }`}
+                          >
+                            <span>{item.prioritas || "Normal"}</span>
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 6. TIM CUTTING */}
+                      <td className="py-2 px-3 border-r border-slate-200/60 whitespace-nowrap">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="inline-flex items-center gap-1 text-slate-800 font-bold text-xs">
+                            <Scissors className="w-3 h-3 text-blue-500 shrink-0" />
+                            <span>{item.timCutting || '-'}</span>
+                          </span>
+                          {item.tglSerahCutting && (
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              Mulai: {item.tglSerahCutting}
                             </span>
                           )}
                         </div>
-                        {Array.isArray(item.kebutuhanBahan) && item.kebutuhanBahan.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {item.kebutuhanBahan.slice(0, 3).map((b, bIdx) => (
-                              <span key={bIdx} className="text-[9.5px] bg-amber-50 text-amber-900 border border-amber-200 px-1 py-0.2 rounded font-medium">
-                                {b.namaBahan}: {b.qtyPerPcs} {b.satuan}/pc
-                              </span>
-                            ))}
-                            {item.kebutuhanBahan.length > 3 && (
-                              <span className="text-[9.5px] text-amber-700 font-bold">
-                                +{item.kebutuhanBahan.length - 3} lagi
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </td>
 
-                      {/* TARGET QTY */}
-                      <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900 text-xs border-r border-slate-200/60">
-                        {qtyVal.toLocaleString('id-ID')} Pcs
-                      </td>
-
-                      {/* TIM CUTTING */}
-                      <td className="py-2.5 px-3 border-r border-slate-200/60">
-                        <span className="inline-flex items-center gap-1 text-slate-800 font-bold text-xs">
-                          <Scissors className="w-3 h-3 text-blue-500" />
-                          <span>{item.timCutting || '-'}</span>
-                        </span>
-                        {item.tglSerahCutting && (
-                          <div className="text-[10px] text-slate-400 font-normal">
-                            Mulai: {item.tglSerahCutting}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* TARIF & TOTAL ONGKOS */}
-                      <td className="py-2.5 px-3 text-right border-r border-slate-200/60 font-mono">
+                      {/* 7. TARIF & TOTAL ONGKOS */}
+                      <td className="py-2 px-3 text-right border-r border-slate-200/60 font-mono whitespace-nowrap">
                         <div className="font-bold text-slate-900 text-xs">
                           Rp {tarifVal.toLocaleString('id-ID')}/pc
                         </div>
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-[10.5px] text-slate-500">
                           Total: Rp {totalOngkos.toLocaleString('id-ID')}
                         </div>
                       </td>
 
-                      {/* STATUS */}
-                      <td className="py-2.5 px-3 text-center border-r border-slate-200/60">
+                      {/* 8. STATUS */}
+                      <td className="py-2 px-3 text-center border-r border-slate-200/60 whitespace-nowrap">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
                             item.status === 'Menunggu Cutting'
-                              ? 'bg-amber-50 text-amber-700 border-amber-300'
+                              ? 'bg-amber-50 text-amber-800 border-amber-300'
                               : item.status === 'Proses Cutting'
-                              ? 'bg-blue-50 text-blue-700 border-blue-300'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              ? 'bg-blue-50 text-blue-800 border-blue-300'
+                              : 'bg-emerald-50 text-emerald-800 border-emerald-300'
                           }`}
                         >
                           {item.status}
                         </span>
                       </td>
 
-                      {/* AKSI */}
-                      <td className="py-2.5 px-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          {/* JIKA STATUS MENUNGGU CUTTING -> TOMBOL PROSES CUTTING */}
+                      {/* 9. AKSI DIVISI */}
+                      <td className="py-2 px-2.5 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
                           {item.status === 'Menunggu Cutting' && (
                             <button
                               onClick={() => handleOpenApproval(item)}
-                              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+                              className="px-2.5 py-1.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
                               title="Mulai Proses Pemotongan Pola Kain"
                             >
                               <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -572,25 +666,23 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
                             </button>
                           )}
 
-                          {/* JIKA STATUS SEDANG CUTTING -> TOMBOL SELESAI & SERAH PENJAHIT */}
                           {item.status === 'Proses Cutting' && (
                             <button
                               onClick={() => handleOpenSerahJahit(item)}
-                              className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+                              className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
                               title="Selesaikan Cutting & Serahkan ke Penjahit"
                             >
-                              <Shirt className="w-3.5 h-3.5" />
-                              <span>Serahkan ke Penjahit</span>
+                              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>Serah Jahit</span>
                             </button>
                           )}
 
-                          {/* DETAIL BUTTON */}
                           <button
                             onClick={() => setSelectedItemDetail(item)}
-                            className="w-7 h-7 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
-                            title="Lihat Rincian Antrean"
+                            className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#0284c7] border border-sky-200 transition-colors cursor-pointer"
+                            title="Lihat Detail SPK"
                           >
-                            <Eye className="w-3.5 h-3.5 text-white" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -602,8 +694,8 @@ export default function DivisiCutting({ antreanList = [], setAntreanList, produc
           </table>
         </div>
 
-        {/* BOTTOM SUMMARY FOOTER */}
-        <div className="bg-[#f8fafc] border-t border-slate-200/80 px-4 py-2.5 flex items-center justify-between text-xs text-slate-600">
+        {/* BOTTOM SUMMARY FOOTER PERSIS SPK */}
+        <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 font-medium">
           <div>
             Menampilkan <span className="font-bold text-slate-900">{filteredData.length}</span> antrean cutting
           </div>

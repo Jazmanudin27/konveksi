@@ -821,7 +821,7 @@ export default function Antrean({
         ...list[index],
         kodeBahan: selectedBahan.kodeBahan || "",
         namaBahan: selectedBahan.namaBahan || "",
-        satuan: selectedBahan.satuan || list[index]?.satuan || "Pcs",
+        satuan: selectedBahan.satuan || "Pcs",
         hargaSatuan: Number(selectedBahan.harga || 0),
         stokSaatIni: Number(selectedBahan.stok ?? 0),
       };
@@ -2208,7 +2208,7 @@ export default function Antrean({
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-black shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            <span>+ SPK Baru</span>
+            <span>SPK Baru</span>
           </button>
         </div>
       </div>
@@ -2534,7 +2534,7 @@ export default function Antrean({
                       Tidak ada data antrean produksi
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      Klik "+ Antrean Baru" untuk mendaftarkan permintaan
+                      Klik "SPK Baru" untuk mendaftarkan permintaan
                       produksi pertama
                     </p>
                   </td>
@@ -3544,7 +3544,7 @@ export default function Antrean({
                       className="h-7 px-2.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>+ Tambah Bahan</span>
+                      <span>Tambah Bahan</span>
                     </button>
                   )}
                 </div>
@@ -3604,6 +3604,16 @@ export default function Antrean({
                           const itemQty = Number(item.qty) || 0;
                           const itemHarga = Number(item.hargaSatuan) || 0;
                           const itemSubtotal = itemQty * itemHarga;
+                          const matchedBahan = (bahan || []).find(
+                            (b) =>
+                              (item.kodeBahan && b.kodeBahan === item.kodeBahan) ||
+                              (b.namaBahan &&
+                                (item.namaBahan || "").toLowerCase() ===
+                                  b.namaBahan.toLowerCase()),
+                          );
+                          const currentSatuan =
+                            matchedBahan?.satuan || item.satuan || "-";
+
                           return (
                             <tr
                               key={item.id || idx}
@@ -3643,48 +3653,10 @@ export default function Antrean({
                                   className="w-full h-7.5 px-1.5 text-center font-mono font-bold rounded-md border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#0284c7]"
                                 />
                               </td>
-                              <td className="py-1 px-1.5">
-                                <select
-                                  value={item.satuan || "Pcs"}
-                                  onChange={(e) =>
-                                    handleUpdateKebutuhanBahan(
-                                      idx,
-                                      "satuan",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full h-7.5 px-1.5 rounded-md border border-slate-200 text-xs bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                                >
-                                  <option value="Pcs">Pcs</option>
-                                  <option value="Meter">Meter</option>
-                                  <option value="Yard">Yard</option>
-                                  <option value="Kg">Kg</option>
-                                  <option value="Roll">Roll</option>
-                                  <option value="Cone">Cone</option>
-                                  <option value="Pasang">Pasang</option>
-                                  <option value="Lusin">Lusin</option>
-                                  <option value="Gross">Gross</option>
-                                  <option value="Lembar">Lembar</option>
-                                  <option value="Set">Set</option>
-                                  {item.satuan &&
-                                    ![
-                                      "Pcs",
-                                      "Meter",
-                                      "Yard",
-                                      "Kg",
-                                      "Roll",
-                                      "Cone",
-                                      "Pasang",
-                                      "Lusin",
-                                      "Gross",
-                                      "Lembar",
-                                      "Set",
-                                    ].includes(item.satuan) && (
-                                      <option value={item.satuan}>
-                                        {item.satuan}
-                                      </option>
-                                    )}
-                                </select>
+                              <td className="py-1 px-1.5 text-center">
+                                <span className="inline-flex items-center justify-center w-full h-7.5 px-2 rounded-md bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-slate-700 shadow-2xs select-none">
+                                  {currentSatuan}
+                                </span>
                               </td>
                               <td className="py-1 px-1.5 text-center">
                                 <span className="font-mono font-bold text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
@@ -3694,7 +3666,7 @@ export default function Antrean({
                                       (Number(formData.qty) || 0)
                                     ).toFixed(2),
                                   )}{" "}
-                                  {item.satuan || "Pcs"}
+                                  {currentSatuan}
                                 </span>
                               </td>
                               <td className="py-1 px-2">

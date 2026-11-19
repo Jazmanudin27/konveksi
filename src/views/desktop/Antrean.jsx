@@ -3275,28 +3275,28 @@ export default function Antrean({
                         <label className="block text-[10.5px] font-black text-slate-700">
                           Tingkat Prioritas
                         </label>
-                        <div className="grid grid-cols-3 gap-1">
+                        <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg border border-slate-200 bg-slate-50/60 shadow-2xs">
                           {[
                             {
                               id: "Urgent",
                               label: "Urgent",
                               icon: Flame,
-                              activeClass: "bg-rose-500 text-white shadow-2xs",
-                              inactiveClass: "bg-rose-50/70 text-rose-700 hover:bg-rose-100",
+                              activeClass: "bg-rose-500 text-white border border-rose-600 shadow-2xs font-extrabold",
+                              inactiveClass: "bg-white text-rose-700 border border-rose-200/90 hover:bg-rose-50 hover:border-rose-300",
                             },
                             {
                               id: "Normal",
                               label: "Normal",
                               icon: Clock,
-                              activeClass: "bg-[#0284c7] text-white shadow-2xs",
-                              inactiveClass: "bg-sky-50/70 text-sky-800 hover:bg-sky-100",
+                              activeClass: "bg-[#0284c7] text-white border border-[#0369a1] shadow-2xs font-extrabold",
+                              inactiveClass: "bg-white text-slate-700 border border-slate-200 hover:bg-sky-50/60 hover:text-[#0284c7] hover:border-sky-300",
                             },
                             {
                               id: "Low",
                               label: "Low",
                               icon: Sparkles,
-                              activeClass: "bg-slate-700 text-white shadow-2xs",
-                              inactiveClass: "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                              activeClass: "bg-slate-700 text-white border border-slate-800 shadow-2xs font-extrabold",
+                              inactiveClass: "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300",
                             },
                           ].map((prio) => {
                             const Icon = prio.icon;
@@ -3311,11 +3311,11 @@ export default function Antrean({
                                     prioritas: prio.id,
                                   })
                                 }
-                                className={`h-7.5 px-1 rounded-lg text-[10px] font-bold flex items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                                className={`h-7 px-1 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                                   isSelected ? prio.activeClass : prio.inactiveClass
                                 }`}
                               >
-                                <Icon className="w-2.5 h-2.5 shrink-0" />
+                                <Icon className="w-3 h-3 shrink-0" />
                                 <span>{prio.label}</span>
                               </button>
                             );

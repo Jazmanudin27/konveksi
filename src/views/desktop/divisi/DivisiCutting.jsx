@@ -483,18 +483,20 @@ export default function DivisiCutting({
                 <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[120px] border-r border-[#3b4c5e] text-white font-bold">
                   TARIF / ONGKOS
                 </th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">
+                <th className={`py-2.5 px-3 text-center whitespace-nowrap min-w-[130px] text-white font-bold ${activeTab === 'approval' ? 'border-r border-[#3b4c5e]' : ''}`}>
                   STATUS
                 </th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[140px] text-white font-bold">
-                  AKSI DIVISI
-                </th>
+                {activeTab === 'approval' && (
+                  <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[140px] text-white font-bold">
+                    AKSI DIVISI
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="py-8 text-center text-slate-400">
+                  <td colSpan={activeTab === 'approval' ? 9 : 8} className="py-8 text-center text-slate-400">
                     <Scissors className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold text-slate-600">
                       Tidak ada data antrean pada tahap ini
@@ -522,14 +524,31 @@ export default function DivisiCutting({
 
                       {/* 2. NO. ANTREAN & TGL */}
                       <td className="py-2 px-3 border-r border-slate-200/60 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-mono font-bold text-xs sm:text-[13px] text-[#0284c7]">
-                            {item.noAntrian}
-                          </span>
-                          <div className="flex items-center gap-1.5 text-slate-600 text-xs mt-0.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="font-mono">{item.tglMasuk || '-'}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex flex-col gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedItemDetail(item)}
+                              className="font-mono font-bold text-xs sm:text-[13px] text-[#0284c7] hover:underline text-left cursor-pointer"
+                              title="Lihat detail SPK"
+                            >
+                              {item.noAntrian}
+                            </button>
+                            <div className="flex items-center gap-1.5 text-slate-600 text-xs mt-0.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="font-mono">{item.tglMasuk || '-'}</span>
+                            </div>
                           </div>
+                          {activeTab !== 'approval' && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedItemDetail(item)}
+                              className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#0284c7] border border-sky-200 transition-colors cursor-pointer"
+                              title="Lihat Detail SPK"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
 
@@ -655,7 +674,7 @@ export default function DivisiCutting({
                       </td>
 
                       {/* 8. STATUS */}
-                      <td className="py-2 px-3 text-center border-r border-slate-200/60 whitespace-nowrap">
+                      <td className={`py-2 px-3 text-center whitespace-nowrap ${activeTab === 'approval' ? 'border-r border-slate-200/60' : ''}`}>
                         <span
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
                             item.status === 'Menunggu Cutting'
@@ -669,39 +688,31 @@ export default function DivisiCutting({
                         </span>
                       </td>
 
-                      {/* 9. AKSI DIVISI */}
-                      <td className="py-2 px-2.5 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {item.status === 'Menunggu Cutting' && (
+                      {/* 9. AKSI DIVISI (HANYA PADA TAB APPROVAL) */}
+                      {activeTab === 'approval' && (
+                        <td className="py-2 px-2.5 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {item.status === 'Menunggu Cutting' && (
+                              <button
+                                onClick={() => handleOpenApproval(item)}
+                                className="px-2.5 py-1.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                title="Mulai Proses Pemotongan Pola Kain"
+                              >
+                                <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Proses Cutting</span>
+                              </button>
+                            )}
+
                             <button
-                              onClick={() => handleOpenApproval(item)}
-                              className="px-2.5 py-1.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                              title="Mulai Proses Pemotongan Pola Kain"
+                              onClick={() => setSelectedItemDetail(item)}
+                              className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#0284c7] border border-sky-200 transition-colors cursor-pointer"
+                              title="Lihat Detail SPK"
                             >
-                              <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Proses Cutting</span>
+                              <Eye className="w-3.5 h-3.5" />
                             </button>
-                          )}
-
-                          {item.status === 'Proses Cutting' && (
-                            <span
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-50 text-[#0284c7] border border-sky-200 font-bold text-xs"
-                              title="Kain dalam pemotongan dan siap diambil langsung oleh penjahit"
-                            >
-                              <Scissors className="w-3.5 h-3.5 text-[#0284c7] animate-pulse" />
-                              <span>Siap Diambil Jahit</span>
-                            </span>
-                          )}
-
-                          <button
-                            onClick={() => setSelectedItemDetail(item)}
-                            className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-[#0284c7] border border-sky-200 transition-colors cursor-pointer"
-                            title="Lihat Detail SPK"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

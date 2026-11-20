@@ -57,6 +57,94 @@ export default function DivisiJahit({
     return '';
   });
 
+  // Opsi daftar penjahit lengkap (User login + master karyawan jahit)
+  const allPenjahitOptions = useMemo(() => {
+    const list = [];
+    if (currentUser?.nama) {
+      list.push({
+        id: 'me',
+        nama: currentUser.nama,
+        label: `${currentUser.nama} (Saya)`,
+        kategori: 'User Login'
+      });
+    }
+    jahitWorkers.forEach((w) => {
+      if (!list.some((item) => item.nama === w.nama)) {
+        list.push({
+          id: w.id || w.nama,
+          nama: w.nama,
+          label: w.nama,
+          nik: w.nik,
+          bagian: w.bagian,
+          kategori: w.kategori
+        });
+      }
+    });
+    if (list.length === 0) {
+      list.push({ id: 'def1', nama: 'Tim Jahit 1', label: 'Tim Jahit 1' });
+    }
+    return list;
+  }, [currentUser, jahitWorkers]);
+
+  // State search & open dropdown penjahit di toolbar
+  const [isPenjahitDropdownOpen, setIsPenjahitDropdownOpen] = useState(false);
+  const [penjahitSearchQuery, setPenjahitSearchQuery] = useState('');
+  const penjahitDropdownRef = useRef(null);
+
+  // Close penjahit dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (penjahitDropdownRef.current && !penjahitDropdownRef.current.contains(event.target)) {
+        setIsPenjahitDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredPenjahitOptions = useMemo(() => {
+    if (!penjahitSearchQuery.trim()) return allPenjahitOptions;
+    const q = penjahitSearchQuery.toLowerCase();
+    return allPenjahitOptions.filter(
+      (opt) =>
+        opt.nama.toLowerCase().includes(q) ||
+        opt.label.toLowerCase().includes(q) ||
+        (opt.nik && String(opt.nik).toLowerCase().includes(q))
+    );
+  }, [allPenjahitOptions, penjahitSearchQuery]);
+
+  const currentSelectedPenjahitLabel = useMemo(() => {
+    const found = allPenjahitOptions.find((o) => o.nama === selectedPenjahit);
+    if (found) return found.label;
+    return selectedPenjahit || 'Pilih Penjahit...';
+  }, [allPenjahitOptions, selectedPenjahit]);
+
+  // State search & open dropdown penjahit di modal Atur Penjahit (approvalModalItem)
+  const [isApprovalPenjahitOpen, setIsApprovalPenjahitOpen] = useState(false);
+  const [approvalPenjahitSearch, setApprovalPenjahitSearch] = useState('');
+  const approvalPenjahitRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (approvalPenjahitRef.current && !approvalPenjahitRef.current.contains(event.target)) {
+        setIsApprovalPenjahitOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredApprovalPenjahitOptions = useMemo(() => {
+    if (!approvalPenjahitSearch.trim()) return allPenjahitOptions;
+    const q = approvalPenjahitSearch.toLowerCase();
+    return allPenjahitOptions.filter(
+      (opt) =>
+        opt.nama.toLowerCase().includes(q) ||
+        opt.label.toLowerCase().includes(q) ||
+        (opt.nik && String(opt.nik).toLowerCase().includes(q))
+    );
+  }, [allPenjahitOptions, approvalPenjahitSearch]);
+
   useEffect(() => {
     if (currentUser?.nama) {
       setSelectedPenjahit(currentUser.nama);
@@ -430,11 +518,13 @@ export default function DivisiJahit({
   const handleOpenApproval = (item) => {
     setApprovalForm({
       tglSerahJahit: item.tglSerahJahit || new Date().toISOString().slice(0, 10),
-      timJahit: item.timJahit || (jahitWorkers.length > 0 ? jahitWorkers[0].nama : 'Tim Jahit 1'),
+      timJahit: item.timJahit || (allPenjahitOptions.length > 0 ? allPenjahitOptions[0].nama : 'Tim Jahit 1'),
       tarifJahit: Number(item.tarifJahit) || 3500,
       catatanJahit: item.catatanJahit || 'Jahit rapih sesuai standar sample'
     });
     setApprovalModalItem(item);
+    setIsApprovalPenjahitOpen(false);
+    setApprovalPenjahitSearch('');
   };
 
   // Submit Approval Terima Order Jahit
@@ -489,10 +579,18 @@ export default function DivisiJahit({
     const defaultTim =
       item.timQc ||
       (customQcTeams.length > 0 ? customQcTeams[0] : 'Tim QC (Pemeriksaan)');
+    const matchedProd = products.find((p) => p.sku === item.sku);
+    const matchedJasa = jasa.find((j) => (j.namaJasa || '').toLowerCase().includes('qc'));
+    const finalTarifQc =
+      Number(item.tarifQc) ||
+      Number(matchedProd?.hargaQc || matchedProd?.tarifQc) ||
+      Number(matchedJasa?.harga) ||
+      500;
+
     setSerahQcForm({
       tglSerahQc: new Date().toISOString().slice(0, 10),
       timQc: defaultTim,
-      tarifQc: Number(item.tarifQc) || 500,
+      tarifQc: finalTarifQc,
       catatanQc: item.catatanQc || 'Jahitan selesai lengkap, siap diinspeksi QC.'
     });
     setSerahQcModalItem(item);
@@ -761,28 +859,96 @@ export default function DivisiJahit({
 
         {/* CONTROLS: PILIH PENJAHIT & SEARCH */}
         <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
-          <div className="flex items-center gap-1.5 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
-            <UserCheck className="w-3.5 h-3.5 text-purple-700 shrink-0" />
-            <span className="text-[11px] font-bold text-purple-900 whitespace-nowrap">
-              Penjahit:
-            </span>
-            <select
-              value={selectedPenjahit}
-              onChange={(e) => setSelectedPenjahit(e.target.value)}
-              className="bg-white border border-purple-300 rounded px-2 py-0.5 text-xs font-bold text-purple-950 focus:outline-none cursor-pointer"
-            >
-              {currentUser?.nama && (
-                <option value={currentUser.nama}>{currentUser.nama} (Saya)</option>
-              )}
-              {jahitWorkers.map((w) => (
-                <option key={w.id || w.nama} value={w.nama}>
-                  {w.nama}
-                </option>
-              ))}
-              {!currentUser?.nama && jahitWorkers.length === 0 && (
-                <option value="Tim Jahit 1">Tim Jahit 1</option>
-              )}
-            </select>
+          {/* SEARCHABLE SELECT PENJAHIT DI TOOLBAR */}
+          <div className="relative" ref={penjahitDropdownRef}>
+            <div className="flex items-center gap-1.5 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+              <UserCheck className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+              <span className="text-[11px] font-bold text-purple-900 whitespace-nowrap">
+                Penjahit:
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPenjahitDropdownOpen((prev) => !prev);
+                  setPenjahitSearchQuery('');
+                }}
+                className="min-w-[150px] max-w-[220px] h-7 bg-white border border-purple-300 hover:border-purple-500 rounded px-2 text-xs font-bold text-purple-950 flex items-center justify-between gap-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 cursor-pointer shadow-2xs transition-all"
+              >
+                <span className="truncate text-left">{currentSelectedPenjahitLabel}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-purple-600 shrink-0 transition-transform duration-200 ${
+                    isPenjahitDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* DROPDOWN MENU WITH SEARCH BAR */}
+            {isPenjahitDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 text-xs font-sans">
+                {/* Search Box */}
+                <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
+                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Cari nama penjahit..."
+                    value={penjahitSearchQuery}
+                    onChange={(e) => setPenjahitSearchQuery(e.target.value)}
+                    className="w-full text-xs bg-white h-7 px-2 rounded-md border border-slate-200 focus:outline-none focus:border-purple-600 font-medium text-slate-800 placeholder-slate-400"
+                  />
+                  {penjahitSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setPenjahitSearchQuery('')}
+                      className="p-1 hover:bg-slate-200 rounded text-slate-400 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* List Items */}
+                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 p-1">
+                  {filteredPenjahitOptions.length === 0 ? (
+                    <div className="py-4 text-center text-slate-400 text-xs">
+                      Penjahit tidak ditemukan.
+                    </div>
+                  ) : (
+                    filteredPenjahitOptions.map((opt) => {
+                      const isSelected = selectedPenjahit === opt.nama;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => {
+                            setSelectedPenjahit(opt.nama);
+                            setIsPenjahitDropdownOpen(false);
+                            setPenjahitSearchQuery('');
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-left transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-purple-50 text-purple-800 font-black'
+                              : 'hover:bg-slate-50 text-slate-700 font-medium'
+                          }`}
+                        >
+                          <div className="truncate">
+                            <span className="block truncate">{opt.label}</span>
+                            {opt.nik && (
+                              <span className="text-[10px] text-slate-400 font-mono block">
+                                NIK: {opt.nik}
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 text-purple-600 shrink-0 ml-1" />
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {activeTab === 'ambil' && filteredData.length > 1 && (
@@ -1063,36 +1229,90 @@ export default function DivisiJahit({
                 </div>
               </div>
 
-              <div>
+              {/* PILIH PENJAHIT (SEARCHABLE COMBOBOX) */}
+              <div className="relative" ref={approvalPenjahitRef}>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Pilih Penjahit *
                 </label>
-                {jahitWorkers.length > 0 ? (
-                  <select
-                    value={approvalForm.timJahit}
-                    onChange={(e) =>
-                      setApprovalForm({ ...approvalForm, timJahit: e.target.value })
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-purple-600"
-                  >
-                    {jahitWorkers.map((w) => (
-                      <option key={w.id} value={w.nama}>
-                        {w.nama} ({w.nik}) - {w.kategori}
-                      </option>
-                    ))}
-                    <option value="Tim Jahit Internal">Tim Jahit Internal</option>
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    value={approvalForm.timJahit}
-                    onChange={(e) =>
-                      setApprovalForm({ ...approvalForm, timJahit: e.target.value })
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-purple-600"
-                    placeholder="Nama Penjahit..."
+                <div
+                  onClick={() => setIsApprovalPenjahitOpen((prev) => !prev)}
+                  className={`w-full h-9 px-3 rounded-lg border text-xs flex items-center justify-between bg-white cursor-pointer transition-all ${
+                    isApprovalPenjahitOpen
+                      ? 'border-purple-600 ring-2 ring-purple-600/20'
+                      : 'border-slate-300 hover:border-purple-600'
+                  }`}
+                >
+                  <span className="font-semibold text-slate-800 truncate">
+                    {approvalForm.timJahit || 'Pilih Penjahit...'}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                      isApprovalPenjahitOpen ? 'rotate-180 text-purple-600' : ''
+                    }`}
                   />
+                </div>
+
+                {isApprovalPenjahitOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 text-xs font-sans">
+                    <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
+                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Cari nama penjahit..."
+                        value={approvalPenjahitSearch}
+                        onChange={(e) => setApprovalPenjahitSearch(e.target.value)}
+                        className="w-full text-xs bg-white h-7 px-2 rounded-md border border-slate-200 focus:outline-none focus:border-purple-600 font-medium text-slate-800 placeholder-slate-400"
+                      />
+                      {approvalPenjahitSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setApprovalPenjahitSearch('')}
+                          className="p-1 hover:bg-slate-200 rounded text-slate-400 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 p-1">
+                      {filteredApprovalPenjahitOptions.length === 0 ? (
+                        <div className="py-3 text-center text-slate-400 text-xs">
+                          Penjahit tidak ditemukan.
+                        </div>
+                      ) : (
+                        filteredApprovalPenjahitOptions.map((opt) => {
+                          const isSelected = approvalForm.timJahit === opt.nama;
+                          return (
+                            <div
+                              key={opt.id}
+                              onClick={() => {
+                                setApprovalForm((prev) => ({ ...prev, timJahit: opt.nama }));
+                                setIsApprovalPenjahitOpen(false);
+                                setApprovalPenjahitSearch('');
+                              }}
+                              className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-left transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'bg-purple-50 text-purple-800 font-black'
+                                  : 'hover:bg-slate-50 text-slate-700 font-medium'
+                              }`}
+                            >
+                              <div className="truncate">
+                                <span className="block truncate">{opt.label}</span>
+                                {opt.nik && (
+                                  <span className="text-[10px] text-slate-400 font-mono block">
+                                    NIK: {opt.nik} {opt.kategori ? `• ${opt.kategori}` : ''}
+                                  </span>
+                                )}
+                              </div>
+                              {isSelected && (
+                                <Check className="w-3.5 h-3.5 text-purple-600 shrink-0 ml-1" />
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -1214,17 +1434,15 @@ export default function DivisiJahit({
                     Tarif Upah QC (per Pcs) <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1.5 text-[11px] font-bold text-slate-400">
+                    <span className="absolute left-2.5 top-2 text-[11px] font-bold text-slate-400 select-none">
                       Rp
                     </span>
                     <input
-                      type="number"
-                      required
-                      value={serahQcForm.tarifQc}
-                      onChange={(e) =>
-                        setSerahQcForm({ ...serahQcForm, tarifQc: e.target.value })
-                      }
-                      className="w-full h-8 pl-8 pr-2.5 rounded-lg border border-slate-300 font-mono font-bold focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 text-right"
+                      type="text"
+                      readOnly
+                      disabled
+                      value={Number(serahQcForm.tarifQc || 0).toLocaleString('id-ID')}
+                      className="w-full h-8 pl-8 pr-2.5 rounded-lg border border-slate-200 bg-slate-100 font-mono font-black text-slate-700 text-xs text-right cursor-not-allowed select-none shadow-2xs"
                     />
                   </div>
                 </div>

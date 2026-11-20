@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Scissors,
   CheckCircle2,
@@ -14,10 +14,15 @@ import {
   UserCheck,
   Layers,
   ChevronRight,
+  ChevronDown,
   ShieldCheck,
   Check,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Plus,
+  Pencil,
+  Trash2,
+  X
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
@@ -88,6 +93,118 @@ export default function DivisiJahit({
     tarifQc: 500,
     catatanQc: 'Jahitan selesai, siap inspeksi kualitas.'
   });
+
+  // Filter tim/petugas QC dari master karyawan & localStorage (sinkron dengan ModalSerahQC SPK)
+  const qcEmployees = useMemo(() => {
+    return employees.filter(
+      (e) =>
+        e.status === 'Aktif' &&
+        (String(e.bagian || '').toLowerCase().includes('qc') ||
+          String(e.bagian || '').toLowerCase().includes('quality'))
+    );
+  }, [employees]);
+
+  const [customQcTeams, setCustomQcTeams] = useState(() => {
+    try {
+      const cached = localStorage.getItem('konveksi_custom_qc_teams');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    const defaultList = [
+      ...qcEmployees.map((e) => `Tim ${e.nama} (${e.bagian || 'QC'})`),
+      'Tim QC 1 (Inspeksi Jahitan & Pola)',
+      'Tim QC 2 (Inspeksi Finishing & Aksesoris)',
+      'Supervisor QC Meja Utama'
+    ];
+    return Array.from(new Set(defaultList));
+  });
+
+  // Sinkronkan tim jika master karyawan memuat tim baru
+  useEffect(() => {
+    if (qcEmployees.length > 0) {
+      setCustomQcTeams((prev) => {
+        const empTeams = qcEmployees.map((e) => `Tim ${e.nama} (${e.bagian || 'QC'})`);
+        return Array.from(new Set([...empTeams, ...prev]));
+      });
+    }
+  }, [qcEmployees]);
+
+  const [isQcComboboxOpen, setIsQcComboboxOpen] = useState(false);
+  const [qcSearchQuery, setQcSearchQuery] = useState('');
+  const [isAddingQcTeam, setIsAddingQcTeam] = useState(false);
+  const [newQcTeamInput, setNewQcTeamInput] = useState('');
+  const [editingQcIndex, setEditingQcIndex] = useState(null);
+  const [editingQcInput, setEditingQcInput] = useState('');
+  const qcComboboxRef = useRef(null);
+
+  // Close combobox saat klik di luar
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (qcComboboxRef.current && !qcComboboxRef.current.contains(event.target)) {
+        setIsQcComboboxOpen(false);
+        setIsAddingQcTeam(false);
+        setEditingQcIndex(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const saveQcTeamsToStorage = (updated) => {
+    setCustomQcTeams(updated);
+    try {
+      localStorage.setItem('konveksi_custom_qc_teams', JSON.stringify(updated));
+    } catch (_) {}
+  };
+
+  const filteredQcTeams = useMemo(() => {
+    if (!qcSearchQuery.trim()) return customQcTeams;
+    const q = qcSearchQuery.toLowerCase();
+    return customQcTeams.filter((t) => t.toLowerCase().includes(q));
+  }, [customQcTeams, qcSearchQuery]);
+
+  const handleAddNewQcTeam = (e) => {
+    e?.preventDefault?.();
+    const val = newQcTeamInput.trim();
+    if (!val) return;
+    if (customQcTeams.includes(val)) {
+      setSerahQcForm((prev) => ({ ...prev, timQc: val }));
+      setIsAddingQcTeam(false);
+      setNewQcTeamInput('');
+      setIsQcComboboxOpen(false);
+      return;
+    }
+    const updated = [...customQcTeams, val];
+    saveQcTeamsToStorage(updated);
+    setSerahQcForm((prev) => ({ ...prev, timQc: val }));
+    setIsAddingQcTeam(false);
+    setNewQcTeamInput('');
+    setIsQcComboboxOpen(false);
+  };
+
+  const handleSaveEditQcTeam = (idx, oldVal) => {
+    const val = editingQcInput.trim();
+    if (!val) {
+      setEditingQcIndex(null);
+      return;
+    }
+    const updated = [...customQcTeams];
+    updated[idx] = val;
+    saveQcTeamsToStorage(updated);
+    if (serahQcForm.timQc === oldVal) {
+      setSerahQcForm((prev) => ({ ...prev, timQc: val }));
+    }
+    setEditingQcIndex(null);
+    setEditingQcInput('');
+  };
+
+  const handleDeleteQcTeam = (valToDelete, e) => {
+    e.stopPropagation();
+    const updated = customQcTeams.filter((t) => t !== valToDelete);
+    saveQcTeamsToStorage(updated);
+    if (serahQcForm.timQc === valToDelete) {
+      setSerahQcForm((prev) => ({ ...prev, timQc: updated[0] || 'Tim QC' }));
+    }
+  };
 
   // Filter Data Khusus Divisi Jahit
   const jahitData = useMemo(() => {
@@ -369,13 +486,20 @@ export default function DivisiJahit({
 
   // Buka Modal Serah ke QC
   const handleOpenSerahQc = (item) => {
+    const defaultTim =
+      item.timQc ||
+      (customQcTeams.length > 0 ? customQcTeams[0] : 'Tim QC (Pemeriksaan)');
     setSerahQcForm({
       tglSerahQc: new Date().toISOString().slice(0, 10),
-      timQc: 'Tim QC (Pemeriksaan)',
-      tarifQc: 500,
-      catatanQc: 'Jahitan selesai lengkap, siap diinspeksi QC.'
+      timQc: defaultTim,
+      tarifQc: Number(item.tarifQc) || 500,
+      catatanQc: item.catatanQc || 'Jahitan selesai lengkap, siap diinspeksi QC.'
     });
     setSerahQcModalItem(item);
+    setIsQcComboboxOpen(false);
+    setIsAddingQcTeam(false);
+    setEditingQcIndex(null);
+    setQcSearchQuery('');
   };
 
   // Submit Selesai Jahit & Serahkan ke QC
@@ -1044,7 +1168,7 @@ export default function DivisiJahit({
       {/* 6. MODAL SERAHKAN KE DIVISI QC */}
       {serahQcModalItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn text-xs">
-          <div className="w-full max-w-md bg-white rounded-2xl p-5 shadow-2xl border border-slate-200/80 space-y-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-5 shadow-2xl border border-slate-200/80 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
@@ -1055,23 +1179,24 @@ export default function DivisiJahit({
                     Selesaikan Jahit & Serahkan ke QC
                   </h3>
                   <p className="text-[10.5px] text-slate-400 font-mono">
-                    {serahQcModalItem.noAntrian} • Qty: {serahQcModalItem.qty} Pcs
+                    {serahQcModalItem.noAntrian} • Target: {serahQcModalItem.qty} Pcs
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setSerahQcModalItem(null)}
-                className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmitSerahQc} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2.5">
+            <form onSubmit={handleSubmitSerahQc} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tanggal Serah QC *
+                    Tanggal Masuk Meja QC <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -1080,52 +1205,246 @@ export default function DivisiJahit({
                     onChange={(e) =>
                       setSerahQcForm({ ...serahQcForm, tglSerahQc: e.target.value })
                     }
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold focus:outline-none focus:border-teal-600"
+                    className="w-full h-8 px-2.5 rounded-lg border border-slate-300 font-semibold focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Ongkos QC / Pcs (Rp) *
+                    Tarif Upah QC (per Pcs) <span className="text-rose-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    required
-                    value={serahQcForm.tarifQc}
-                    onChange={(e) =>
-                      setSerahQcForm({ ...serahQcForm, tarifQc: e.target.value })
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-mono font-bold focus:outline-none focus:border-teal-600 text-right"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1.5 text-[11px] font-bold text-slate-400">
+                      Rp
+                    </span>
+                    <input
+                      type="number"
+                      required
+                      value={serahQcForm.tarifQc}
+                      onChange={(e) =>
+                        setSerahQcForm({ ...serahQcForm, tarifQc: e.target.value })
+                      }
+                      className="w-full h-8 pl-8 pr-2.5 rounded-lg border border-slate-300 font-mono font-bold focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 text-right"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Tim Pemeriksa QC *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={serahQcForm.timQc}
-                  onChange={(e) =>
-                    setSerahQcForm({ ...serahQcForm, timQc: e.target.value })
-                  }
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-teal-600"
-                />
+              {/* TIM / PETUGAS QC (SEARCHABLE SELECT COMBOBOX DENGAN DATABASE KARYAWAN & SEARCH) */}
+              <div className="relative" ref={qcComboboxRef}>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Tim / Petugas QC Pemeriksa <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsQcComboboxOpen(true);
+                      setIsAddingQcTeam(true);
+                    }}
+                    className="text-[10.5px] text-teal-600 hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Tambah Petugas</span>
+                  </button>
+                </div>
+
+                {/* Combobox Trigger Box */}
+                <div
+                  onClick={() => setIsQcComboboxOpen((prev) => !prev)}
+                  className={`w-full h-9 px-3 rounded-lg border text-xs flex items-center justify-between bg-white cursor-pointer transition-all ${
+                    isQcComboboxOpen
+                      ? 'border-teal-600 ring-2 ring-teal-600/20'
+                      : 'border-slate-300 hover:border-teal-600'
+                  }`}
+                >
+                  <span className="font-semibold text-slate-800 truncate">
+                    {serahQcForm.timQc || 'Pilih Tim QC...'}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
+                      isQcComboboxOpen ? 'rotate-180 text-teal-600' : ''
+                    }`}
+                  />
+                </div>
+
+                {/* Combobox Popover Dropdown */}
+                {isQcComboboxOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 text-xs font-sans">
+                    {/* Search Bar Input */}
+                    <div className="p-2 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Cari nama tim / petugas QC..."
+                        value={qcSearchQuery}
+                        onChange={(e) => setQcSearchQuery(e.target.value)}
+                        className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400 font-medium"
+                      />
+                      {qcSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setQcSearchQuery('')}
+                          className="p-1 hover:bg-slate-200 rounded text-slate-400 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Mode Tambah Tim Baru */}
+                    {isAddingQcTeam && (
+                      <div className="p-2 bg-teal-50 border-b border-teal-200 flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Ketik nama tim / petugas QC baru..."
+                          value={newQcTeamInput}
+                          onChange={(e) => setNewQcTeamInput(e.target.value)}
+                          className="flex-1 h-7 px-2 bg-white rounded border border-teal-300 text-xs text-slate-800 focus:outline-none focus:border-teal-600"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAddNewQcTeam(e);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddNewQcTeam}
+                          className="px-2.5 h-7 bg-teal-600 hover:bg-teal-700 text-white rounded font-bold text-[11px] cursor-pointer shrink-0"
+                        >
+                          Simpan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingQcTeam(false)}
+                          className="px-2 h-7 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-semibold text-[11px] cursor-pointer shrink-0"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    )}
+
+                    {/* List Items */}
+                    <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 p-1">
+                      {filteredQcTeams.length === 0 ? (
+                        <div className="py-4 text-center text-slate-400 text-xs">
+                          Petugas QC tidak ditemukan.
+                        </div>
+                      ) : (
+                        filteredQcTeams.map((teamName, idx) => {
+                          const isSelected = serahQcForm.timQc === teamName;
+                          const isEditing = editingQcIndex === idx;
+
+                          if (isEditing) {
+                            return (
+                              <div
+                                key={idx}
+                                className="p-1.5 flex items-center gap-1 bg-amber-50"
+                              >
+                                <input
+                                  type="text"
+                                  value={editingQcInput}
+                                  onChange={(e) => setEditingQcInput(e.target.value)}
+                                  className="flex-1 h-6 px-1.5 bg-white rounded border border-amber-300 text-xs text-slate-800"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter')
+                                      handleSaveEditQcTeam(idx, teamName);
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEditQcTeam(idx, teamName)}
+                                  className="px-2 h-6 bg-emerald-600 text-white rounded font-bold text-[10px] cursor-pointer"
+                                >
+                                  OK
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingQcIndex(null)}
+                                  className="px-1.5 h-6 bg-slate-200 text-slate-600 rounded text-[10px] cursor-pointer"
+                                >
+                                  X
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                setSerahQcForm((prev) => ({ ...prev, timQc: teamName }));
+                                setIsQcComboboxOpen(false);
+                              }}
+                              className={`w-full p-2 rounded-lg flex items-center justify-between text-left transition-colors cursor-pointer group ${
+                                isSelected
+                                  ? 'bg-teal-50 font-bold text-teal-700'
+                                  : 'hover:bg-slate-100 text-slate-700'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                                )}
+                                <span className="truncate">{teamName}</span>
+                              </div>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingQcIndex(idx);
+                                    setEditingQcInput(teamName);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-amber-600 rounded hover:bg-white"
+                                  title="Edit Nama Tim"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteQcTeam(teamName, e)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-white"
+                                  title="Hapus Dari Daftar"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ESTIMASI TOTAL UPAH QC BANNER */}
+              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">
+                  Total Estimasi Upah QC ({serahQcModalItem.qty || 1} Pcs):
+                </span>
+                <span className="font-mono font-black text-slate-800">
+                  Rp{' '}
+                  {(
+                    (Number(serahQcModalItem.qty) || 1) *
+                    (Number(serahQcForm.tarifQc) || 0)
+                  ).toLocaleString('id-ID')}
+                </span>
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Catatan untuk Divisi QC
+                  Catatan / Instruksi Khusus Pemeriksaan QC
                 </label>
                 <textarea
                   rows="2"
+                  placeholder="mis: Cek jahitan kerah O-neck 1.5cm, toleransi ukuran lingkar dada +-1cm..."
                   value={serahQcForm.catatanQc}
                   onChange={(e) =>
                     setSerahQcForm({ ...serahQcForm, catatanQc: e.target.value })
                   }
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-teal-600"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                 />
               </div>
 
@@ -1133,17 +1452,17 @@ export default function DivisiJahit({
                 <button
                   type="button"
                   onClick={() => setSerahQcModalItem(null)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
                 >
                   <ArrowRight className="w-3.5 h-3.5" />
-                  <span>{loading ? 'Memproses...' : 'Serahkan ke QC'}</span>
+                  <span>{loading ? 'Memproses...' : 'Konfirmasi & Serahkan ke Tim QC'}</span>
                 </button>
               </div>
             </form>

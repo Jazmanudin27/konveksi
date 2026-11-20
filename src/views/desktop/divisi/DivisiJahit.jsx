@@ -179,7 +179,7 @@ export default function DivisiJahit({
     tglSerahQc: new Date().toISOString().slice(0, 10),
     timQc: 'Tim QC (Pemeriksaan)',
     tarifQc: 500,
-    catatanQc: 'Jahitan selesai, siap inspeksi kualitas.'
+    catatanQc: ''
   });
 
   // Filter tim/petugas QC dari master karyawan & localStorage (sinkron dengan ModalSerahQC SPK)
@@ -591,7 +591,7 @@ export default function DivisiJahit({
       tglSerahQc: new Date().toISOString().slice(0, 10),
       timQc: defaultTim,
       tarifQc: finalTarifQc,
-      catatanQc: item.catatanQc || 'Jahitan selesai lengkap, siap diinspeksi QC.'
+      catatanQc: item.catatanQc || ''
     });
     setSerahQcModalItem(item);
     setIsQcComboboxOpen(false);

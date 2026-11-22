@@ -14,16 +14,23 @@ import {
   ShieldCheck,
   Check,
   XCircle,
-  RotateCcw
+  RotateCcw,
+  Camera,
+  QrCode,
+  Printer
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
+import ScannerModal from '../../../components/common/ScannerModal';
+import CetakSpkModal from '../antrean/CetakSpkModal';
 
-export default function DivisiQC({ antreanList = [], setAntreanList, products = [], employees = [] }) {
+export default function DivisiQC({ antreanList = [], setAntreanList, products = [], employees = [], currentUser = null }) {
   const [activeTab, setActiveTab] = useState('inspeksi'); // 'inspeksi' | 'riwayat'
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedCetakSpk, setSelectedCetakSpk] = useState(null);
 
   // Modal Inspeksi & Approval QC
   const [inspeksiModalItem, setInspeksiModalItem] = useState(null);
@@ -100,6 +107,10 @@ export default function DivisiQC({ antreanList = [], setAntreanList, products = 
       catatanFinishing: 'Jahitan dan bahan telah lolos uji mutu standar'
     });
     setInspeksiModalItem(item);
+  };
+
+  const handleScannerAction = (matchedItem) => {
+    handleOpenInspeksi(matchedItem);
   };
 
   // Handle Perubahan Qty Lolos & Reject
@@ -206,22 +217,33 @@ export default function DivisiQC({ antreanList = [], setAntreanList, products = 
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setLoading(true);
-            api.getAntrean()
-              .then((fresh) => {
-                if (Array.isArray(fresh)) setAntreanList(fresh);
-                Swal.toast('Data QC diperbarui');
-              })
-              .finally(() => setLoading(false));
-          }}
-          disabled={loading}
-          className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/20 active:scale-95 shrink-0 self-start md:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Segarkan Data</span>
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 border border-emerald-400"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Scan Barcode SPK</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setLoading(true);
+              api.getAntrean()
+                .then((fresh) => {
+                  if (Array.isArray(fresh)) setAntreanList(fresh);
+                  Swal.toast('Data QC diperbarui');
+                })
+                .finally(() => setLoading(false));
+            }}
+            disabled={loading}
+            className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/20 active:scale-95"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Segarkan</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. STATS KPI CARDS */}
@@ -760,6 +782,23 @@ export default function DivisiQC({ antreanList = [], setAntreanList, products = 
           </div>
         </div>
       )}
+      {/* MODAL SCANNER BARCODE / QR SPK */}
+      <ScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        division="qc"
+        antreanList={antreanList}
+        currentUser={currentUser}
+        onActionSuccess={handleScannerAction}
+      />
+
+      {/* MODAL CETAK SPK & QR CODE */}
+      <CetakSpkModal
+        isOpen={Boolean(selectedCetakSpk)}
+        antrean={selectedCetakSpk}
+        products={products}
+        onClose={() => setSelectedCetakSpk(null)}
+      />
     </div>
   );
 }

@@ -94,6 +94,7 @@ export const api = {
   getMutasiGudangJadi: () => request('/mutasi-gudang-jadi'),
   createMutasiGudangJadi: (data) => request('/mutasi-gudang-jadi', { method: 'POST', body: JSON.stringify(data) }),
   approveMutasiGudangJadi: (data) => request('/mutasi-gudang-jadi/approve', { method: 'POST', body: JSON.stringify(data) }),
+  rejectMutasiGudangJadi: (data) => request('/mutasi-gudang-jadi/reject', { method: 'POST', body: JSON.stringify(data) }),
   deleteMutasiGudangJadi: (id) => request(`/mutasi-gudang-jadi/${id}`, { method: 'DELETE' }),
 
   // Master Ukuran / Sizes (Dinamis Tambah, Edit, Hapus)
@@ -143,6 +144,7 @@ export const api = {
   createUser: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+  syncPenjahitUsers: () => request('/users/sync-penjahit', { method: 'POST' }),
 };
 
 

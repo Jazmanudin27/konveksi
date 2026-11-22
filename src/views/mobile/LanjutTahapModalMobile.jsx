@@ -829,34 +829,7 @@ export default function LanjutTahapModalMobile({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Lokasi Rak:
-                  </label>
-                  <input
-                    type="text"
-                    value={lokasiRak}
-                    onChange={(e) => setLokasiRak(e.target.value)}
-                    placeholder="RAK-A1"
-                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none uppercase"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Petugas Penerima:
-                  </label>
-                  <input
-                    type="text"
-                    value={petugasGudang}
-                    onChange={(e) => setPetugasGudang(e.target.value)}
-                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:border-emerald-600 focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
+              {/* Lokasi Rak & Petugas default otomatis */}
 
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-700 mb-1">

@@ -27,10 +27,13 @@ import {
   Shirt,
   Sparkles,
   Settings,
-  Scissors
+  Scissors,
+  Printer,
+  QrCode
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
+import CetakSpkModal from './antrean/CetakSpkModal';
 
 // Sub-komponen Searchable Select Master Bahan Baku Desktop
 function SearchableBahanSelectDesktop({
@@ -328,6 +331,7 @@ export default function PermintaanProduksiGudang({
   const [filterPrioritas, setFilterPrioritas] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
+  const [selectedCetakSpk, setSelectedCetakSpk] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Combobox Product state
@@ -863,13 +867,25 @@ export default function PermintaanProduksiGudang({
       }
 
       setIsModalOpen(false);
-      Swal.fire({
+      const confirmPrint = await Swal.fire({
         icon: 'success',
         title: 'Permintaan Berhasil Dikirim!',
-        text: `Nomor ${newEntry.noAntrian} (${newEntry.namaProduk} - ${newEntry.qty} Pcs) telah masuk ke Divisi Cutting untuk diproses.`,
-        timer: 2200,
-        showConfirmButton: false,
+        html: `
+          <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
+            <p>Nomor <b>${newEntry.noAntrian}</b> (<b>${newEntry.namaProduk}</b> - ${newEntry.qty} Pcs) telah masuk ke antrean pabrik.</p>
+            <p style="margin-top:8px; font-weight:bold; color:#0284c7;">Cetak Lembar SPK ber-Barcode & QR Code sekarang?</p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '🖨️ Cetak SPK & QR Code',
+        cancelButtonText: 'Nanti Saja',
+        confirmButtonColor: '#059669',
+        cancelButtonColor: '#64748b',
       });
+
+      if (confirmPrint.isConfirmed) {
+        setSelectedCetakSpk(newEntry);
+      }
     } catch (err) {
       Swal.fire('Gagal Menyimpan', err.message || 'Terjadi kesalahan sistem saat membuat permintaan.', 'error');
     }
@@ -1263,6 +1279,16 @@ export default function PermintaanProduksiGudang({
                               <span>Terima</span>
                             </button>
                           )}
+
+                          {/* Tombol Cetak SPK & QR Code */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCetakSpk(item)}
+                            className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                            title="Cetak Lembar SPK & QR Code / Barcode"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-white" />
+                          </button>
 
                           {/* Tombol Detail */}
                           <button
@@ -2498,6 +2524,13 @@ export default function PermintaanProduksiGudang({
           </div>
         </div>
       )}
+      {/* Modal Cetak SPK & QR Code */}
+      <CetakSpkModal
+        isOpen={Boolean(selectedCetakSpk)}
+        antrean={selectedCetakSpk}
+        products={products}
+        onClose={() => setSelectedCetakSpk(null)}
+      />
     </div>
   );
 }

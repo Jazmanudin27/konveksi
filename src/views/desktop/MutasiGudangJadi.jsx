@@ -70,18 +70,24 @@ export default function MutasiGudangJadi({
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [approveTargetItem, setApproveTargetItem] = useState(null);
   const [approveForm, setApproveForm] = useState({
+    kesesuaian: "SESUAI", // 'SESUAI' | 'TIDAK_SESUAI'
+    qtySesuai: 1,
     tglDiterima: new Date().toISOString().slice(0, 10),
     petugasTerima: currentUser,
     lokasiRak: "Gudang Utama - Rak A1 (Kaos)",
+    alasanTidakSesuai: "",
     catatan: "",
   });
 
   const handleOpenApproveModal = (item) => {
     setApproveTargetItem(item);
     setApproveForm({
+      kesesuaian: "SESUAI",
+      qtySesuai: Number(item.qty) || 1,
       tglDiterima: new Date().toISOString().slice(0, 10),
       petugasTerima: currentUser,
       lokasiRak: item.lokasiRak || "Gudang Utama - Rak A1 (Kaos)",
+      alasanTidakSesuai: "",
       catatan: "",
     });
     setIsApproveModalOpen(true);
@@ -91,7 +97,72 @@ export default function MutasiGudangJadi({
     e.preventDefault();
     if (!approveTargetItem) return;
 
+    // KASUS 1: TIDAK SESUAI (TOLAK / RETUR KE FINISHING)
+    if (approveForm.kesesuaian === "TIDAK_SESUAI") {
+      if (!approveForm.alasanTidakSesuai.trim()) {
+        Swal.fire({
+          icon: "warning",
+          title: "Alasan Penolakan Wajib Diisi",
+          text: "Silakan masukkan alasan/detail ketidaksesuaian barang untuk divisi Finishing.",
+        });
+        return;
+      }
+
+      try {
+        try {
+          await api.rejectMutasiGudangJadi({
+            id: approveTargetItem.id,
+            alasan: approveForm.alasanTidakSesuai.trim(),
+            petugas: approveForm.petugasTerima,
+          });
+          const fresh = await api.getMutasiGudangJadi();
+          if (Array.isArray(fresh)) setMutasiList(fresh);
+        } catch (apiErr) {
+          console.warn("API reject offline/fallback:", apiErr);
+          setMutasiList((prev) =>
+            prev.map((m) =>
+              m.id === approveTargetItem.id
+                ? {
+                    ...m,
+                    statusPenerimaan: "Ditolak",
+                    catatan: `${m.catatan || ""} | [DITOLAK GUDANG]: ${approveForm.alasanTidakSesuai}`,
+                  }
+                : m
+            )
+          );
+        }
+
+        setIsApproveModalOpen(false);
+        setApproveTargetItem(null);
+
+        await Swal.fire({
+          icon: "info",
+          title: "Barang Ditolak & Dikembalikan!",
+          html: `
+            <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
+              <p>Barang <b>${approveTargetItem.namaProduk}</b> tidak lolos opname gudang dan telah dikembalikan ke <b>Divisi Finishing</b>.</p>
+              <div style="margin-top:8px; padding:10px 14px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; color:#991b1b;">
+                <b>Alasan Penolakan:</b> ${approveForm.alasanTidakSesuai}
+              </div>
+            </div>
+          `,
+          confirmButtonText: "Selesai",
+          confirmButtonColor: "#ef4444",
+        });
+      } catch (err) {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Menolak Barang",
+          text: err.message || "Terjadi kesalahan sistem",
+        });
+      }
+      return;
+    }
+
+    // KASUS 2: SESUAI (LOLOS & MASUK STOK GUDANG JADI)
     try {
+      const finalQtySesuai = Number(approveForm.qtySesuai) > 0 ? Number(approveForm.qtySesuai) : Number(approveTargetItem.qty);
+
       try {
         await api.approveMutasiGudangJadi({
           id: approveTargetItem.id,
@@ -99,6 +170,7 @@ export default function MutasiGudangJadi({
           petugasTerima: approveForm.petugasTerima,
           lokasiRak: approveForm.lokasiRak,
           catatan: approveForm.catatan,
+          qtySesuai: finalQtySesuai,
         });
         const fresh = await api.getMutasiGudangJadi();
         if (Array.isArray(fresh)) setMutasiList(fresh);
@@ -113,6 +185,7 @@ export default function MutasiGudangJadi({
               ? {
                   ...m,
                   statusPenerimaan: "Diterima",
+                  qty: finalQtySesuai,
                   tglDiterima: approveForm.tglDiterima,
                   petugasTerima: approveForm.petugasTerima,
                   petugas: approveForm.petugasTerima,
@@ -131,13 +204,13 @@ export default function MutasiGudangJadi({
 
       await Swal.fire({
         icon: "success",
-        title: "Barang Jadi Resmi Diterima & Disimpan!",
+        title: "Barang Sesuai & Resmi Masuk Stok!",
         html: `
           <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
-            <p>Penerimaan barang dari Finishing telah berhasil di-approve:</p>
+            <p>Hasil opname fisik sesuai. Stok produk di sistem otomatis bertambah:</p>
             <div style="margin-top:8px; padding:10px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; color:#166534;">
-              <div>📦 <b>${approveTargetItem.namaProduk}</b> (+${Number(approveTargetItem.qty).toLocaleString("id-ID")} Pcs)</div>
-              <div>📍 Lokasi Rak: <b>${approveForm.lokasiRak}</b></div>
+              <div>📦 <b>${approveTargetItem.namaProduk}</b> (+${finalQtySesuai.toLocaleString("id-ID")} Pcs)</div>
+              <div>📍 Lokasi Rak: <b>${approveForm.lokasiRak || "Gudang Utama"}</b></div>
               <div>📅 Tgl Diterima: <b>${approveForm.tglDiterima}</b> (Oleh ${approveForm.petugasTerima})</div>
               ${approveTargetItem.tglDiserahkan ? `<div style="font-size:11px; color:#15803d; margin-top:4px;">📤 Tgl Diserahkan: ${approveTargetItem.tglDiserahkan} (${approveTargetItem.petugasSerah || "Tim Finishing"})</div>` : ""}
             </div>
@@ -872,8 +945,9 @@ export default function MutasiGudangJadi({
               </button>
             </div>
 
-            <form onSubmit={handleApproveSubmit} className="p-3.5 space-y-2.5">
-              <div className="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/60 space-y-1.5">
+            <form onSubmit={handleApproveSubmit} className="p-3.5 space-y-3">
+              {/* RINGKASAN BARANG DARI FINISHING */}
+              <div className="p-2.5 rounded-lg border border-slate-200 bg-slate-50/80 space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-extrabold text-xs text-slate-900">
@@ -885,18 +959,14 @@ export default function MutasiGudangJadi({
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="font-mono font-black text-sm text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-300 inline-block">
-                      +{Number(approveTargetItem.qty).toLocaleString("id-ID")}{" "}
-                      Pcs
+                    <span className="font-mono font-black text-xs text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 inline-block shadow-2xs">
+                      Target: {Number(approveTargetItem.qty).toLocaleString("id-ID")} Pcs
                     </span>
                   </div>
                 </div>
-                <div className="text-[10px] text-slate-500 pt-1 border-t border-emerald-200/80 flex items-center justify-between">
+                <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-200/80 flex items-center justify-between">
                   <span>
-                    Diserahkan:{" "}
-                    <strong>
-                      {approveTargetItem.petugasSerah || "Finishing"}
-                    </strong>
+                    Diserahkan: <strong>{approveTargetItem.petugasSerah || "Finishing"}</strong>
                   </span>
                   <span className="font-mono">
                     {approveTargetItem.tglDiserahkan || "-"}
@@ -904,76 +974,203 @@ export default function MutasiGudangJadi({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
-                    Tgl Diterima *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={approveForm.tglDiterima}
-                    onChange={(e) =>
-                      setApproveForm((prev) => ({
-                        ...prev,
-                        tglDiterima: e.target.value,
-                      }))
+              {/* OPSI KEPUTUSAN OPNAME: SESUAI VS TIDAK SESUAI */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-800 mb-1.5">
+                  Hasil Opname & Pemeriksaan Fisik *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setApproveForm((prev) => ({ ...prev, kesesuaian: "SESUAI" }))
                     }
-                    className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300 font-mono"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[10.5px] font-bold text-slate-700">
-                      Petugas Penerima
-                    </label>
-                    <span className="text-[9.5px] text-emerald-600 font-semibold bg-emerald-50 px-1 rounded border border-emerald-200">
-                      Auto: User Login
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    readOnly
-                    value={approveForm.petugasTerima}
-                    title="Otomatis terisi akun yang sedang login"
-                    className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300 bg-slate-100 text-slate-700 font-semibold cursor-not-allowed select-none"
-                  />
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      approveForm.kesesuaian === "SESUAI"
+                        ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/30 text-emerald-900 shadow-xs"
+                        : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-black text-xs text-emerald-700">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Sesuai (Lolos)</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Fisik lengkap, simpan ke stok gudang.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setApproveForm((prev) => ({ ...prev, kesesuaian: "TIDAK_SESUAI" }))
+                    }
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      approveForm.kesesuaian === "TIDAK_SESUAI"
+                        ? "bg-rose-50 border-rose-500 ring-2 ring-rose-400/30 text-rose-900 shadow-xs"
+                        : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-black text-xs text-rose-700">
+                      <X className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Tidak Sesuai</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Ada selisih/cacat, kembalikan ke Finishing.
+                    </p>
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
-                  Catatan Tambahan
-                </label>
-                <input
-                  type="text"
-                  value={approveForm.catatan}
-                  onChange={(e) =>
-                    setApproveForm((prev) => ({
-                      ...prev,
-                      catatan: e.target.value,
-                    }))
-                  }
-                  placeholder="mis: Diterima kondisi rapi siap packing..."
-                  className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300"
-                />
-              </div>
+              {/* JIKA TIDAK SESUAI: FORM ALASAN PENOLAKAN */}
+              {approveForm.kesesuaian === "TIDAK_SESUAI" ? (
+                <div className="space-y-2 animate-fadeIn">
+                  <div className="p-2.5 rounded-lg bg-rose-50/80 border border-rose-200 text-rose-900 text-[10.5px] leading-relaxed">
+                    ⚠️ <b>Barang akan ditolak:</b> Status batch akan dikembalikan ke <b>Divisi Finishing (Proses Finishing)</b> agar diperiksa dan dikerjakan ulang oleh tim finishing.
+                  </div>
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-rose-800 mb-1">
+                      Alasan Ketidaksesuaian / Reject *
+                    </label>
+                    <textarea
+                      rows="3"
+                      required
+                      value={approveForm.alasanTidakSesuai}
+                      onChange={(e) =>
+                        setApproveForm((prev) => ({
+                          ...prev,
+                          alasanTidakSesuai: e.target.value,
+                        }))
+                      }
+                      placeholder="Tulis alasan: contoh Qty fisik kurang 2 pcs, jahitan kerah lepas, kancing kurang..."
+                      className="w-full p-2 text-xs rounded-lg border border-rose-300 focus:outline-none focus:ring-1 focus:ring-rose-500"
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* JIKA SESUAI: FORM PENYIMPANAN KE GUDANG */
+                <div className="space-y-2.5 animate-fadeIn">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                        Qty Fisik Diterima (Pcs) *
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={approveForm.qtySesuai}
+                        onChange={(e) =>
+                          setApproveForm((prev) => ({
+                            ...prev,
+                            qtySesuai: e.target.value,
+                          }))
+                        }
+                        className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300 font-mono font-bold text-emerald-700 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                        Lokasi Rak Gudang *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={approveForm.lokasiRak}
+                        onChange={(e) =>
+                          setApproveForm((prev) => ({
+                            ...prev,
+                            lokasiRak: e.target.value,
+                          }))
+                        }
+                        placeholder="mis: Rak A1 (Kaos)"
+                        className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300 font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                        Tgl Diterima *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={approveForm.tglDiterima}
+                        onChange={(e) =>
+                          setApproveForm((prev) => ({
+                            ...prev,
+                            tglDiterima: e.target.value,
+                          }))
+                        }
+                        className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10.5px] font-bold text-slate-700">
+                          Petugas Penerima
+                        </label>
+                        <span className="text-[9.5px] text-emerald-600 font-semibold bg-emerald-50 px-1 rounded border border-emerald-200">
+                          Auto Login
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        readOnly
+                        value={approveForm.petugasTerima}
+                        title="Otomatis terisi akun yang sedang login"
+                        className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300 bg-slate-100 text-slate-700 font-semibold cursor-not-allowed select-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                      Catatan Tambahan
+                    </label>
+                    <input
+                      type="text"
+                      value={approveForm.catatan}
+                      onChange={(e) =>
+                        setApproveForm((prev) => ({
+                          ...prev,
+                          catatan: e.target.value,
+                        }))
+                      }
+                      placeholder="mis: Diterima rapi siap display / packing kirim..."
+                      className="w-full h-7.5 px-2 text-xs rounded-lg border border-slate-300"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsApproveModalOpen(false)}
-                  className="px-3 py-1 rounded-lg border border-slate-300 text-slate-600 font-bold cursor-pointer text-xs"
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 font-bold cursor-pointer text-xs hover:bg-slate-50"
                 >
                   Batal
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer text-xs shadow-xs flex items-center gap-1"
-                >
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Konfirmasi Terima</span>
-                </button>
+                {approveForm.kesesuaian === "TIDAK_SESUAI" ? (
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer text-xs shadow-xs flex items-center gap-1.5"
+                  >
+                    <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Tolak & Kembalikan ke Finishing</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer text-xs shadow-xs flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Konfirmasi Sesuai & Masuk Stok</span>
+                  </button>
+                )}
               </div>
             </form>
           </div>

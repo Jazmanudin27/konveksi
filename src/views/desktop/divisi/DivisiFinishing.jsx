@@ -15,10 +15,15 @@ import {
   ShieldCheck,
   Check,
   Sparkles,
-  Boxes
+  Boxes,
+  Camera,
+  QrCode,
+  Printer
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
+import ScannerModal from '../../../components/common/ScannerModal';
+import CetakSpkModal from '../antrean/CetakSpkModal';
 
 export default function DivisiFinishing({
   antreanList = [],
@@ -26,20 +31,23 @@ export default function DivisiFinishing({
   products = [],
   employees = [],
   mutasiGudangJadiList = [],
-  setMutasiGudangJadiList
+  setMutasiGudangJadiList,
+  currentUser = null,
+  userRole = '',
+  onNavigateToMutasiGudang = null
 }) {
-  const [activeTab, setActiveTab] = useState('proses'); // 'proses' | 'riwayat'
+  const [activeTab, setActiveTab] = useState('proses'); // 'proses' | 'menunggu' | 'riwayat'
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedCetakSpk, setSelectedCetakSpk] = useState(null);
 
   // Modal Selesai Finishing & Serah ke Gudang Jadi
   const [selesaiModalItem, setSelesaiModalItem] = useState(null);
   const [selesaiForm, setSelesaiForm] = useState({
     tglDiserahkan: new Date().toISOString().slice(0, 10),
-    petugasSerah: 'Admin Finishing',
-    lokasiRak: 'RAK-GUDANG-A',
-    catatan: 'Pakaian telah disetrika uap, hangtag terpasang, dan dikemas rapi.'
+    catatan: ''
   });
 
   // Master Tim Finishing
@@ -58,6 +66,9 @@ export default function DivisiFinishing({
     return antreanList.filter((item) => {
       if (activeTab === 'proses') {
         return item.status === 'Proses Finishing';
+      }
+      if (activeTab === 'menunggu') {
+        return item.status === 'Menunggu Approval Gudang';
       }
       if (activeTab === 'riwayat') {
         return item.status === 'Selesai';
@@ -83,14 +94,18 @@ export default function DivisiFinishing({
   // Statistik KPI Divisi Finishing
   const stats = useMemo(() => {
     const proses = antreanList.filter((i) => i.status === 'Proses Finishing');
+    const menunggu = antreanList.filter((i) => i.status === 'Menunggu Approval Gudang');
     const riwayat = antreanList.filter((i) => i.status === 'Selesai');
     const totalPcsProses = proses.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+    const totalPcsMenunggu = menunggu.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
     const totalPcsSelesai = riwayat.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
 
     return {
       prosesCount: proses.length,
+      menungguCount: menunggu.length,
       riwayatCount: riwayat.length,
       totalPcsProses,
+      totalPcsMenunggu,
       totalPcsSelesai
     };
   }, [antreanList]);
@@ -99,11 +114,13 @@ export default function DivisiFinishing({
   const handleOpenSelesai = (item) => {
     setSelesaiForm({
       tglDiserahkan: new Date().toISOString().slice(0, 10),
-      petugasSerah: item.timFinishing || 'Admin Finishing',
-      lokasiRak: 'RAK-GUDANG-A',
-      catatan: 'Pakaian telah disetrika uap, hangtag terpasang, dan dikemas plastik OPP.'
+      catatan: ''
     });
     setSelesaiModalItem(item);
+  };
+
+  const handleScannerAction = (matchedItem) => {
+    handleOpenSelesai(matchedItem);
   };
 
   // Submit Serah ke Gudang Jadi
@@ -113,14 +130,19 @@ export default function DivisiFinishing({
 
     try {
       setLoading(true);
+      const finalPetugas =
+        selesaiModalItem.timFinishing ||
+        currentUser?.nama ||
+        'Tim Finishing & Packing';
+
       const payload = {
         ids: [selesaiModalItem.id],
         tglDiserahkan: selesaiForm.tglDiserahkan,
         tglSelesai: selesaiForm.tglDiserahkan,
-        petugasSerah: selesaiForm.petugasSerah,
-        timFinishing: selesaiModalItem.timFinishing || selesaiForm.petugasSerah,
-        lokasiRak: selesaiForm.lokasiRak,
-        catatan: selesaiForm.catatan
+        petugasSerah: finalPetugas,
+        timFinishing: finalPetugas,
+        lokasiRak: 'Gudang Jadi',
+        catatan: selesaiForm.catatan || 'Selesai dikemas & siap opname gudang jadi.'
       };
 
       await api.selesaiFinishing(payload);
@@ -136,9 +158,18 @@ export default function DivisiFinishing({
       }
 
       Swal.success(
-        'Finishing Selesai!',
-        `Antrean ${selesaiModalItem.noAntrian} berhasil diserahkan ke Gudang Jadi (Lokasi: ${selesaiForm.lokasiRak}).`
+        'Diserahkan ke Gudang Jadi!',
+        `Antrean ${selesaiModalItem.noAntrian} berhasil diserahkan. Menunggu proses opname & approval oleh Bagian Gudang.`
       );
+
+      setSelesaiModalItem(null);
+      setActiveTab('menunggu');
+    } catch (err) {
+      Swal.error('Gagal Serahkan', err.message || 'Terjadi kesalahan sistem.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
       setSelesaiModalItem(null);
       setActiveTab('riwayat');
@@ -172,22 +203,33 @@ export default function DivisiFinishing({
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setLoading(true);
-            api.getAntrean()
-              .then((fresh) => {
-                if (Array.isArray(fresh)) setAntreanList(fresh);
-                Swal.toast('Data finishing diperbarui');
-              })
-              .finally(() => setLoading(false));
-          }}
-          disabled={loading}
-          className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/20 active:scale-95 shrink-0 self-start md:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Segarkan Data</span>
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 border border-emerald-400"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Scan Barcode SPK</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setLoading(true);
+              api.getAntrean()
+                .then((fresh) => {
+                  if (Array.isArray(fresh)) setAntreanList(fresh);
+                  Swal.toast('Data finishing diperbarui');
+                })
+                .finally(() => setLoading(false));
+            }}
+            disabled={loading}
+            className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/20 active:scale-95"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Segarkan</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. STATS KPI CARDS */}
@@ -215,6 +257,28 @@ export default function DivisiFinishing({
         </div>
 
         <div
+          onClick={() => setActiveTab('menunggu')}
+          className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+            activeTab === 'menunggu'
+              ? 'bg-amber-50/90 border-amber-400 ring-2 ring-amber-400/40 shadow-xs'
+              : 'bg-white border-slate-200/80 hover:border-amber-300 shadow-xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-600 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
+              Menunggu Opname Gudang
+            </span>
+            <Warehouse className="w-4 h-4 text-amber-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 leading-tight">
+            {stats.menungguCount}
+          </div>
+          <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
+            {stats.totalPcsMenunggu.toLocaleString('id-ID')} Pcs Menunggu Verifikasi
+          </p>
+        </div>
+
+        <div
           onClick={() => setActiveTab('riwayat')}
           className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
             activeTab === 'riwayat'
@@ -224,7 +288,7 @@ export default function DivisiFinishing({
         >
           <div className="flex items-center justify-between text-emerald-600 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Selesai ke Gudang
+              Selesai Masuk Stok
             </span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
@@ -232,7 +296,7 @@ export default function DivisiFinishing({
             {stats.riwayatCount}
           </div>
           <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">
-            {stats.totalPcsSelesai.toLocaleString('id-ID')} Pcs Masuk Gudang Jadi
+            {stats.totalPcsSelesai.toLocaleString('id-ID')} Pcs Resmi Masuk Gudang Jadi
           </p>
         </div>
 
@@ -248,21 +312,6 @@ export default function DivisiFinishing({
           </div>
           <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
             Tim Finishing & Kemas
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Status Gudang
-            </span>
-            <Warehouse className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 leading-tight">
-            Ready
-          </div>
-          <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
-            Auto Input Mutu & Rak
           </p>
         </div>
       </div>
@@ -285,6 +334,23 @@ export default function DivisiFinishing({
               activeTab === 'proses' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
             }`}>
               {stats.prosesCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('menunggu')}
+            className={`px-3.5 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'menunggu'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+            }`}
+          >
+            <Warehouse className="w-4 h-4" />
+            <span>Menunggu Opname Gudang</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+              activeTab === 'menunggu' ? 'bg-white/25 text-white' : 'bg-amber-200 text-amber-900'
+            }`}>
+              {stats.menungguCount}
             </span>
           </button>
 
@@ -422,6 +488,8 @@ export default function DivisiFinishing({
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
                             item.status === 'Proses Finishing'
                               ? 'bg-rose-50 text-rose-700 border-rose-300'
+                              : item.status === 'Menunggu Approval Gudang'
+                              ? 'bg-amber-50 text-amber-800 border-amber-300'
                               : 'bg-emerald-50 text-emerald-700 border-emerald-300'
                           }`}
                         >
@@ -441,6 +509,18 @@ export default function DivisiFinishing({
                             >
                               <Warehouse className="w-3.5 h-3.5" />
                               <span>Serah ke Gudang</span>
+                            </button>
+                          )}
+
+                          {/* JIKA MENUNGGU APPROVAL GUDANG -> SHORTCUT BUKA MUTASI GUDANG */}
+                          {item.status === 'Menunggu Approval Gudang' && onNavigateToMutasiGudang && (
+                            <button
+                              onClick={onNavigateToMutasiGudang}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                              title="Buka menu Mutasi Gudang Jadi untuk Opname & Approval"
+                            >
+                              <Warehouse className="w-3.5 h-3.5" />
+                              <span>Opname Gudang</span>
                             </button>
                           )}
 
@@ -499,7 +579,7 @@ export default function DivisiFinishing({
               </button>
             </div>
 
-            <form onSubmit={handleSubmitSelesai} className="space-y-3">
+            <form onSubmit={handleSubmitSelesai} className="space-y-3.5">
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Produk Selesai Dikemas
@@ -512,51 +592,18 @@ export default function DivisiFinishing({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tanggal Penyerahan *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={selesaiForm.tglDiserahkan}
-                    onChange={(e) =>
-                      setSelesaiForm({ ...selesaiForm, tglDiserahkan: e.target.value })
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold focus:outline-none focus:border-emerald-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Lokasi Rak Gudang *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={selesaiForm.lokasiRak}
-                    onChange={(e) =>
-                      setSelesaiForm({ ...selesaiForm, lokasiRak: e.target.value })
-                    }
-                    placeholder="mis: RAK-A1"
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-emerald-600"
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Petugas Penyerah Finishing *
+                  Tanggal Penyerahan *
                 </label>
                 <input
-                  type="text"
+                  type="date"
                   required
-                  value={selesaiForm.petugasSerah}
+                  value={selesaiForm.tglDiserahkan}
                   onChange={(e) =>
-                    setSelesaiForm({ ...selesaiForm, petugasSerah: e.target.value })
+                    setSelesaiForm({ ...selesaiForm, tglDiserahkan: e.target.value })
                   }
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-emerald-600"
+                  className="w-full h-8 px-2.5 rounded-lg border border-slate-300 font-semibold focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
                 />
               </div>
 
@@ -570,7 +617,8 @@ export default function DivisiFinishing({
                   onChange={(e) =>
                     setSelesaiForm({ ...selesaiForm, catatan: e.target.value })
                   }
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-600"
+                  placeholder="Catatan tambahan kondisi kemasan, plastik polybag, dll (opsional)..."
+                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
                 />
               </div>
 
@@ -588,7 +636,7 @@ export default function DivisiFinishing({
                   className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs"
                 >
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>{loading ? 'Menyimpan...' : 'Selesaikan & Masukkan Gudang'}</span>
+                  <span>{loading ? 'Menyimpan...' : 'Konfirmasi & Serahkan ke Gudang Jadi'}</span>
                 </button>
               </div>
             </form>
@@ -646,6 +694,23 @@ export default function DivisiFinishing({
           </div>
         </div>
       )}
+      {/* MODAL SCANNER BARCODE / QR SPK */}
+      <ScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        division="finishing"
+        antreanList={antreanList}
+        currentUser={currentUser}
+        onActionSuccess={handleScannerAction}
+      />
+
+      {/* MODAL CETAK SPK & QR CODE */}
+      <CetakSpkModal
+        isOpen={Boolean(selectedCetakSpk)}
+        antrean={selectedCetakSpk}
+        products={products}
+        onClose={() => setSelectedCetakSpk(null)}
+      />
     </div>
   );
 }

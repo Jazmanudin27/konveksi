@@ -971,10 +971,10 @@ router.post('/selesai-finishing', async (req, res) => {
 
       const finalPetugasSerah = petugasSerah || timFinishing || item.tim_finishing || 'Tim Finishing';
 
-      // 1. Update status antrean -> 'Selesai'
+      // 1. Update status antrean -> 'Menunggu Approval Gudang'
       await connection.query(`
         UPDATE antrean 
-        SET status = 'Selesai',
+        SET status = 'Menunggu Approval Gudang',
             tgl_serah_gudang = ?
         WHERE id = ?
       `, [tglSerah, id]);

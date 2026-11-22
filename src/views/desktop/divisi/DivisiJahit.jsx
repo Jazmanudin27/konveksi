@@ -22,10 +22,15 @@ import {
   Plus,
   Pencil,
   Trash2,
-  X
+  X,
+  Camera,
+  QrCode,
+  Printer
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
+import ScannerModal from '../../../components/common/ScannerModal';
+import CetakSpkModal from '../antrean/CetakSpkModal';
 
 export default function DivisiJahit({
   antreanList = [],
@@ -39,6 +44,8 @@ export default function DivisiJahit({
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedCetakSpk, setSelectedCetakSpk] = useState(null);
 
   // Filter daftar penjahit dari master karyawan
   const jahitWorkers = useMemo(() => {
@@ -648,6 +655,64 @@ export default function DivisiJahit({
     }
   };
 
+  // Handler saat Penjahit scan Barcode / QR SPK
+  const handleScannerAction = async (matchedItem, actionType, user) => {
+    const workerName = user?.nama || selectedPenjahit || 'Penjahit';
+
+    if (actionType === 'ambil_jahit') {
+      try {
+        setLoading(true);
+        const payload = {
+          ids: [matchedItem.id],
+          timJahit: workerName,
+          tarifJahit: Number(matchedItem.tarifJahit) || 3500,
+          tglSerahJahit: new Date().toISOString().slice(0, 10),
+          catatanJahit: `Diambil via Scan Barcode oleh ${workerName}`
+        };
+
+        await api.serahJahit(payload);
+
+        setAntreanList((prev) =>
+          prev.map((ant) =>
+            ant.id === matchedItem.id
+              ? {
+                  ...ant,
+                  status: 'Proses Jahit',
+                  timJahit: workerName,
+                  tglSerahJahit: payload.tglSerahJahit,
+                  tarifJahit: payload.tarifJahit,
+                  catatanJahit: payload.catatanJahit
+                }
+              : ant
+          )
+        );
+
+        setActiveTab('proses');
+        setSelectedPenjahit(workerName);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'SPK Berhasil Diambil!',
+          html: `
+            <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
+              <p>Nomor <b>${matchedItem.noAntrian}</b> (<b>${matchedItem.namaProduk}</b> - ${matchedItem.qty} Pcs) resmi Anda ambil untuk dijahit.</p>
+              <div style="margin-top:8px; padding:8px 12px; background:#f5f3ff; border:1px solid #ddd6fe; border-radius:8px; color:#5b21b6;">
+                👤 Penjahit Bertugas: <b>${workerName}</b>
+              </div>
+            </div>
+          `,
+          confirmButtonColor: '#9333ea',
+        });
+      } catch (err) {
+        Swal.fire('Gagal Mengambil Jahitan', err.message || 'Terjadi kesalahan sistem.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    } else if (actionType === 'serah_qc') {
+      handleOpenSerahQc(matchedItem);
+    }
+  };
+
   return (
     <div className="w-full space-y-4">
       {/* 1. HEADER BANNER KHUSUS DIVISI JAHIT */}
@@ -671,22 +736,33 @@ export default function DivisiJahit({
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setLoading(true);
-            api.getAntrean()
-              .then((fresh) => {
-                if (Array.isArray(fresh)) setAntreanList(fresh);
-                Swal.toast('Data jahit diperbarui');
-              })
-              .finally(() => setLoading(false));
-          }}
-          disabled={loading}
-          className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/20 active:scale-95 shrink-0 self-start md:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Segarkan Data</span>
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 border border-emerald-400"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Scan Barcode SPK</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setLoading(true);
+              api.getAntrean()
+                .then((fresh) => {
+                  if (Array.isArray(fresh)) setAntreanList(fresh);
+                  Swal.toast('Data jahit diperbarui');
+                })
+                .finally(() => setLoading(false));
+            }}
+            disabled={loading}
+            className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/20 active:scale-95"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Segarkan</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. STATS KPI CARDS */}
@@ -1745,6 +1821,24 @@ export default function DivisiJahit({
           </div>
         </div>
       )}
+
+      {/* MODAL SCANNER BARCODE / QR SPK */}
+      <ScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        division="jahit"
+        antreanList={antreanList}
+        currentUser={currentUser}
+        onActionSuccess={handleScannerAction}
+      />
+
+      {/* MODAL CETAK SPK & QR CODE */}
+      <CetakSpkModal
+        isOpen={Boolean(selectedCetakSpk)}
+        antrean={selectedCetakSpk}
+        products={products}
+        onClose={() => setSelectedCetakSpk(null)}
+      />
     </div>
   );
 }

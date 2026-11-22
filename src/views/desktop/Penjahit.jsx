@@ -16,6 +16,7 @@ import {
   Sparkles,
   RefreshCw,
   Coins,
+  KeyRound,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -231,6 +232,39 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
+            onClick={async () => {
+              try {
+                setLoading(true);
+                const res = await api.syncPenjahitUsers();
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Sinkronisasi Akun Penjahit Berhasil!',
+                  html: `
+                    <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
+                      <p>${res.message || 'Semua penjahit kini memiliki akun login masing-masing.'}</p>
+                      <div style="margin-top:8px; padding:10px 14px; background:#f5f3ff; border:1px solid #ddd6fe; border-radius:8px; color:#5b21b6;">
+                        🔑 <b>Username:</b> NIK atau Nama Penjahit (huruf kecil)<br/>
+                        🔒 <b>Password Default:</b> 123456<br/>
+                        🎯 <b>Role:</b> Jahit (Sewing)
+                      </div>
+                    </div>
+                  `,
+                  confirmButtonColor: '#9333ea',
+                });
+              } catch (err) {
+                Swal.fire('Gagal Sinkronisasi', err.message || 'Terjadi kesalahan sistem', 'error');
+              } finally {
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer border border-purple-400 active:scale-95"
+            title="Buat akun login otomatis untuk setiap penjahit agar bisa login dan scan SPK"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>Sinkron Akun Login</span>
+          </button>
+          <button
             onClick={fetchData}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer border border-white/25"
@@ -390,8 +424,12 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
                     <td className="py-2 px-3 font-mono font-bold text-[#0284c7] bg-sky-50/50 border-r border-slate-200/60">
                       {item.nik}
                     </td>
-                    <td className="py-2 px-3 font-bold text-slate-900 border-r border-slate-200/60">
-                      {item.nama}
+                    <td className="py-2 px-3 border-r border-slate-200/60">
+                      <span className="font-bold text-slate-900 block leading-tight">{item.nama}</span>
+                      <span className="font-mono text-[9.5px] text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200 inline-flex items-center gap-1 mt-0.5">
+                        <KeyRound className="w-2.5 h-2.5" />
+                        Login: {(item.nik || item.nama.replace(/\s+/g, '')).toLowerCase()}
+                      </span>
                     </td>
                     <td className="py-2 px-3 border-r border-slate-200/60">
                       <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200">

@@ -257,6 +257,24 @@ async function initMysql() {
           ('finishing', 'Admin Finishing & Packing', 'finishing@ruangtech.com', '123456', 'finishing', 'Aktif', '0819-7788-9900')
         `);
       }
+
+      // Auto-sinkronisasi semua penjahit dari master employees ke tabel users
+      try {
+        const [penjahits] = await connection.query(`
+          SELECT id, nik, nama, kategori, bagian, status, telepon 
+          FROM employees 
+          WHERE LOWER(bagian) LIKE '%jahit%' OR LOWER(kategori) LIKE '%borongan%' OR LOWER(bagian) LIKE '%sew%'
+        `);
+        for (const p of penjahits) {
+          const rawUser = (p.nik || p.nama.replace(/\\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+          const username = rawUser || `penjahit_${p.id}`;
+          await connection.query(`
+            INSERT IGNORE INTO users (username, nama, password, role, status, telepon, keterangan)
+            VALUES (?, ?, '123456', 'jahit', ?, ?, ?)
+          `, [username, p.nama, p.status || 'Aktif', p.telepon || null, `Akun Penjahit ${p.kategori || 'Borongan'}`]);
+        }
+      } catch (_) {}
+
       console.log("✅ Tabel users & data akun operasional tersinkron di MySQL");
     } catch (uErr) {
       console.warn("Peringatan sinkronisasi users MySQL:", uErr.message);

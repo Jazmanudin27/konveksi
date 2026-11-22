@@ -504,6 +504,8 @@ export default function App() {
               jasa={jasa}
               bahan={bahan}
               userRole={userRole}
+              currentUser={currentUser}
+              onNavigateToMutasiGudang={() => setActiveMenu('mutasi-gudang-jadi')}
             />
           )}
           {activeMenu === 'laporan-stok-gudang' && (
@@ -554,6 +556,7 @@ export default function App() {
               setAntreanList={setAntreanList}
               products={products}
               employees={employees}
+              currentUser={currentUser}
             />
           )}
           {activeMenu === 'divisi-finishing' && (
@@ -564,6 +567,9 @@ export default function App() {
               employees={employees}
               mutasiGudangJadiList={mutasiGudangJadiList}
               setMutasiGudangJadiList={setMutasiGudangJadiList}
+              currentUser={currentUser}
+              userRole={userRole}
+              onNavigateToMutasiGudang={() => setActiveMenu('mutasi-gudang-jadi')}
             />
           )}
         </main>

@@ -119,9 +119,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 3. POST approve penerimaan barang jadi ke rak gudang
+// 3. POST approve penerimaan barang jadi ke rak gudang (Opname Fisik Sesuai)
 router.post('/approve', async (req, res) => {
-  const { id, tglDiterima, petugasTerima, lokasiRak, catatan } = req.body;
+  const { id, tglDiterima, petugasTerima, lokasiRak, catatan, qtySesuai } = req.body;
   if (!id) return res.status(400).json({ error: 'ID mutasi wajib diisi.' });
 
   const connection = await pool.getConnection();
@@ -133,6 +133,7 @@ router.post('/approve', async (req, res) => {
     const finalTglDiterima = tglDiterima || new Date().toISOString().slice(0, 10);
     const finalPetugas = petugasTerima || 'Staff Gudang Jadi';
     const finalRak = lokasiRak || 'Gudang Utama - Rak A1';
+    const finalQty = Number(qtySesuai) > 0 ? Number(qtySesuai) : Number(row.qty);
 
     await connection.beginTransaction();
 
@@ -140,6 +141,7 @@ router.post('/approve', async (req, res) => {
       UPDATE mutasi_gudang_jadi
       SET 
         status_penerimaan = 'Diterima',
+        qty = ?,
         tgl_diterima = ?,
         petugas_terima = ?,
         petugas = ?,
@@ -151,6 +153,7 @@ router.post('/approve', async (req, res) => {
         END
       WHERE id = ?
     `, [
+      finalQty,
       finalTglDiterima,
       finalPetugas,
       finalPetugas,
@@ -162,15 +165,18 @@ router.post('/approve', async (req, res) => {
       id
     ]);
 
-    // Update status antrean -> 'Selesai'
+    // Update status antrean -> 'Selesai' dan tgl_selesai
     if (row.no_antrian) {
-      await connection.query("UPDATE antrean SET status = 'Selesai' WHERE no_antrian = ?", [row.no_antrian]);
+      await connection.query(
+        "UPDATE antrean SET status = 'Selesai', tgl_selesai = ? WHERE no_antrian = ?",
+        [finalTglDiterima, row.no_antrian]
+      );
     }
 
-    // Tambah stok produk
+    // Tambah stok produk sesuai qty fisik opname
     if (row.jenis_mutasi === 'MASUK') {
       try {
-        await connection.query('UPDATE products SET stok = COALESCE(stok, 0) + ? WHERE sku = ?', [row.qty, row.sku]);
+        await connection.query('UPDATE products SET stok = COALESCE(stok, 0) + ? WHERE sku = ?', [finalQty, row.sku]);
       } catch (_) {}
     }
 
@@ -208,6 +214,59 @@ router.post('/approve', async (req, res) => {
   } catch (err) {
     await connection.rollback();
     console.error('❌ Error POST /api/mutasi-gudang-jadi/approve:', err);
+    res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// 3b. POST reject penerimaan barang jadi (Opname Tidak Sesuai -> Kembalikan ke Finishing)
+router.post('/reject', async (req, res) => {
+  const { id, alasan, petugas } = req.body;
+  if (!id) return res.status(400).json({ error: 'ID mutasi wajib diisi.' });
+
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.query('SELECT * FROM mutasi_gudang_jadi WHERE id = ?', [id]);
+    const row = rows[0];
+    if (!row) return res.status(404).json({ error: 'Data mutasi gudang jadi tidak ditemukan.' });
+
+    await connection.beginTransaction();
+
+    const finalAlasan = alasan || 'Barang tidak sesuai hasil opname fisik gudang';
+    const finalPetugas = petugas || 'Staff Gudang Jadi';
+
+    // 1. Update status mutasi gudang jadi -> 'Ditolak'
+    await connection.query(`
+      UPDATE mutasi_gudang_jadi
+      SET 
+        status_penerimaan = 'Ditolak',
+        petugas_terima = ?,
+        tgl_diterima = CURRENT_DATE,
+        catatan = CONCAT(COALESCE(catatan, ''), ' | [DITOLAK GUDANG]: ', ?)
+      WHERE id = ?
+    `, [finalPetugas, finalAlasan, id]);
+
+    // 2. Kembalikan status antrean ke 'Proses Finishing'
+    if (row.no_antrian) {
+      await connection.query(`
+        UPDATE antrean 
+        SET 
+          status = 'Proses Finishing',
+          catatan_finishing = CONCAT('[DITOLAK GUDANG]: ', ?)
+        WHERE no_antrian = ?
+      `, [finalAlasan, row.no_antrian]);
+    }
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: `Barang antrean ${row.no_antrian || id} berhasil ditolak dan dikembalikan ke Proses Finishing.`
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error('❌ Error POST /api/mutasi-gudang-jadi/reject:', err);
     res.status(400).json({ error: err.message });
   } finally {
     connection.release();

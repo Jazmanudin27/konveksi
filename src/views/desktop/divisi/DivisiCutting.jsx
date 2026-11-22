@@ -25,10 +25,15 @@ import {
   Wallet,
   CalendarDays,
   User,
-  Lock
+  Lock,
+  Camera,
+  QrCode,
+  Printer
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Swal } from '../../../utils/swal';
+import ScannerModal from '../../../components/common/ScannerModal';
+import CetakSpkModal from '../antrean/CetakSpkModal';
 
 export default function DivisiCutting({
   antreanList = [],
@@ -42,6 +47,8 @@ export default function DivisiCutting({
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedCetakSpk, setSelectedCetakSpk] = useState(null);
 
   // Modal Approval (Terima & Mulai Cutting)
   const [approvalModalItem, setApprovalModalItem] = useState(null);
@@ -133,6 +140,66 @@ export default function DivisiCutting({
       totalPcsProses
     };
   }, [antreanList]);
+
+  // Handler saat scan Barcode / QR SPK di Divisi Cutting
+  const handleScannerAction = async (matchedItem, actionType, user) => {
+    const workerName = user?.nama || 'Tim Cutting';
+
+    if (actionType === 'mulai_cutting') {
+      try {
+        setLoading(true);
+        const payload = {
+          ids: [matchedItem.id],
+          timCutting: workerName,
+          tarifCutting: Number(matchedItem.tarifCutting) || 1500,
+          tglSerahCutting: new Date().toISOString().slice(0, 10),
+          catatanCutting: `Mulai potong via Scan Barcode oleh ${workerName}`
+        };
+
+        await api.serahCutting(payload);
+
+        setAntreanList((prev) =>
+          prev.map((ant) =>
+            ant.id === matchedItem.id
+              ? {
+                  ...ant,
+                  status: 'Proses Cutting',
+                  timCutting: workerName,
+                  tglSerahCutting: payload.tglSerahCutting,
+                  tarifCutting: payload.tarifCutting,
+                  catatanCutting: payload.catatanCutting
+                }
+              : ant
+          )
+        );
+
+        setActiveTab('proses');
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Mulai Proses Cutting!',
+          text: `Batch ${matchedItem.noAntrian} (${matchedItem.namaProduk}) resmi mulai dipotong oleh ${workerName}.`,
+          confirmButtonColor: '#0284c7',
+        });
+      } catch (err) {
+        Swal.fire('Gagal Memproses Cutting', err.message || 'Terjadi kesalahan sistem.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    } else if (actionType === 'selesai_cutting') {
+      Swal.fire({
+        icon: 'info',
+        title: 'Siap Diambil Jahit',
+        html: `
+          <div style="font-size:12px; text-align:left; color:#334155; line-height:1.6;">
+            <p>Batch <b>${matchedItem.noAntrian}</b> (${matchedItem.namaProduk} - ${matchedItem.qty} Pcs) sudah selesai dipotong.</p>
+            <p style="margin-top:8px; color:#9333ea; font-weight:bold;">Penjahit sekarang dapat men-scan QR/Barcode lembar SPK ini untuk mengambil jahitan.</p>
+          </div>
+        `,
+        confirmButtonColor: '#9333ea',
+      });
+    }
+  };
 
   // Buka Modal Approval Terima Order Cutting
   const handleOpenApproval = (item) => {
@@ -281,6 +348,15 @@ export default function DivisiCutting({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-extrabold shadow-md transition-all cursor-pointer border border-emerald-400 active:scale-95"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Scan Barcode SPK</span>
+          </button>
+
           <button
             onClick={() => {
               setLoading(true);
@@ -1206,6 +1282,23 @@ export default function DivisiCutting({
           </div>
         </div>
       )}
+      {/* MODAL SCANNER BARCODE / QR SPK */}
+      <ScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        division="cutting"
+        antreanList={antreanList}
+        currentUser={currentUser}
+        onActionSuccess={handleScannerAction}
+      />
+
+      {/* MODAL CETAK SPK & QR CODE */}
+      <CetakSpkModal
+        isOpen={Boolean(selectedCetakSpk)}
+        antrean={selectedCetakSpk}
+        products={products}
+        onClose={() => setSelectedCetakSpk(null)}
+      />
     </div>
   );
 }

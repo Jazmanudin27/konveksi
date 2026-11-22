@@ -44,6 +44,9 @@ import {
   Settings,
   Edit2,
   Share2,
+  Printer,
+  QrCode,
+  Camera,
 } from "lucide-react";
 import { api } from "../../services/api";
 import { Swal } from "../../utils/swal";
@@ -61,6 +64,8 @@ import ModalSerahQC from "./antrean/ModalSerahQC";
 import ModalSerahFinishing from "./antrean/ModalSerahFinishing";
 import ModalSelesaiGudangJadi from "./antrean/ModalSelesaiGudangJadi";
 import ModalHistoriCutting from "./antrean/ModalHistoriCutting";
+import CetakSpkModal from "./antrean/CetakSpkModal";
+import ScannerModal from "../../components/common/ScannerModal";
 import ShareTrackingModal from "../../components/common/ShareTrackingModal";
 
 // Sub-komponen Searchable Select Master Bahan Baku Desktop
@@ -362,6 +367,7 @@ export default function Antrean({
   bahan = [],
   timFinishingList: propTimFinishingList = [],
   userRole = "superadmin",
+  onNavigateToMutasiGudang,
 }) {
   const getDefaultTabForRole = (role) => {
     switch (role) {
@@ -386,6 +392,8 @@ export default function Antrean({
     getDefaultTabForRole(userRole),
   );
   const [shareTrackingItem, setShareTrackingItem] = useState(null);
+  const [selectedCetakSpk, setSelectedCetakSpk] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   useEffect(() => {
     if (userRole && userRole !== "superadmin") {
@@ -2083,7 +2091,9 @@ export default function Antrean({
     ).length;
     const countDone = list.filter(
       (a) =>
-        a.status === "Selesai" || a.status === "Menunggu Penerimaan Gudang",
+        a.status === "Selesai" ||
+        a.status === "Menunggu Penerimaan Gudang" ||
+        a.status === "Menunggu Approval Gudang",
     ).length;
     const countUrgent = list.filter((a) => a.prioritas === "Urgent").length;
     const totalQty = list.reduce(
@@ -2131,7 +2141,8 @@ export default function Antrean({
       if (
         activeTab === "Selesai" &&
         item.status !== "Selesai" &&
-        item.status !== "Menunggu Penerimaan Gudang"
+        item.status !== "Menunggu Penerimaan Gudang" &&
+        item.status !== "Menunggu Approval Gudang"
       )
         return false;
 
@@ -2195,6 +2206,15 @@ export default function Antrean({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black shadow-md transition-all cursor-pointer border border-purple-500 active:scale-95"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Scan SPK</span>
+          </button>
+
           <button
             onClick={handleRefresh}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer border border-white/25"
@@ -2697,6 +2717,8 @@ export default function Antrean({
                                     ? "bg-indigo-100 text-indigo-800 border-indigo-300"
                                     : item.status === "Proses QC"
                                       ? "bg-teal-100 text-teal-800 border-teal-300"
+                                        : item.status === "Menunggu Approval Gudang"
+                                          ? "bg-amber-100 text-amber-800 border-amber-300"
                                       : item.status === "Proses Finishing"
                                         ? "bg-emerald-100 text-emerald-800 border-emerald-300"
                                         : item.status === "Selesai" ||
@@ -2708,6 +2730,8 @@ export default function Antrean({
                           >
                             {item.status === "Sedang Diproses"
                               ? "Proses Cutting"
+                              : item.status === "Menunggu Approval Gudang"
+                                ? "Menunggu Approval Gudang"
                               : item.status === "Menunggu Penerimaan Gudang"
                                 ? "Selesai"
                                 : item.status}
@@ -2780,6 +2804,25 @@ export default function Antrean({
                             >
                               <Warehouse className="w-4 h-4" />
                             </button>
+                          ) : item.status === "Menunggu Approval Gudang" ? (
+                            <button
+                              onClick={() => {
+                                if (onNavigateToMutasiGudang) {
+                                  onNavigateToMutasiGudang();
+                                } else {
+                                  Swal.fire({
+                                    icon: "info",
+                                    title: "Menunggu Opname Gudang",
+                                    text: "Buka menu Gudang Jadi -> Mutasi Gudang Jadi untuk melakukan approval dan verifikasi barang.",
+                                  });
+                                }
+                              }}
+                              className="px-2 py-1 rounded-md bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
+                              title="Buka Mutasi Gudang Jadi untuk Approval/Opname"
+                            >
+                              <Warehouse className="w-3.5 h-3.5" />
+                              <span>Opname Gudang</span>
+                            </button>
                           ) : item.status === "Selesai" ||
                             item.status === "Menunggu Penerimaan Gudang" ? (
                             <span
@@ -2812,6 +2855,16 @@ export default function Antrean({
                               <Scissors className="w-4 h-4" />
                             </button>
                           )}
+
+                          {/* Tombol Cetak SPK & QR Code */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCetakSpk(item)}
+                            className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                            title="Cetak Lembar SPK & QR Code / Barcode"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
 
                           <button
                             type="button"
@@ -4110,6 +4163,26 @@ export default function Antrean({
         isOpen={Boolean(shareTrackingItem)}
         item={shareTrackingItem}
         onClose={() => setShareTrackingItem(null)}
+      />
+
+      {/* Modal Cetak SPK & QR Code */}
+      <CetakSpkModal
+        isOpen={Boolean(selectedCetakSpk)}
+        antrean={selectedCetakSpk}
+        products={products}
+        onClose={() => setSelectedCetakSpk(null)}
+      />
+
+      {/* Modal Scanner Barcode / QR SPK */}
+      <ScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        division="general"
+        antreanList={antreanList}
+        currentUser={null}
+        onActionSuccess={(item) => {
+          setSelectedAntreanShow(item);
+        }}
       />
     </div>
   );

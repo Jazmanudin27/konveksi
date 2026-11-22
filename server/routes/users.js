@@ -14,10 +14,47 @@ router.post('/login', async (req, res) => {
   const inputPassword = String(password).trim();
 
   try {
-    const user = await db.get(
+    let user = await db.get(
       'SELECT id, username, nama, email, password, role, status, telepon, keterangan FROM users WHERE LOWER(username) = ?',
       [cleanUsername]
     );
+
+    // Fallback: Jika belum ada di users, cek apakah terdaftar sebagai penjahit di master employees
+    if (!user) {
+      const emp = await db.get(
+        `SELECT id, nik, nama, kategori, bagian, status, telepon 
+         FROM employees 
+         WHERE (LOWER(nik) = ? OR LOWER(REPLACE(nama, ' ', '')) = ? OR LOWER(SUBSTRING_INDEX(nama, ' ', 1)) = ?)
+           AND status = 'Aktif'`,
+        [cleanUsername, cleanUsername, cleanUsername]
+      );
+
+      if (emp) {
+        // Cek password default penjahit '123456'
+        if (inputPassword !== '123456') {
+          return res.status(401).json({ error: 'Password penjahit default adalah "123456".' });
+        }
+
+        // Auto-provision user account untuk penjahit
+        const penjahitUsername = (emp.nik || cleanUsername).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        const info = await db.run(
+          `INSERT INTO users (username, nama, password, role, status, telepon, keterangan) 
+           VALUES (?, ?, '123456', 'jahit', 'Aktif', ?, ?)
+           ON DUPLICATE KEY UPDATE nama = VALUES(nama), status = 'Aktif'`,
+          [penjahitUsername, emp.nama, emp.telepon || null, `Akun Penjahit ${emp.kategori || 'Borongan'}`]
+        );
+
+        user = {
+          id: info.insertId || emp.id,
+          username: penjahitUsername,
+          nama: emp.nama,
+          role: 'jahit',
+          status: 'Aktif',
+          telepon: emp.telepon,
+          keterangan: `Akun Penjahit ${emp.kategori || 'Borongan'}`
+        };
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'Username tidak ditemukan di database.' });
@@ -193,6 +230,43 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true, message: `Akun ${target.username} berhasil dihapus.` });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /sync-penjahit - Sinkronisasi otomatis semua penjahit di employees menjadi user login
+router.post('/sync-penjahit', async (req, res) => {
+  try {
+    const penjahits = await db.all(
+      `SELECT id, nik, nama, kategori, bagian, status, telepon 
+       FROM employees 
+       WHERE LOWER(bagian) LIKE '%jahit%' OR LOWER(kategori) LIKE '%borongan%' OR LOWER(bagian) LIKE '%sew%'`
+    );
+
+    let createdCount = 0;
+    for (const p of penjahits) {
+      const rawUser = (p.nik || p.nama.replace(/\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const username = rawUser || `penjahit_${p.id}`;
+      
+      const existing = await db.get('SELECT id FROM users WHERE LOWER(username) = ?', [username]);
+      if (!existing) {
+        await db.run(
+          `INSERT INTO users (username, nama, password, role, status, telepon, keterangan)
+           VALUES (?, ?, '123456', 'jahit', ?, ?, ?)`,
+          [username, p.nama, p.status || 'Aktif', p.telepon || null, `Akun Penjahit ${p.kategori || 'Borongan'}`]
+        );
+        createdCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Sinkronisasi selesai. ${createdCount} akun penjahit baru dibuat (Password default: 123456).`,
+      totalPenjahit: penjahits.length,
+      createdCount
+    });
+  } catch (err) {
+    console.error('❌ Error /sync-penjahit:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

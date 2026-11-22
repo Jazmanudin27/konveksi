@@ -17,6 +17,8 @@ import {
   RefreshCw,
   Coins,
   KeyRound,
+  User,
+  Lock,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -44,6 +46,8 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
     telepon: '',
     status: 'Aktif',
     tanggalMasuk: new Date().toISOString().slice(0, 10),
+    username: '',
+    password: '123456',
   });
   const [editingId, setEditingId] = useState(null);
 
@@ -107,14 +111,17 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
 
   // Modal Handlers
   const handleOpenCreate = () => {
+    const defaultNik = `JHT-${Date.now().toString().slice(-4)}`;
     setFormData({
-      nik: `JHT-${Date.now().toString().slice(-4)}`,
+      nik: defaultNik,
       nama: '',
       kategori: 'Borongan',
       bagian: 'Penjahit',
       telepon: '',
       status: 'Aktif',
       tanggalMasuk: new Date().toISOString().slice(0, 10),
+      username: defaultNik.toLowerCase(),
+      password: '123456',
     });
     setEditingId(null);
     setModalMode('create');
@@ -129,6 +136,8 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
       telepon: item.telepon || '',
       status: item.status || 'Aktif',
       tanggalMasuk: item.tanggalMasuk || new Date().toISOString().slice(0, 10),
+      username: item.username || (item.nik || item.nama.replace(/\s+/g, '')).toLowerCase(),
+      password: item.password || '123456',
     });
     setEditingId(item.id);
     setModalMode('edit');
@@ -137,9 +146,12 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const cleanUsername = (formData.username || formData.nik || formData.nama.replace(/\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
       const payload = {
         ...formData,
         bagian: 'Penjahit',
+        username: cleanUsername,
+        password: formData.password || '123456',
       };
 
       if (modalMode === 'create') {
@@ -147,8 +159,16 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
         Swal.fire({
           icon: 'success',
           title: 'Berhasil Ditambahkan',
-          text: `Penjahit ${formData.nama} berhasil didaftarkan ke Data Karyawan.`,
-          timer: 1500,
+          html: `
+            <div style="font-size:12px; text-align:left; color:#334155;">
+              <p>Penjahit <b>${formData.nama}</b> berhasil didaftarkan.</p>
+              <div style="margin-top:8px; padding:8px 12px; background:#f5f3ff; border:1px solid #ddd6fe; border-radius:6px; color:#5b21b6;">
+                🔑 <b>Username:</b> ${cleanUsername}<br/>
+                🔒 <b>Password:</b> ${formData.password || '123456'}
+              </div>
+            </div>
+          `,
+          timer: 2000,
           showConfirmButton: false,
         });
       } else {
@@ -156,8 +176,16 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
         Swal.fire({
           icon: 'success',
           title: 'Berhasil Diperbarui',
-          text: `Data ${formData.nama} telah diupdate di Data Karyawan.`,
-          timer: 1500,
+          html: `
+            <div style="font-size:12px; text-align:left; color:#334155;">
+              <p>Data akun <b>${formData.nama}</b> telah diperbarui.</p>
+              <div style="margin-top:8px; padding:8px 12px; background:#f5f3ff; border:1px solid #ddd6fe; border-radius:6px; color:#5b21b6;">
+                🔑 <b>Username:</b> ${cleanUsername}<br/>
+                🔒 <b>Password:</b> ${formData.password || '123456'}
+              </div>
+            </div>
+          `,
+          timer: 2000,
           showConfirmButton: false,
         });
       }
@@ -400,8 +428,8 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
                 <th className="py-2.5 px-2 text-center w-10 border-r border-[#3b4c5e] text-white font-bold">NO</th>
                 <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px] border-r border-[#3b4c5e] text-white font-bold">KODE / NIK</th>
                 <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px] border-r border-[#3b4c5e] text-white font-bold">NAMA PENJAHIT</th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px] border-r border-[#3b4c5e] text-white font-bold">AKUN LOGIN (USER & PASS)</th>
                 <th className="py-2.5 px-3 whitespace-nowrap min-w-[110px] border-r border-[#3b4c5e] text-white font-bold">KATEGORI</th>
-                <th className="py-2.5 px-3 min-w-[140px] border-r border-[#3b4c5e] text-white font-bold">BAGIAN / DIVISI</th>
                 <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KONTAK / HP</th>
                 <th className="py-2.5 px-3 whitespace-nowrap min-w-[110px] border-r border-[#3b4c5e] text-white font-bold">TGL MASUK</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[90px] border-r border-[#3b4c5e] text-white font-bold">STATUS</th>
@@ -426,19 +454,25 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
                     </td>
                     <td className="py-2 px-3 border-r border-slate-200/60">
                       <span className="font-bold text-slate-900 block leading-tight">{item.nama}</span>
-                      <span className="font-mono text-[9.5px] text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200 inline-flex items-center gap-1 mt-0.5">
-                        <KeyRound className="w-2.5 h-2.5" />
-                        Login: {(item.nik || item.nama.replace(/\s+/g, '')).toLowerCase()}
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {item.bagian || 'Penjahit'}
                       </span>
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200/60 whitespace-nowrap bg-purple-50/30">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 text-purple-950 font-mono text-xs font-black">
+                          <User className="w-3 h-3 text-purple-600 shrink-0" />
+                          <span>{item.username || (item.nik || item.nama.replace(/\s+/g, '')).toLowerCase()}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-500 font-mono text-[10.5px]">
+                          <Lock className="w-2.5 h-2.5 text-purple-400 shrink-0" />
+                          <span>Pass: <strong className="text-purple-900 font-black">{item.password || '123456'}</strong></span>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-2 px-3 border-r border-slate-200/60">
                       <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                         {item.kategori}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-slate-700 font-semibold border-r border-slate-200/60">
-                      <span className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-slate-100 text-slate-700">
-                        {item.bagian || 'Penjahit'}
                       </span>
                     </td>
                     <td className="py-2 px-3 font-mono text-slate-700 border-r border-slate-200/60">
@@ -551,9 +585,66 @@ export default function Penjahit({ employees: propEmployees = [], setEmployees: 
                   required
                   placeholder="Cth: CEPI, Siti Aminah, Budi"
                   value={formData.nama}
-                  onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+                  onChange={(e) => {
+                    const newNama = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      nama: newNama,
+                      username:
+                        modalMode === 'create' && !prev.usernameTouched
+                          ? newNama.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || prev.nik.toLowerCase()
+                          : prev.username,
+                    }));
+                  }}
                   className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-purple-600"
                 />
+              </div>
+
+              {/* AKUN LOGIN PENJAHIT (USERNAME & PASSWORD) */}
+              <div className="p-3 bg-purple-50/80 rounded-xl border border-purple-200/80 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-purple-900 font-extrabold text-xs">
+                    <KeyRound className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Akun Login Penjahit</span>
+                  </div>
+                  <span className="text-[10px] text-purple-600 font-medium">Untuk Scan SPK di HP</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Username Login *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Username penjahit"
+                      value={formData.username}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''),
+                          usernameTouched: true,
+                        })
+                      }
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-purple-300 font-mono font-bold text-purple-950 bg-white focus:outline-none focus:border-purple-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Password Login *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-purple-300 font-mono font-bold text-purple-950 bg-white focus:outline-none focus:border-purple-600"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">

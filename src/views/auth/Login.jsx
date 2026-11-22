@@ -5,18 +5,10 @@ import {
   Eye,
   EyeOff,
   Shirt,
-  ShieldCheck,
-  Warehouse,
-  Scissors,
-  Layers,
-  CheckCircle2,
-  PackageCheck,
   ArrowRight,
-  Sparkles,
   AlertCircle
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { USER_ROLES } from '../../constants/userRoles';
 
 export default function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
@@ -24,22 +16,6 @@ export default function Login({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  // Preset role untuk login cepat (Testing & Demo)
-  const quickAccounts = [
-    { username: 'admin', role: 'superadmin', label: 'Super Admin', pass: '123456' },
-    { username: 'gudang', role: 'gudang', label: 'Admin Gudang', pass: '123456' },
-    { username: 'cutting', role: 'cutting', label: 'Admin Cutting', pass: '123456' },
-    { username: 'jahit', role: 'jahit', label: 'Admin Jahit', pass: '123456' },
-    { username: 'qc', role: 'qc', label: 'Admin QC', pass: '123456' },
-    { username: 'finishing', role: 'finishing', label: 'Admin Finishing', pass: '123456' },
-  ];
-
-  const handleSelectQuickAccount = (acc) => {
-    setUsername(acc.username);
-    setPassword(acc.pass);
-    setErrorMessage('');
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -69,25 +45,6 @@ export default function Login({ onLoginSuccess }) {
       setErrorMessage(err.message || 'Username atau password salah.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getRoleIcon = (roleKey) => {
-    switch (roleKey) {
-      case 'superadmin':
-        return <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />;
-      case 'gudang':
-        return <Warehouse className="w-3.5 h-3.5 text-amber-400" />;
-      case 'cutting':
-        return <Scissors className="w-3.5 h-3.5 text-blue-400" />;
-      case 'jahit':
-        return <Layers className="w-3.5 h-3.5 text-purple-400" />;
-      case 'qc':
-        return <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />;
-      case 'finishing':
-        return <PackageCheck className="w-3.5 h-3.5 text-rose-400" />;
-      default:
-        return <User className="w-3.5 h-3.5 text-slate-400" />;
     }
   };
 
@@ -196,41 +153,6 @@ export default function Login({ onLoginSuccess }) {
               )}
             </button>
           </form>
-
-          {/* Quick Select Preset Roles */}
-          <div className="pt-3 border-t border-slate-800/80 space-y-2">
-            <div className="flex items-center justify-between text-[10.5px] text-slate-400">
-              <span className="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-cyan-400" />
-                <span>Pilih Cepat Akun Role:</span>
-              </span>
-              <span className="font-mono text-[9.5px] text-slate-500">Pass: 123456</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5">
-              {quickAccounts.map((acc) => {
-                const isCurrent = username === acc.username;
-                return (
-                  <button
-                    key={acc.username}
-                    type="button"
-                    onClick={() => handleSelectQuickAccount(acc)}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer border text-xs ${
-                      isCurrent
-                        ? 'bg-cyan-950/70 border-cyan-500 text-cyan-200'
-                        : 'bg-slate-900/60 hover:bg-slate-800/80 border-slate-800 text-slate-300'
-                    }`}
-                  >
-                    <div className="shrink-0">{getRoleIcon(acc.role)}</div>
-                    <div className="min-w-0 leading-tight">
-                      <div className="font-bold text-[11px] truncate">{acc.label}</div>
-                      <div className="font-mono text-[9px] text-slate-400">@{acc.username}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Footer Info */}

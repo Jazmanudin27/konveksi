@@ -14,47 +14,56 @@ router.post('/login', async (req, res) => {
   const inputPassword = String(password).trim();
 
   try {
-    let user = await db.get(
-      'SELECT id, username, nama, email, password, role, status, telepon, keterangan FROM users WHERE LOWER(username) = ?',
-      [cleanUsername]
+    // 1. Prioritaskan autentikasi penjahit langsung dari tabel employees (Master Penjahit)
+    const emp = await db.get(
+      `SELECT id, nik, nama, kategori, bagian, status, telepon, username, password 
+       FROM employees 
+       WHERE (LOWER(COALESCE(username, '')) = ? OR LOWER(nik) = ? OR LOWER(REPLACE(nama, ' ', '')) = ? OR LOWER(SUBSTRING_INDEX(nama, ' ', 1)) = ?)`,
+      [cleanUsername, cleanUsername, cleanUsername, cleanUsername]
     );
 
-    // Fallback: Jika belum ada di users, cek apakah terdaftar sebagai penjahit di master employees
-    if (!user) {
-      const emp = await db.get(
-        `SELECT id, nik, nama, kategori, bagian, status, telepon 
-         FROM employees 
-         WHERE (LOWER(nik) = ? OR LOWER(REPLACE(nama, ' ', '')) = ? OR LOWER(SUBSTRING_INDEX(nama, ' ', 1)) = ?)
-           AND status = 'Aktif'`,
-        [cleanUsername, cleanUsername, cleanUsername]
-      );
+    if (emp && (String(emp.bagian || '').toLowerCase().includes('jahit') || String(emp.kategori || '').toLowerCase().includes('borongan'))) {
+      if (emp.status !== 'Aktif') {
+        return res.status(403).json({ error: `Akun penjahit "${emp.nama}" sedang ${emp.status}. Hubungi Admin.` });
+      }
 
-      if (emp) {
-        // Cek password default penjahit '123456'
-        if (inputPassword !== '123456') {
-          return res.status(401).json({ error: 'Password penjahit default adalah "123456".' });
-        }
+      const expectedPass = String(emp.password || '123456').trim();
+      if (inputPassword !== expectedPass) {
+        return res.status(401).json({ error: 'Password penjahit salah.' });
+      }
 
-        // Auto-provision user account untuk penjahit
-        const penjahitUsername = (emp.nik || cleanUsername).toLowerCase().replace(/[^a-z0-9_-]/g, '');
-        const info = await db.run(
+      const penjahitUsername = (emp.username || emp.nik || cleanUsername).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+      // Sinkronkan ke tabel users
+      try {
+        await db.run(
           `INSERT INTO users (username, nama, password, role, status, telepon, keterangan) 
-           VALUES (?, ?, '123456', 'jahit', 'Aktif', ?, ?)
-           ON DUPLICATE KEY UPDATE nama = VALUES(nama), status = 'Aktif'`,
-          [penjahitUsername, emp.nama, emp.telepon || null, `Akun Penjahit ${emp.kategori || 'Borongan'}`]
+           VALUES (?, ?, ?, 'jahit', 'Aktif', ?, ?)
+           ON DUPLICATE KEY UPDATE nama = VALUES(nama), password = VALUES(password), status = 'Aktif'`,
+          [penjahitUsername, emp.nama, expectedPass, emp.telepon || null, `Akun Penjahit ${emp.kategori || 'Borongan'}`]
         );
+      } catch (_) {}
 
-        user = {
-          id: info.insertId || emp.id,
+      return res.json({
+        success: true,
+        message: 'Login berhasil sebagai Penjahit.',
+        user: {
+          id: emp.id,
           username: penjahitUsername,
           nama: emp.nama,
           role: 'jahit',
           status: 'Aktif',
           telepon: emp.telepon,
           keterangan: `Akun Penjahit ${emp.kategori || 'Borongan'}`
-        };
-      }
+        }
+      });
     }
+
+    // 2. Jika bukan penjahit, autentikasi dari tabel users (Admin, Gudang, Cutting, QC, Finishing, dll)
+    let user = await db.get(
+      'SELECT id, username, nama, email, password, role, status, telepon, keterangan FROM users WHERE LOWER(username) = ?',
+      [cleanUsername]
+    );
 
     if (!user) {
       return res.status(401).json({ error: 'Username tidak ditemukan di database.' });

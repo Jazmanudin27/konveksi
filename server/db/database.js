@@ -213,6 +213,31 @@ async function initMysql() {
       }
     } catch (_) {}
 
+    // Pastikan kolom username & password tersedia di tabel employees (Akun Login Penjahit)
+    try {
+      const [colUser] = await connection.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'username' AND TABLE_SCHEMA = DATABASE()",
+      );
+      if (!colUser || colUser.length === 0) {
+        await connection.query("ALTER TABLE employees ADD COLUMN username VARCHAR(100) NULL AFTER tanggal_masuk");
+      }
+
+      const [colPass] = await connection.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'password' AND TABLE_SCHEMA = DATABASE()",
+      );
+      if (!colPass || colPass.length === 0) {
+        await connection.query("ALTER TABLE employees ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT '123456' AFTER username");
+      }
+
+      // Isi default username jika belum terisi
+      await connection.query(`
+        UPDATE employees 
+        SET username = LOWER(REPLACE(COALESCE(NULLIF(TRIM(nik), ''), TRIM(nama)), ' ', '')),
+            password = COALESCE(NULLIF(TRIM(password), ''), '123456')
+        WHERE username IS NULL OR TRIM(username) = ''
+      `);
+    } catch (_) {}
+
     // Bersihkan data dummy / fake lama jika pernah ter-generate otomatis
     try {
       await connection.query(

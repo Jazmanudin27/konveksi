@@ -51,7 +51,9 @@ CREATE TABLE IF NOT EXISTS employees (
   bagian VARCHAR(100) NOT NULL,
   status VARCHAR(30) DEFAULT 'Aktif',
   telepon VARCHAR(50),
-  tanggal_masuk DATE DEFAULT (CURRENT_DATE)
+  tanggal_masuk DATE DEFAULT (CURRENT_DATE),
+  username VARCHAR(100) NULL,
+  password VARCHAR(255) NOT NULL DEFAULT '123456'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS jasa (

@@ -411,10 +411,6 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <TopHeader
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-          dbConnected={dbConnected}
-          onSwitchToMobile={() => toggleViewMode(true)}
-          userRole={userRole}
-          onRoleChange={handleRoleChange}
           currentUser={currentUser}
           onLogout={handleLogout}
         />

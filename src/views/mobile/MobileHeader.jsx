@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shirt, Bell, Megaphone, LogOut, Monitor, ShieldCheck, Warehouse, Scissors } from 'lucide-react';
+import { Shirt, Bell, Megaphone, LogOut, Monitor, ShieldCheck, Warehouse, Scissors, Camera } from 'lucide-react';
 import { USER_ROLES } from '../../constants/userRoles';
 
 export default function MobileHeader({
@@ -11,6 +11,7 @@ export default function MobileHeader({
   userRole = 'superadmin',
   currentUser = null,
   onLogout = () => {},
+  onOpenScanner = () => {},
 }) {
   const displayCount = notificationCount > 0 ? notificationCount : activeUrgentCount;
   const isGudang = userRole === 'gudang';
@@ -90,6 +91,16 @@ export default function MobileHeader({
               )}
             </button>
           )}
+
+          {/* Tombol Scan QR / Barcode SPK dengan Kamera */}
+          <button
+            type="button"
+            onClick={onOpenScanner}
+            className="w-8 h-8 rounded-xl bg-purple-500/30 hover:bg-purple-500/50 active:scale-95 border border-purple-300/40 flex items-center justify-center text-purple-100 transition-all cursor-pointer shadow-xs"
+            title="Scan Barcode / QR Code SPK dengan Kamera HP"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
 
           {/* Tombol Beralih ke Tampilan Desktop Layar Lebar */}
           <button

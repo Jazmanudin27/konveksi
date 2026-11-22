@@ -171,15 +171,6 @@ export default function DivisiFinishing({
     }
   };
 
-      setSelesaiModalItem(null);
-      setActiveTab('riwayat');
-    } catch (err) {
-      Swal.error('Gagal Serahkan', err.message || 'Terjadi kesalahan sistem.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="w-full space-y-4">
       {/* 1. HEADER BANNER KHUSUS DIVISI FINISHING */}

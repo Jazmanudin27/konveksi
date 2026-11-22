@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Scissors, ChevronRight, Share2, Boxes, Shirt } from 'lucide-react';
+import { Search, Plus, Scissors, ChevronRight, Share2, Boxes, Shirt, Camera } from 'lucide-react';
 import ShareTrackingModal from '../../components/common/ShareTrackingModal';
+import ScannerModal from '../../components/common/ScannerModal';
 
 export default function AntreanMobile({
   antreanList = [],
@@ -13,6 +14,7 @@ export default function AntreanMobile({
   const [antreanSearch, setAntreanSearch] = useState('');
   const [antreanFilterStatus, setAntreanFilterStatus] = useState(isCutting ? 'Menunggu Cutting' : 'SEMUA');
   const [shareItem, setShareItem] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const normalizedList = useMemo(() => {
     return antreanList.map((item) => {
@@ -190,28 +192,39 @@ export default function AntreanMobile({
         </div>
       )}
 
-      {/* Search Bar Full Width */}
-      <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-        <input
-          type="text"
-          placeholder={
-            isGudang
-              ? "Cari No SPK, SKU, model produk..."
-              : isCutting
-              ? "Cari no SPK / antrean, SKU, bahan..."
-              : "Cari no antrean / SKU / nama..."
-          }
-          value={antreanSearch}
-          onChange={(e) => setAntreanSearch(e.target.value)}
-          className={`w-full bg-white pl-9 pr-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 ${
-            isGudang
-              ? 'focus:ring-amber-500'
-              : isCutting
-              ? 'focus:ring-blue-500'
-              : 'focus:ring-[#064e3b]'
-          }`}
-        />
+      {/* Search Bar & Scan Button */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+          <input
+            type="text"
+            placeholder={
+              isGudang
+                ? "Cari No SPK, SKU, model produk..."
+                : isCutting
+                ? "Cari no SPK / antrean, SKU, bahan..."
+                : "Cari no antrean / SKU / nama..."
+            }
+            value={antreanSearch}
+            onChange={(e) => setAntreanSearch(e.target.value)}
+            className={`w-full bg-white pl-9 pr-3 py-2 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 ${
+              isGudang
+                ? 'focus:ring-amber-500'
+                : isCutting
+                ? 'focus:ring-blue-500'
+                : 'focus:ring-[#064e3b]'
+            }`}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsScannerOpen(true)}
+          className="h-8.5 px-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
+          title="Scan SPK dengan Kamera HP"
+        >
+          <Camera className="w-4 h-4" />
+          <span>Scan SPK</span>
+        </button>
       </div>
 
       {/* Filter Tabs Horizontal dengan Angka Jumlah Transaksi */}
@@ -394,6 +407,21 @@ export default function AntreanMobile({
           </>
         )}
       </button>
+
+      {/* Modal Scanner SPK (Kamera HP) */}
+      <ScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        division={isCutting ? 'cutting' : 'general'}
+        antreanList={normalizedList}
+        currentUser={null}
+        onActionSuccess={(item) => {
+          setIsScannerOpen(false);
+          if (onNextStatus) {
+            onNextStatus(item);
+          }
+        }}
+      />
 
       {/* Modal Share Tracking Link Customer */}
       <ShareTrackingModal

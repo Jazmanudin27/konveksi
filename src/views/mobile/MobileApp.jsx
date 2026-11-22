@@ -29,6 +29,7 @@ import MobileMenuSheet from './MobileMenuSheet';
 import AddAntreanModalMobile from './AddAntreanModalMobile';
 import LanjutTahapModalMobile from './LanjutTahapModalMobile';
 import MobileNotificationModal from './MobileNotificationModal';
+import ScannerModal from '../../components/common/ScannerModal';
 
 // Helper deteksi dan resolusi route aktif dari hash URL browser
 function resolveMobileRouteFromHash(isGudang = false, userRole = 'superadmin') {
@@ -230,6 +231,7 @@ export default function MobileApp({
 
   // State Modal Lanjut Tahap Produksi SOP Mobile
   const [selectedNextStatusItem, setSelectedNextStatusItem] = useState(null);
+  const [isGlobalScannerOpen, setIsGlobalScannerOpen] = useState(false);
 
   // Handler Buka Modal Serah Tahapan Produksi (Cutting, Jahit, QC, Finishing, Gudang)
   const handleOpenNextStatus = (item) => {
@@ -267,6 +269,7 @@ export default function MobileApp({
           userRole={userRole}
           currentUser={currentUser}
           onLogout={onLogout}
+          onOpenScanner={() => setIsGlobalScannerOpen(true)}
         />
       )}
 
@@ -397,6 +400,7 @@ export default function MobileApp({
                   userRole={userRole}
                   currentUser={currentUser}
                   onLogout={onLogout}
+                  onOpenScanner={() => setIsGlobalScannerOpen(true)}
                 />
                 <div className="px-3.5">
                   <DashboardMobile
@@ -528,6 +532,31 @@ export default function MobileApp({
         }}
         onNavigateToProduk={() => {
           navigateMobile('produk', null);
+        }}
+      />
+      {/* 8. MODAL SCANNER QR / BARCODE KAMERA MOBILE */}
+      <ScannerModal
+        isOpen={isGlobalScannerOpen}
+        onClose={() => setIsGlobalScannerOpen(false)}
+        division={userRole === 'cutting' ? 'cutting' : userRole === 'jahit' ? 'jahit' : 'general'}
+        antreanList={antreanList}
+        currentUser={currentUser}
+        onActionSuccess={async (item, actionType) => {
+          setIsGlobalScannerOpen(false);
+          if (actionType === 'ambil_jahit') {
+            try {
+              await api.updateAntrean(item.id, {
+                status: 'Proses Jahit',
+                timJahit: currentUser?.nama || 'Penjahit',
+                penjahitId: currentUser?.id || null,
+              });
+              await handleRefreshAntrean();
+            } catch (err) {
+              alert('Gagal mengambil antrean jahit: ' + (err.message || err));
+            }
+          } else {
+            handleOpenNextStatus(item);
+          }
         }}
       />
     </div>

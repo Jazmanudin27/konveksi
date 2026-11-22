@@ -15,6 +15,9 @@ import {
   Flame,
   Volume2,
   VolumeX,
+  Barcode as BarcodeIcon,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function ScannerModal({
@@ -25,6 +28,16 @@ export default function ScannerModal({
   currentUser = null,
   onActionSuccess,
 }) {
+  // Deteksi perangkat: Mobile pakai Kamera, Desktop pakai Mesin Scanner (Laser Gun)
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.innerWidth < 768 ||
+      /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    );
+  };
+
+  const [scanMode, setScanMode] = useState(() => (isMobile() ? 'camera' : 'laser'));
   const [scanQuery, setScanQuery] = useState('');
   const [matchedItem, setMatchedItem] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -37,8 +50,10 @@ export default function ScannerModal({
   const streamRef = useRef(null);
   const detectorRef = useRef(null);
   const scanIntervalRef = useRef(null);
+  const barcodeBufferRef = useRef('');
+  const lastKeyTimeRef = useRef(0);
 
-  // Play beep sound on scan success
+  // Audio feedback: Beep on scan
   const playBeep = () => {
     if (!soundEnabled) return;
     try {
@@ -46,8 +61,8 @@ export default function ScannerModal({
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(950, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -56,28 +71,74 @@ export default function ScannerModal({
     } catch (_) {}
   };
 
-  // Auto focus input on modal open so Barcode Laser Gun works instantly
+  // Reset & inisialisasi mode saat modal dibuka
   useEffect(() => {
     if (isOpen) {
+      const mobileDevice = isMobile();
+      setScanMode(mobileDevice ? 'camera' : 'laser');
       setScanQuery('');
       setMatchedItem(null);
       setIsProcessing(false);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-      startCamera();
+
+      if (mobileDevice) {
+        startCamera();
+      } else {
+        stopCamera();
+        setTimeout(() => inputRef.current?.focus(), 80);
+      }
     } else {
       stopCamera();
     }
+
     return () => {
       stopCamera();
     };
   }, [isOpen]);
 
+  // Listener keyboard global khusus Mesin Scanner Laser di Desktop
+  // Mesin scanner USB/Bluetooth mengirimkan karakter secara cepat (< 30ms) dan diakhiri Enter
+  useEffect(() => {
+    if (!isOpen || scanMode !== 'laser') return;
+
+    const handleKeyDown = (e) => {
+      // Jika input sedang fokus, biarkan form input menangani
+      if (document.activeElement === inputRef.current) return;
+
+      const currentTime = Date.now();
+      if (currentTime - lastKeyTimeRef.current > 150) {
+        barcodeBufferRef.current = '';
+      }
+      lastKeyTimeRef.current = currentTime;
+
+      if (e.key === 'Enter') {
+        if (barcodeBufferRef.current.length >= 3) {
+          handleCodeScanned(barcodeBufferRef.current);
+          barcodeBufferRef.current = '';
+        }
+      } else if (e.key.length === 1) {
+        barcodeBufferRef.current += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, scanMode, antreanList]);
+
+  // Kelola perpindahan mode scan (Mesin Scanner vs Kamera)
+  const switchScanMode = (newMode) => {
+    setScanMode(newMode);
+    if (newMode === 'camera') {
+      startCamera();
+    } else {
+      stopCamera();
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
+  };
+
   const startCamera = async () => {
     setCameraError('');
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError('Kamera tidak didukung oleh browser ini. Gunakan barcode scanner atau input nomor.');
+      setCameraError('Kamera tidak didukung oleh browser ini. Gunakan mode Mesin Scanner / ketik nomor SPK.');
       return;
     }
 
@@ -91,7 +152,7 @@ export default function ScannerModal({
         await videoRef.current.play();
         setCameraActive(true);
 
-        // Check if BarcodeDetector API exists
+        // BarcodeDetector API (Chrome Mobile, Edge, Chrome Desktop)
         if ('BarcodeDetector' in window) {
           try {
             detectorRef.current = new window.BarcodeDetector({
@@ -102,8 +163,8 @@ export default function ScannerModal({
         }
       }
     } catch (err) {
-      console.warn('Camera access denied or unavailable:', err);
-      setCameraError('Kamera tidak aktif atau izin ditolak. Anda tetap dapat menggunakan Barcode Scanner Gun / mengetik No. Antrean.');
+      console.warn('Camera stream error:', err);
+      setCameraError('Kamera tidak aktif atau izin ditolak. Silakan gunakan mode Mesin Scanner.');
       setCameraActive(false);
     }
   };
@@ -136,13 +197,12 @@ export default function ScannerModal({
     }, 400);
   };
 
-  // Find antrean item based on scanned string
+  // Temukan item antrean berdasarkan kode barcode/QR
   const handleCodeScanned = (rawCode) => {
     if (!rawCode || isProcessing) return;
     const clean = String(rawCode).trim().replace(/^https?:\/\/.*#track\//i, '').replace(/\*/g, '');
     setScanQuery(clean);
 
-    // Search in antrean list
     const found = antreanList.find(
       (a) =>
         (a.noAntrian && a.noAntrian.toLowerCase() === clean.toLowerCase()) ||
@@ -163,7 +223,6 @@ export default function ScannerModal({
     handleCodeScanned(scanQuery);
   };
 
-  // Execute Division Action
   const handleExecuteAction = async (actionType) => {
     if (!matchedItem || !onActionSuccess) return;
     setIsProcessing(true);
@@ -171,7 +230,7 @@ export default function ScannerModal({
       await onActionSuccess(matchedItem, actionType, currentUser);
       onClose();
     } catch (err) {
-      console.error('Error executing action:', err);
+      console.error('Error action execution:', err);
     } finally {
       setIsProcessing(false);
     }
@@ -182,19 +241,19 @@ export default function ScannerModal({
   const loggedInWorkerName = currentUser?.nama || 'Saya';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[95vh]">
-        {/* HEADER */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[96vh]">
+        {/* HEADER MODAL */}
         <div className="bg-[#0b1b36] text-white px-4 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-400/40 text-purple-300 flex items-center justify-center font-bold">
               <QrCode className="w-4 h-4 text-purple-300" />
             </div>
             <div>
-              <h3 className="font-extrabold text-xs text-white leading-tight">
+              <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
                 Scan Barcode & QR Code SPK
               </h3>
-              <p className="text-[10px] text-slate-300">
+              <p className="text-[10px] sm:text-[11px] text-slate-300">
                 Divisi: <span className="font-bold text-amber-300 uppercase">{division}</span> • Petugas: <strong className="text-emerald-300">{loggedInWorkerName}</strong>
               </p>
             </div>
@@ -219,40 +278,96 @@ export default function ScannerModal({
           </div>
         </div>
 
-        {/* BODY */}
-        <div className="p-4 overflow-y-auto space-y-3.5 bg-slate-50 flex-1">
-          {/* CAMERA VIEWPORT */}
-          <div className="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center border-2 border-slate-700 shadow-inner">
-            <video
-              ref={videoRef}
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            
-            {/* SCANNING OVERLAY FRAME */}
-            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4">
-              <div className="w-48 h-32 border-2 border-emerald-400 rounded-xl relative animate-pulse shadow-[0_0_15px_rgba(52,211,153,0.5)]">
-                <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white -mt-0.5 -ml-0.5"></div>
-                <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-white -mt-0.5 -mr-0.5"></div>
-                <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-white -mb-0.5 -ml-0.5"></div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white -mb-0.5 -mr-0.5"></div>
-                <div className="absolute inset-x-2 top-1/2 h-0.5 bg-emerald-400 opacity-70"></div>
+        {/* TAB TOGGLE: MESIN SCANNER (DESKTOP) VS KAMERA HP (MOBILE) */}
+        <div className="bg-slate-100 p-1.5 flex items-center gap-1 border-b border-slate-200 shrink-0 text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => switchScanMode('laser')}
+            className={`flex-1 py-1.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              scanMode === 'laser'
+                ? 'bg-purple-700 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <BarcodeIcon className="w-4 h-4" />
+            <span>Mesin Scanner (Desktop)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => switchScanMode('camera')}
+            className={`flex-1 py-1.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              scanMode === 'camera'
+                ? 'bg-purple-700 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>Kamera HP (Mobile)</span>
+          </button>
+        </div>
+
+        {/* BODY CONTENT */}
+        <div className="p-3.5 sm:p-4 overflow-y-auto space-y-3.5 bg-slate-50 flex-1">
+          {/* 1. TAMPILAN KHUSUS MODE MESIN SCANNER (DESKTOP) */}
+          {scanMode === 'laser' && (
+            <div className="border-2 border-dashed border-purple-400 bg-purple-50/60 rounded-2xl p-5 text-center space-y-2 shadow-inner">
+              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center mx-auto shadow-md">
+                <BarcodeIcon className="w-7 h-7 animate-pulse" />
               </div>
-              <span className="text-[10px] text-white/90 bg-black/60 px-2 py-0.5 rounded-full mt-2 font-mono">
-                Arahkan kamera ke QR / Barcode SPK
-              </span>
+              <h4 className="font-black text-sm text-purple-950">
+                Mode Mesin Scanner Barcode Aktif
+              </h4>
+              <p className="text-xs text-purple-800 font-medium max-w-sm mx-auto">
+                Arahkan <b>Barcode Scanner Gun (Laser / USB / Bluetooth)</b> ke Barcode nomor SPK pada kertas.
+              </p>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10.5px] font-extrabold border border-emerald-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <span>Mesin Scanner Siap • Siap Menerima Scan</span>
+              </div>
             </div>
+          )}
 
-            {cameraError && (
-              <div className="absolute inset-0 bg-slate-900/90 text-white p-4 flex flex-col items-center justify-center text-center space-y-2">
-                <AlertTriangle className="w-6 h-6 text-amber-400" />
-                <p className="text-xs text-slate-300 max-w-xs">{cameraError}</p>
+          {/* 2. TAMPILAN KHUSUS MODE KAMERA HP (MOBILE) */}
+          {scanMode === 'camera' && (
+            <div className="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center border-2 border-slate-700 shadow-inner">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4">
+                <div className="w-48 h-32 border-2 border-emerald-400 rounded-xl relative animate-pulse shadow-[0_0_15px_rgba(52,211,153,0.5)]">
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white -mt-0.5 -ml-0.5"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-white -mt-0.5 -mr-0.5"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-white -mb-0.5 -ml-0.5"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white -mb-0.5 -mr-0.5"></div>
+                  <div className="absolute inset-x-2 top-1/2 h-0.5 bg-emerald-400 opacity-80"></div>
+                </div>
+                <span className="text-[10px] text-white/90 bg-black/60 px-2.5 py-0.5 rounded-full mt-2 font-mono">
+                  Arahkan kamera ke QR / Barcode SPK
+                </span>
               </div>
-            )}
-          </div>
 
-          {/* LASER BARCODE SCANNER INPUT BOX (AUTO-FOCUS) */}
+              {cameraError && (
+                <div className="absolute inset-0 bg-slate-900/95 text-white p-4 flex flex-col items-center justify-center text-center space-y-2">
+                  <AlertTriangle className="w-6 h-6 text-amber-400" />
+                  <p className="text-xs text-slate-300 max-w-xs">{cameraError}</p>
+                  <button
+                    type="button"
+                    onClick={() => switchScanMode('laser')}
+                    className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold"
+                  >
+                    Beralih ke Mesin Scanner
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* INPUT FIELD BARCODE (AUTO-FOCUS UNTUK MESIN SCANNER GUN) */}
           <form onSubmit={handleInputSubmit} className="relative">
             <div className="flex items-center gap-1.5">
               <div className="relative flex-1">
@@ -260,25 +375,22 @@ export default function ScannerModal({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Ketik / Scan nomor SPK (mis: ANT-20261119-433)..."
+                  placeholder="Ketik / Arahkan Mesin Scanner ke No. SPK..."
                   value={scanQuery}
                   onChange={(e) => {
                     setScanQuery(e.target.value);
                     handleCodeScanned(e.target.value);
                   }}
-                  className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 shadow-xs"
+                  className="w-full pl-9 pr-3 py-2.5 bg-white border-2 border-purple-300 rounded-xl text-xs sm:text-sm font-mono font-bold text-slate-900 placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 shadow-xs"
                 />
               </div>
               <button
                 type="submit"
-                className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs"
+                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs active:scale-95"
               >
-                Cari
+                Cek SPK
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 mt-1 pl-1">
-              💡 <b>Tips:</b> Gunakan Barcode Scanner Gun (Laser) otomatis membaca saat diarahkan ke lembar SPK.
-            </p>
           </form>
 
           {/* HASIL DETEKSI SPK */}
@@ -294,7 +406,7 @@ export default function ScannerModal({
                       {matchedItem.status}
                     </span>
                   </div>
-                  <h4 className="font-extrabold text-xs text-slate-900 mt-0.5">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 mt-0.5">
                     {matchedItem.namaProduk}
                   </h4>
                   <p className="text-[10.5px] text-slate-500 font-mono">
@@ -312,7 +424,7 @@ export default function ScannerModal({
                 </div>
               </div>
 
-              {/* ACTION BERDASARKAN DIVISI */}
+              {/* ACTION SESUAI DIVISI */}
               <div className="space-y-2">
                 {division === 'jahit' && (
                   <div>
@@ -332,7 +444,7 @@ export default function ScannerModal({
                         type="button"
                         disabled={isProcessing}
                         onClick={() => handleExecuteAction('serah_qc')}
-                        className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                        className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
                       >
                         <ShieldCheck className="w-4 h-4" />
                         <span>Selesaikan Jahit & Serahkan ke Tim QC</span>
@@ -342,7 +454,7 @@ export default function ScannerModal({
                         type="button"
                         disabled={isProcessing}
                         onClick={() => handleExecuteAction('ambil_jahit')}
-                        className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                        className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
                       >
                         <Scissors className="w-4 h-4" />
                         <span>Ambil SPK Ini & Mulai Menjahit</span>
@@ -358,7 +470,7 @@ export default function ScannerModal({
                         type="button"
                         disabled={isProcessing}
                         onClick={() => handleExecuteAction('mulai_cutting')}
-                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
                       >
                         <Scissors className="w-4 h-4" />
                         <span>Mulai Proses Potong Bahan (Cutting)</span>
@@ -368,7 +480,7 @@ export default function ScannerModal({
                         type="button"
                         disabled={isProcessing}
                         onClick={() => handleExecuteAction('selesai_cutting')}
-                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         <span>Tandai Selesai Cutting (Siap Diambil Jahit)</span>
@@ -382,7 +494,7 @@ export default function ScannerModal({
                     type="button"
                     disabled={isProcessing}
                     onClick={() => handleExecuteAction('proses_qc')}
-                    className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                    className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
                   >
                     <ShieldCheck className="w-4 h-4" />
                     <span>Lakukan Inspeksi QC & Lanjut Finishing</span>
@@ -394,10 +506,22 @@ export default function ScannerModal({
                     type="button"
                     disabled={isProcessing}
                     onClick={() => handleExecuteAction('selesai_finishing')}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
                   >
                     <Warehouse className="w-4 h-4" />
                     <span>Serahkan ke Gudang Jadi (Packing Selesai)</span>
+                  </button>
+                )}
+
+                {(division === 'general' || division === 'gudang') && (
+                  <button
+                    type="button"
+                    disabled={isProcessing}
+                    onClick={() => handleExecuteAction('view_detail')}
+                    className="w-full py-2.5 bg-[#0284c7] hover:bg-[#0369a1] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                    <span>Buka Detail & Lanjut Proses</span>
                   </button>
                 )}
               </div>
@@ -406,7 +530,7 @@ export default function ScannerModal({
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center text-xs text-amber-800 space-y-1">
               <span className="font-bold block">Nomor SPK "{scanQuery}" tidak ditemukan</span>
               <span className="text-[11px] text-amber-600 block">
-                Pastikan nomor antrean sudah didaftarkan pada sistem.
+                Arahkan Mesin Scanner ke Barcode SPK atau cek kembali nomor antrean.
               </span>
             </div>
           ) : null}
@@ -414,7 +538,9 @@ export default function ScannerModal({
 
         {/* FOOTER */}
         <div className="bg-white border-t border-slate-200 px-4 py-2.5 flex items-center justify-between text-xs text-slate-500 shrink-0">
-          <span>Scanner Siap Digunakan</span>
+          <span>
+            {scanMode === 'laser' ? '🔫 Mesin Scanner Ready' : '📷 Kamera Scanner Ready'}
+          </span>
           <button
             type="button"
             onClick={onClose}

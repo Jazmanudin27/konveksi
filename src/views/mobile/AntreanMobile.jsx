@@ -178,7 +178,7 @@ export default function AntreanMobile({
               </div>
               <div>
                 <h2 className="text-sm font-black tracking-tight leading-tight">
-                  Divisi Cutting & Pola Kain
+                  Cutting
                 </h2>
                 <p className="text-[10px] text-blue-100 font-medium">
                   Pemotongan pola bahan & serah terima ke penjahit

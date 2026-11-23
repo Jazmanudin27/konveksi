@@ -181,6 +181,16 @@ export default function App() {
     } catch (_) {}
   };
 
+  // Proteksi Akses Menu Sesuai Role (Misal: Admin Cutting hanya boleh ke halaman Cutting)
+  useEffect(() => {
+    const config = USER_ROLES[userRole];
+    if (config && Array.isArray(config.allowedMenus) && config.allowedMenus.length > 0) {
+      if (!config.allowedMenus.includes(activeMenu)) {
+        setActiveMenu(config.defaultMenu || 'dashboard');
+      }
+    }
+  }, [userRole, activeMenu]);
+
   // Sinkronisasi event navigasi URL Hash & tombol Back/Forward browser
   useEffect(() => {
     const onHashChange = () => {

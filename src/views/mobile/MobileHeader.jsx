@@ -44,7 +44,7 @@ export default function MobileHeader({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="font-black text-sm sm:text-base tracking-tight text-white leading-tight truncate">
-                {isGudang ? 'Gudang Jadi' : isCutting ? 'Divisi Cutting' : 'Ruang Konveksi'}{' '}
+                {isGudang ? 'Gudang Jadi' : isCutting ? 'Cutting' : 'Ruang Konveksi'}{' '}
                 <span className={`font-medium italic ${isCutting ? 'text-blue-300' : isGudang ? 'text-amber-200' : 'text-emerald-300'}`}>Mobile</span>
               </h1>
             </div>
@@ -56,7 +56,7 @@ export default function MobileHeader({
                   ? 'bg-blue-500/30 text-blue-100 border-blue-300/40'
                   : 'bg-emerald-800/80 text-emerald-200 border-emerald-600/40'
               }`}>
-                {isGudang ? 'SPK & MUTASI GUDANG' : isCutting ? 'ADMIN CUTTING • POLA & POTONG' : (currentUser?.nama || roleTitle)}
+                {isGudang ? 'SPK & MUTASI GUDANG' : isCutting ? 'ADMIN CUTTING' : (currentUser?.nama || roleTitle)}
               </span>
             </div>
           </div>

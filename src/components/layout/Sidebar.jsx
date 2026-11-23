@@ -134,18 +134,20 @@ export default function Sidebar({
 
         {/* Navigation Menus (Scrollbar Tersembunyi tapi Tetap Bisa Scroll) */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 text-xs font-medium no-scrollbar scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {/* MENU DASHBOARD UTAMA */}
-          <button
-            onClick={() => handleMenuClick("dashboard")}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all cursor-pointer text-xs ${
-              activeMenu === "dashboard"
-                ? `bg-gradient-to-r ${roleConfig.themeGradient} text-white shadow-md`
-                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <Home className="w-4 h-4 shrink-0 text-cyan-400" />
-            <span>Dashboard</span>
-          </button>
+          {/* MENU DASHBOARD UTAMA (Role Cutting langsung ke halaman Cutting tanpa Dashboard) */}
+          {!isCutting && (
+            <button
+              onClick={() => handleMenuClick("dashboard")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all cursor-pointer text-xs ${
+                activeMenu === "dashboard"
+                  ? `bg-gradient-to-r ${roleConfig.themeGradient} text-white shadow-md`
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <Home className="w-4 h-4 shrink-0 text-cyan-400" />
+              <span>Dashboard</span>
+            </button>
+          )}
 
           {/* 1. KHUSUS ROLE ADMIN GUDANG */}
           {isGudang && (
@@ -238,51 +240,20 @@ export default function Sidebar({
             </div>
           )}
 
-          {/* 2. KHUSUS ROLE ADMIN CUTTING */}
+          {/* 2. KHUSUS ROLE ADMIN CUTTING (HANYA SATU MENU: CUTTING) */}
           {isCutting && (
-            <div className="space-y-3">
-              <div className="pt-2 border-t border-slate-800/60">
-                <div className="px-3 pb-1 text-[9.5px] font-bold uppercase tracking-wider text-blue-400">
-                  DIVISI POTONG & POLA
-                </div>
-                <div className="space-y-0.5">
-                  <button
-                    onClick={() => handleMenuClick("divisi-cutting")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-bold transition-all cursor-pointer text-xs ${
-                      activeMenu === "divisi-cutting"
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm font-black"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <Scissors className="w-4 h-4 shrink-0 text-blue-400" />
-                    <span>Halaman Divisi Cutting</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleMenuClick("bahan")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                      activeMenu === "bahan"
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <Boxes className="w-4 h-4 shrink-0 text-cyan-400" />
-                    <span>Katalog Bahan Baku</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleMenuClick("mutasi-bahan")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                      activeMenu === "mutasi-bahan"
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <ArrowLeftRight className="w-4 h-4 shrink-0 text-cyan-400" />
-                    <span>Mutasi Pengambilan Bahan</span>
-                  </button>
-                </div>
-              </div>
+            <div className="space-y-1">
+              <button
+                onClick={() => handleMenuClick("divisi-cutting")}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold transition-all cursor-pointer text-xs ${
+                  activeMenu === "divisi-cutting"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md font-black"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                }`}
+              >
+                <Scissors className="w-4 h-4 shrink-0 text-blue-400" />
+                <span>Cutting</span>
+              </button>
             </div>
           )}
 
@@ -588,7 +559,7 @@ export default function Sidebar({
                       }`}
                     >
                       <Scissors className="w-3.5 h-3.5 shrink-0 text-blue-400" />
-                      <span>Divisi Cutting</span>
+                      <span>Cutting</span>
                     </button>
 
                     <button

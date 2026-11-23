@@ -332,7 +332,7 @@ export default function DivisiCutting({
           <div>
             <div className="flex items-center gap-2 leading-none">
               <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
-                2. Divisi Cutting & Pola Kain
+                Cutting
               </h2>
               <span className="px-2 py-0.5 rounded-md bg-white/25 text-white text-[10.5px] font-black">
                 TAHAP 2 SOP
@@ -803,7 +803,7 @@ export default function DivisiCutting({
             Menampilkan <span className="font-bold text-slate-900">{filteredData.length}</span> antrean cutting
           </div>
           <div className="font-semibold text-slate-700">
-            Divisi Cutting • Terhubung Database MySQL
+            Cutting • Terhubung Database MySQL
           </div>
         </div>
       </div>

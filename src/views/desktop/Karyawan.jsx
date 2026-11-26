@@ -15,7 +15,10 @@ import {
   Layers,
   Phone,
   Calendar,
-  Building2
+  Building2,
+  User,
+  Lock,
+  KeyRound
 } from 'lucide-react';
 import {
   EMPLOYEE_CATEGORIES,
@@ -333,6 +336,7 @@ export default function Karyawan({
                 <th className="py-2.5 px-2.5 min-w-[200px] border-r border-[#3b4c5e] text-white font-bold">NAMA KARYAWAN</th>
                 <th className="py-2.5 px-2.5 min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KATEGORI</th>
                 <th className="py-2.5 px-2.5 min-w-[160px] border-r border-[#3b4c5e] text-white font-bold">BAGIAN</th>
+                <th className="py-2.5 px-2.5 min-w-[150px] border-r border-[#3b4c5e] text-white font-bold">AKUN LOGIN (USER & PASS)</th>
                 <th className="py-2.5 px-2.5 text-center w-28 border-r border-[#3b4c5e] text-white font-bold">STATUS</th>
                 <th className="py-2.5 px-2.5 text-center w-24 text-white font-bold">AKSI</th>
               </tr>
@@ -340,7 +344,7 @@ export default function Karyawan({
             <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
+                  <td colSpan="8" className="py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold">Tidak ada karyawan ditemukan</p>
                     <p className="text-[11px] text-slate-400">Coba ubah kata kunci pencarian atau filter</p>
@@ -387,6 +391,18 @@ export default function Karyawan({
                       <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
                         <Briefcase className="w-3 h-3 text-slate-600" />
                         <span>{emp.bagian}</span>
+                      </div>
+                    </td>
+
+                    {/* AKUN LOGIN */}
+                    <td className="py-2 px-2.5 border-r border-slate-200/60 font-mono text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                        <User className="w-3.5 h-3.5 text-sky-600" />
+                        <span>{emp.username || emp.nik?.toLowerCase() || '-'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-500 text-[11px] mt-0.5">
+                        <Lock className="w-3 h-3 text-slate-400" />
+                        <span>{emp.password || '123456'}</span>
                       </div>
                     </td>
 
@@ -500,6 +516,8 @@ function FormModalKaryawan({ isOpen, editingEmployee, onClose, onSave }) {
     bagian: editingEmployee?.bagian || 'Jahit (Sewing)',
     status: editingEmployee?.status || 'Aktif',
     telepon: editingEmployee?.telepon || '',
+    username: editingEmployee?.username || '',
+    password: editingEmployee?.password || '123456',
     tanggalMasuk: editingEmployee?.tanggalMasuk || new Date().toISOString().split('T')[0],
   });
 
@@ -620,6 +638,43 @@ function FormModalKaryawan({ isOpen, editingEmployee, onClose, onSave }) {
             </div>
           </div>
 
+          {/* AKUN LOGIN KARYAWAN */}
+          <div className="p-3 bg-sky-50/70 border border-sky-200 rounded-xl space-y-2">
+            <div className="flex items-center gap-1.5 text-sky-900 font-bold text-xs">
+              <KeyRound className="w-4 h-4 text-sky-700" />
+              <span>Akun Login Divisi (Cutting, QC, Jahit, dll)</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  Username Login
+                </label>
+                <input
+                  type="text"
+                  placeholder="misal: budi_cut"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  Password Login
+                </label>
+                <input
+                  type="text"
+                  placeholder="Default: 123456"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+            </div>
+            <p className="text-[10.5px] text-sky-700">
+              * Karyawan login menggunakan Username & Password di atas sesuai bagiannya (Cutting, QC, Jahit).
+            </p>
+          </div>
+
           <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
             <button
               type="button"
@@ -692,6 +747,22 @@ function DetailModalKaryawan({ employee, onClose, getBadgeClass }) {
             <div className="flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-cyan-600" />
               <span className="font-semibold text-slate-800">{employee.bagian}</span>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-sky-50/70 border border-sky-200">
+            <span className="text-[10px] font-bold text-sky-800 uppercase tracking-wider block mb-1.5">
+              Akses Login Akun
+            </span>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div>
+                <span className="text-slate-500 text-[10.5px] block">Username</span>
+                <span className="font-bold text-slate-800">{employee.username || employee.nik?.toLowerCase() || '-'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 text-[10.5px] block">Password</span>
+                <span className="font-bold text-slate-800">{employee.password || '123456'}</span>
+              </div>
             </div>
           </div>
         </div>

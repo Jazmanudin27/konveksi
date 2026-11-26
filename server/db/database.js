@@ -219,20 +219,53 @@ async function initMysql() {
         "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'username' AND TABLE_SCHEMA = DATABASE()",
       );
       if (!colUser || colUser.length === 0) {
-        await connection.query("ALTER TABLE employees ADD COLUMN username VARCHAR(100) NULL AFTER tanggal_masuk");
+        await connection.query(
+          "ALTER TABLE employees ADD COLUMN username VARCHAR(100) NULL AFTER tanggal_masuk",
+        );
       }
 
       const [colPass] = await connection.query(
         "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'password' AND TABLE_SCHEMA = DATABASE()",
       );
       if (!colPass || colPass.length === 0) {
-        await connection.query("ALTER TABLE employees ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT '123456' AFTER username");
+        await connection.query(
+          "ALTER TABLE employees ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT '123456' AFTER username",
+        );
       }
 
       // Isi default username jika belum terisi
       await connection.query(`
         UPDATE employees 
         SET username = LOWER(REPLACE(COALESCE(NULLIF(TRIM(nik), ''), TRIM(nama)), ' ', '')),
+            password = COALESCE(NULLIF(TRIM(password), ''), '123456')
+        WHERE username IS NULL OR TRIM(username) = ''
+      `);
+    } catch (_) {}
+
+    // Pastikan kolom username & password tersedia di tabel tim_finishing (Akun Login Tim Finishing)
+    try {
+      const [colUserFin] = await connection.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tim_finishing' AND COLUMN_NAME = 'username' AND TABLE_SCHEMA = DATABASE()",
+      );
+      if (!colUserFin || colUserFin.length === 0) {
+        await connection.query(
+          "ALTER TABLE tim_finishing ADD COLUMN username VARCHAR(100) NULL AFTER catatan",
+        );
+      }
+
+      const [colPassFin] = await connection.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tim_finishing' AND COLUMN_NAME = 'password' AND TABLE_SCHEMA = DATABASE()",
+      );
+      if (!colPassFin || colPassFin.length === 0) {
+        await connection.query(
+          "ALTER TABLE tim_finishing ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT '123456' AFTER username",
+        );
+      }
+
+      // Isi default username jika belum terisi
+      await connection.query(`
+        UPDATE tim_finishing 
+        SET username = LOWER(REPLACE(COALESCE(NULLIF(TRIM(kode_tim), ''), TRIM(nama_tim)), ' ', '')),
             password = COALESCE(NULLIF(TRIM(password), ''), '123456')
         WHERE username IS NULL OR TRIM(username) = ''
       `);
@@ -291,12 +324,23 @@ async function initMysql() {
           WHERE LOWER(bagian) LIKE '%jahit%' OR LOWER(kategori) LIKE '%borongan%' OR LOWER(bagian) LIKE '%sew%'
         `);
         for (const p of penjahits) {
-          const rawUser = (p.nik || p.nama.replace(/\\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+          const rawUser = (p.nik || p.nama.replace(/\\s+/g, ""))
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]/g, "");
           const username = rawUser || `penjahit_${p.id}`;
-          await connection.query(`
+          await connection.query(
+            `
             INSERT IGNORE INTO users (username, nama, password, role, status, telepon, keterangan)
             VALUES (?, ?, '123456', 'jahit', ?, ?, ?)
-          `, [username, p.nama, p.status || 'Aktif', p.telepon || null, `Akun Penjahit ${p.kategori || 'Borongan'}`]);
+          `,
+            [
+              username,
+              p.nama,
+              p.status || "Aktif",
+              p.telepon || null,
+              `Akun Penjahit ${p.kategori || "Borongan"}`,
+            ],
+          );
         }
       } catch (_) {}
 

@@ -205,6 +205,8 @@ CREATE TABLE IF NOT EXISTS tim_finishing (
   telepon VARCHAR(50),
   status VARCHAR(30) DEFAULT 'Aktif',
   catatan TEXT,
+  username VARCHAR(100) NULL,
+  password VARCHAR(255) NOT NULL DEFAULT '123456',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

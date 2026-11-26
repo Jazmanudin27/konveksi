@@ -16,6 +16,9 @@ import {
   Sparkles,
   RefreshCw,
   Warehouse,
+  User,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Swal } from '../../utils/swal';
@@ -35,6 +38,8 @@ export default function TimFinishing() {
   const [formData, setFormData] = useState({
     kodeTim: '',
     namaTim: '',
+    username: '',
+    password: '123456',
     kategori: 'Internal',
     spesialisasi: 'Finishing, Setrika Uap & Packing',
     kapasitasHarian: 250,
@@ -93,6 +98,8 @@ export default function TimFinishing() {
     setFormData({
       kodeTim: `FIN-${Date.now().toString().slice(-4)}`,
       namaTim: '',
+      username: '',
+      password: '123456',
       kategori: 'Internal',
       spesialisasi: 'Finishing, Setrika Uap & Packing',
       kapasitasHarian: 250,
@@ -108,6 +115,8 @@ export default function TimFinishing() {
     setFormData({
       kodeTim: item.kodeTim || '',
       namaTim: item.namaTim || '',
+      username: item.username || '',
+      password: item.password || '123456',
       kategori: item.kategori || 'Internal',
       spesialisasi: item.spesialisasi || 'Finishing, Setrika Uap & Packing',
       kapasitasHarian: Number(item.kapasitasHarian) || 250,
@@ -351,6 +360,7 @@ export default function TimFinishing() {
                 <th className="py-2.5 px-3 min-w-[240px] border-r border-[#3b4c5e] text-white font-bold">SPESIALISASI PENGERJAAN</th>
                 <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KAPASITAS / HARI</th>
                 <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KONTAK / HP</th>
+                <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px] border-r border-[#3b4c5e] text-white font-bold">AKUN LOGIN (USER & PASS)</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[90px] border-r border-[#3b4c5e] text-white font-bold">STATUS</th>
                 <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[100px] text-white font-bold">AKSI</th>
               </tr>
@@ -387,6 +397,16 @@ export default function TimFinishing() {
                     </td>
                     <td className="py-2 px-3 font-mono text-slate-700 border-r border-slate-200/60">
                       {item.telepon || '-'}
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200/60 font-mono text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                        <User className="w-3.5 h-3.5 text-teal-600" />
+                        <span>{item.username || item.kodeTim?.toLowerCase() || '-'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-500 text-[11px] mt-0.5">
+                        <Lock className="w-3 h-3 text-slate-400" />
+                        <span>{item.password || '123456'}</span>
+                      </div>
                     </td>
                     <td className="py-2 px-3 text-center border-r border-slate-200/60">
                       <span
@@ -550,6 +570,40 @@ export default function TimFinishing() {
                   onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
                   className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-teal-600"
                 />
+              </div>
+
+              {/* AKUN LOGIN TIM FINISHING */}
+              <div className="p-3 bg-teal-50/70 border border-teal-200 rounded-xl space-y-2">
+                <div className="flex items-center gap-1.5 text-teal-900 font-bold text-[11px]">
+                  <KeyRound className="w-3.5 h-3.5 text-teal-700" />
+                  <span>Akun Akses Login Divisi Finishing</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                      Username Login
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Cth: finishing1"
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-mono font-bold focus:outline-none focus:border-teal-600 text-slate-800 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                      Password Login
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Default: 123456"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-mono font-bold focus:outline-none focus:border-teal-600 text-slate-800 bg-white"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>

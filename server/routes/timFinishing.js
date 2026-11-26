@@ -17,6 +17,8 @@ router.get('/', async (req, res) => {
       telepon: r.telepon || '',
       status: r.status || 'Aktif',
       catatan: r.catatan || '',
+      username: r.username || (r.kode_tim || r.nama_tim.replace(/\s+/g, '')).toLowerCase(),
+      password: r.password || '123456',
       createdAt: r.created_at
     })));
   } catch (err) {
@@ -26,14 +28,23 @@ router.get('/', async (req, res) => {
 
 // POST create tim finishing
 router.post('/', async (req, res) => {
-  const { kodeTim, namaTim, kategori, spesialisasi, kapasitasHarian, telepon, status, catatan } = req.body;
+  const { kodeTim, namaTim, kategori, spesialisasi, kapasitasHarian, telepon, status, catatan, username, password } = req.body;
+  const cleanUsername = (username || kodeTim || namaTim.replace(/\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  const cleanPassword = password || '123456';
+
   try {
     const autoKode = kodeTim || `FIN-${Date.now().toString().slice(-4)}`;
     const info = await db.run(
-      'INSERT INTO tim_finishing (kode_tim, nama_tim, kategori, spesialisasi, kapasitas_harian, telepon, status, catatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [autoKode, namaTim, kategori || 'Internal', spesialisasi || 'Finishing & Packing', Number(kapasitasHarian) || 200, telepon || null, status || 'Aktif', catatan || null]
+      'INSERT INTO tim_finishing (kode_tim, nama_tim, kategori, spesialisasi, kapasitas_harian, telepon, status, catatan, username, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [autoKode, namaTim, kategori || 'Internal', spesialisasi || 'Finishing & Packing', Number(kapasitasHarian) || 200, telepon || null, status || 'Aktif', catatan || null, cleanUsername, cleanPassword]
     );
-    res.status(201).json({ id: Number(info.insertId), ...req.body, kodeTim: autoKode });
+    res.status(201).json({
+      id: Number(info.insertId),
+      ...req.body,
+      kodeTim: autoKode,
+      username: cleanUsername,
+      password: cleanPassword
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -42,13 +53,21 @@ router.post('/', async (req, res) => {
 // PUT update tim finishing
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { kodeTim, namaTim, kategori, spesialisasi, kapasitasHarian, telepon, status, catatan } = req.body;
+  const { kodeTim, namaTim, kategori, spesialisasi, kapasitasHarian, telepon, status, catatan, username, password } = req.body;
+  const cleanUsername = (username || kodeTim || namaTim.replace(/\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  const cleanPassword = password || '123456';
+
   try {
     await db.run(
-      'UPDATE tim_finishing SET kode_tim = ?, nama_tim = ?, kategori = ?, spesialisasi = ?, kapasitas_harian = ?, telepon = ?, status = ?, catatan = ? WHERE id = ?',
-      [kodeTim, namaTim, kategori, spesialisasi, Number(kapasitasHarian) || 200, telepon || null, status || 'Aktif', catatan || null, id]
+      'UPDATE tim_finishing SET kode_tim = ?, nama_tim = ?, kategori = ?, spesialisasi = ?, kapasitas_harian = ?, telepon = ?, status = ?, catatan = ?, username = ?, password = ? WHERE id = ?',
+      [kodeTim, namaTim, kategori, spesialisasi, Number(kapasitasHarian) || 200, telepon || null, status || 'Aktif', catatan || null, cleanUsername, cleanPassword, id]
     );
-    res.json({ success: true, id: Number(id) });
+    res.json({
+      success: true,
+      id: Number(id),
+      username: cleanUsername,
+      password: cleanPassword
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

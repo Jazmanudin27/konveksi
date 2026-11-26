@@ -102,7 +102,7 @@ export default function Login({ onLoginSuccess }) {
                   autoFocus
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="misal: admin, gudang, cutting..."
+                  placeholder="misal: admin, gudang, nama_tim..."
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900/80 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono"
                 />
               </div>

@@ -14,7 +14,52 @@ router.post('/login', async (req, res) => {
   const inputPassword = String(password).trim();
 
   try {
-    // 1. Prioritaskan autentikasi penjahit langsung dari tabel employees (Master Penjahit)
+    // 1. Cek dari tabel tim_finishing (Master Tim Finishing & Packing)
+    const fin = await db.get(
+      `SELECT id, kode_tim, nama_tim, kategori, spesialisasi, kapasitas_harian, telepon, status, username, password 
+       FROM tim_finishing 
+       WHERE (LOWER(COALESCE(username, '')) = ? OR LOWER(kode_tim) = ? OR LOWER(REPLACE(nama_tim, ' ', '')) = ? OR LOWER(SUBSTRING_INDEX(nama_tim, ' ', 1)) = ?)`,
+      [cleanUsername, cleanUsername, cleanUsername, cleanUsername]
+    );
+
+    if (fin) {
+      if (fin.status !== 'Aktif') {
+        return res.status(403).json({ error: `Akun tim finishing "${fin.nama_tim}" sedang ${fin.status}. Hubungi Admin.` });
+      }
+
+      const expectedPass = String(fin.password || '123456').trim();
+      if (inputPassword !== expectedPass) {
+        return res.status(401).json({ error: 'Password Tim Finishing salah.' });
+      }
+
+      const finishingUsername = (fin.username || fin.kode_tim || cleanUsername).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+      // Sinkronkan ke tabel users role 'finishing'
+      try {
+        await db.run(
+          `INSERT INTO users (username, nama, password, role, status, telepon, keterangan) 
+           VALUES (?, ?, ?, 'finishing', 'Aktif', ?, ?)
+           ON DUPLICATE KEY UPDATE nama = VALUES(nama), password = VALUES(password), role = 'finishing', status = 'Aktif'`,
+          [finishingUsername, fin.nama_tim, expectedPass, fin.telepon || null, `Tim Finishing & Packing (${fin.kategori || 'Internal'})`]
+        );
+      } catch (_) {}
+
+      return res.json({
+        success: true,
+        message: 'Login berhasil sebagai Tim Finishing.',
+        user: {
+          id: fin.id,
+          username: finishingUsername,
+          nama: fin.nama_tim,
+          role: 'finishing',
+          status: 'Aktif',
+          telepon: fin.telepon,
+          keterangan: `Tim Finishing & Packing (${fin.kategori || 'Internal'})`
+        }
+      });
+    }
+
+    // 2. Cek dari tabel employees (Master Karyawan: Cutting, QC, Jahit, dll)
     const emp = await db.get(
       `SELECT id, nik, nama, kategori, bagian, status, telepon, username, password 
        FROM employees 
@@ -22,44 +67,66 @@ router.post('/login', async (req, res) => {
       [cleanUsername, cleanUsername, cleanUsername, cleanUsername]
     );
 
-    if (emp && (String(emp.bagian || '').toLowerCase().includes('jahit') || String(emp.kategori || '').toLowerCase().includes('borongan'))) {
+    if (emp) {
       if (emp.status !== 'Aktif') {
-        return res.status(403).json({ error: `Akun penjahit "${emp.nama}" sedang ${emp.status}. Hubungi Admin.` });
+        return res.status(403).json({ error: `Akun karyawan "${emp.nama}" sedang ${emp.status}. Hubungi Admin.` });
       }
 
       const expectedPass = String(emp.password || '123456').trim();
       if (inputPassword !== expectedPass) {
-        return res.status(401).json({ error: 'Password penjahit salah.' });
+        return res.status(401).json({ error: 'Password karyawan salah.' });
       }
 
-      const penjahitUsername = (emp.username || emp.nik || cleanUsername).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      // Tentukan role berdasarkan bagian kerja di tabel employees
+      const b = String(emp.bagian || '').toLowerCase();
+      let empRole = 'jahit';
+      let titleBagian = 'Penjahit';
+
+      if (b.includes('cut') || b.includes('pola')) {
+        empRole = 'cutting';
+        titleBagian = 'Divisi Cutting (Pola & Potong)';
+      } else if (b.includes('qc') || b.includes('quality') || b.includes('inspeksi')) {
+        empRole = 'qc';
+        titleBagian = 'Divisi Quality Control (QC)';
+      } else if (b.includes('finish') || b.includes('pack')) {
+        empRole = 'finishing';
+        titleBagian = 'Divisi Finishing & Packing';
+      } else if (b.includes('gudang')) {
+        empRole = 'gudang';
+        titleBagian = 'Divisi Gudang';
+      } else {
+        empRole = 'jahit';
+        titleBagian = `Penjahit (${emp.kategori || 'Borongan'})`;
+      }
+
+      const empUsername = (emp.username || emp.nik || cleanUsername).toLowerCase().replace(/[^a-z0-9_-]/g, '');
 
       // Sinkronkan ke tabel users
       try {
         await db.run(
           `INSERT INTO users (username, nama, password, role, status, telepon, keterangan) 
-           VALUES (?, ?, ?, 'jahit', 'Aktif', ?, ?)
-           ON DUPLICATE KEY UPDATE nama = VALUES(nama), password = VALUES(password), status = 'Aktif'`,
-          [penjahitUsername, emp.nama, expectedPass, emp.telepon || null, `Akun Penjahit ${emp.kategori || 'Borongan'}`]
+           VALUES (?, ?, ?, ?, 'Aktif', ?, ?)
+           ON DUPLICATE KEY UPDATE nama = VALUES(nama), password = VALUES(password), role = VALUES(role), status = 'Aktif'`,
+          [empUsername, emp.nama, expectedPass, empRole, emp.telepon || null, `Akun ${titleBagian}`]
         );
       } catch (_) {}
 
       return res.json({
         success: true,
-        message: 'Login berhasil sebagai Penjahit.',
+        message: `Login berhasil sebagai ${titleBagian}.`,
         user: {
           id: emp.id,
-          username: penjahitUsername,
+          username: empUsername,
           nama: emp.nama,
-          role: 'jahit',
+          role: empRole,
           status: 'Aktif',
           telepon: emp.telepon,
-          keterangan: `Akun Penjahit ${emp.kategori || 'Borongan'}`
+          keterangan: `Akun ${titleBagian}`
         }
       });
     }
 
-    // 2. Jika bukan penjahit, autentikasi dari tabel users (Admin, Gudang, Cutting, QC, Finishing, dll)
+    // 3. Fallback: Autentikasi dari tabel users (Khusus Super Admin atau Akun Sistem)
     let user = await db.get(
       'SELECT id, username, nama, email, password, role, status, telepon, keterangan FROM users WHERE LOWER(username) = ?',
       [cleanUsername]

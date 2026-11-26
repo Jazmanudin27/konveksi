@@ -5,7 +5,8 @@ import {
   Minimize2,
   Shirt,
   Sparkles,
-  LogOut
+  LogOut,
+  Download
 } from 'lucide-react';
 import { useClock } from '../../hooks/useClock';
 
@@ -13,6 +14,8 @@ export default function TopHeader({
   onToggleSidebar,
   currentUser = null,
   onLogout = null,
+  onOpenInstallModal = null,
+  isInstalled = false,
 }) {
   const timeStr = useClock();
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -70,6 +73,18 @@ export default function TopHeader({
 
       {/* Bagian Kanan Header */}
       <div className="flex items-center gap-1.5 sm:gap-2.5">
+        {/* Tombol Install App Chrome */}
+        {!isInstalled && onOpenInstallModal && (
+          <button
+            onClick={onOpenInstallModal}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-300 hover:text-white border border-cyan-800/60 text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+            title="Pasang Aplikasi Ruang Konveksi ke Chrome"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Install App</span>
+          </button>
+        )}
+
         {/* Tombol Logout Akun */}
         {onLogout && (
           <button

@@ -6,11 +6,12 @@ import {
   EyeOff,
   Shirt,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { api } from '../../services/api';
 
-export default function Login({ onLoginSuccess }) {
+export default function Login({ onLoginSuccess, onOpenInstallModal }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -156,7 +157,19 @@ export default function Login({ onLoginSuccess }) {
         </div>
 
         {/* Footer Info */}
-        <div className="text-center text-[10.5px] text-slate-500 space-y-1">
+        <div className="text-center text-[10.5px] text-slate-500 space-y-2">
+          {onOpenInstallModal && (
+            <div>
+              <button
+                type="button"
+                onClick={onOpenInstallModal}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-cyan-300 hover:text-white border border-slate-700 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Download className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Pasang Aplikasi di Google Chrome</span>
+              </button>
+            </div>
+          )}
           <p>Database MySQL: <span className="font-mono text-cyan-400">konveksi@localhost</span></p>
           <p>© 2026 Ruang Konveksi System • Hak Akses & Keamanan Terenkripsi</p>
         </div>

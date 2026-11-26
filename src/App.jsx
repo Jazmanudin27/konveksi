@@ -23,6 +23,8 @@ import DivisiJahit from './views/desktop/divisi/DivisiJahit';
 import DivisiQC from './views/desktop/divisi/DivisiQC';
 import DivisiFinishing from './views/desktop/divisi/DivisiFinishing';
 import Login from './views/auth/Login';
+import InstallAppModal from './components/common/InstallAppModal';
+import { usePwaInstall } from './hooks/usePwaInstall';
 import { api } from './services/api';
 import { Swal } from './utils/swal';
 import { USER_ROLES } from './constants/userRoles';
@@ -30,6 +32,16 @@ import { USER_ROLES } from './constants/userRoles';
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dbConnected, setDbConnected] = useState(false);
+
+  // Hook PWA Install Google Chrome
+  const {
+    deferredPrompt,
+    isInstallable,
+    isInstalled,
+    showModal: showInstallModal,
+    openInstallModal,
+    closeInstallModal,
+  } = usePwaInstall();
 
   // Mode Tampilan: Mobile vs Desktop (Auto-detect layar smartphone < 768px atau pilihan manual)
   const [isMobileView, setIsMobileView] = useState(() => {
@@ -375,32 +387,51 @@ export default function App() {
 
   // Jika Belum Login -> Tampilkan Halaman Login Pengguna
   if (!currentUser) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <Login
+          onLoginSuccess={handleLoginSuccess}
+          onOpenInstallModal={openInstallModal}
+        />
+        <InstallAppModal
+          isOpen={showInstallModal}
+          onClose={closeInstallModal}
+          deferredPrompt={deferredPrompt}
+        />
+      </>
+    );
   }
 
   if (isMobileView) {
     return (
-      <MobileApp
-        products={products}
-        setProducts={setProducts}
-        categories={categories}
-        setCategories={setCategories}
-        employees={employees}
-        setEmployees={setEmployees}
-        bahan={bahan}
-        setBahan={setBahan}
-        antreanList={antreanList}
-        setAntreanList={setAntreanList}
-        mutasiList={mutasiList}
-        setMutasiList={setMutasiList}
-        mutasiGudangJadiList={mutasiGudangJadiList}
-        setMutasiGudangJadiList={setMutasiGudangJadiList}
-        dbConnected={dbConnected}
-        onSwitchToDesktop={() => toggleViewMode(false)}
-        userRole={userRole}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-      />
+      <>
+        <MobileApp
+          products={products}
+          setProducts={setProducts}
+          categories={categories}
+          setCategories={setCategories}
+          employees={employees}
+          setEmployees={setEmployees}
+          bahan={bahan}
+          setBahan={setBahan}
+          antreanList={antreanList}
+          setAntreanList={setAntreanList}
+          mutasiList={mutasiList}
+          setMutasiList={setMutasiList}
+          mutasiGudangJadiList={mutasiGudangJadiList}
+          setMutasiGudangJadiList={setMutasiGudangJadiList}
+          dbConnected={dbConnected}
+          onSwitchToDesktop={() => toggleViewMode(false)}
+          userRole={userRole}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+        />
+        <InstallAppModal
+          isOpen={showInstallModal}
+          onClose={closeInstallModal}
+          deferredPrompt={deferredPrompt}
+        />
+      </>
     );
   }
 
@@ -423,6 +454,8 @@ export default function App() {
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           currentUser={currentUser}
           onLogout={handleLogout}
+          onOpenInstallModal={openInstallModal}
+          isInstalled={isInstalled}
         />
 
         <main className="flex-1 p-2.5 sm:p-3 overflow-y-auto overflow-x-hidden scrollbar-thin">
@@ -580,6 +613,13 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Modal PWA Install Chrome */}
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={closeInstallModal}
+        deferredPrompt={deferredPrompt}
+      />
     </div>
   );
 }

@@ -1,0 +1,19 @@
+{
+  "name": "Ruang Konveksi - Sistem Manajemen ERP",
+  "short_name": "Ruang Konveksi",
+  "description": "Sistem Manajemen Produksi Konveksi, Stok Gudang & Pembayaran Upah",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070d1e",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

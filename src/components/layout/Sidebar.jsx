@@ -41,7 +41,6 @@ export default function Sidebar({
 }) {
   // State collapse sub-menu Data Master, Laporan, & Settings
   const [isDataMasterOpen, setIsDataMasterOpen] = useState(true);
-  const [isDivisiOpen, setIsDivisiOpen] = useState(true);
   const [isLaporanOpen, setIsLaporanOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
 
@@ -526,79 +525,6 @@ export default function Sidebar({
                     <span>Mutasi Gudang Jadi</span>
                   </button>
                 </div>
-              </div>
-
-              {/* GRUP MENU WORKFLOW DIVISI PRODUKSI (SUPER ADMIN ACCESSIBLE) */}
-              <div className="pt-2 border-t border-slate-800/60">
-                <button
-                  onClick={() => setIsDivisiOpen((prev) => !prev)}
-                  className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all cursor-pointer"
-                  title="Buka/Tutup Menu Divisi Operasional"
-                >
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-200">
-                      Workflow Divisi
-                    </span>
-                  </div>
-                  {isDivisiOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                  )}
-                </button>
-
-                {isDivisiOpen && (
-                  <div className="mt-1 space-y-0.5 border-l border-slate-800 ml-4 pl-2">
-                    <button
-                      onClick={() => handleMenuClick("divisi-cutting")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "divisi-cutting"
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <Scissors className="w-3.5 h-3.5 shrink-0 text-blue-400" />
-                      <span>Cutting</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleMenuClick("divisi-jahit")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "divisi-jahit"
-                          ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-sm shadow-purple-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <Shirt className="w-3.5 h-3.5 shrink-0 text-purple-400" />
-                      <span>Divisi Jahit</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleMenuClick("divisi-qc")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "divisi-qc"
-                          ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm shadow-teal-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-teal-400" />
-                      <span>Divisi QC (Inspeksi)</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleMenuClick("divisi-finishing")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "divisi-finishing"
-                          ? "bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-sm shadow-rose-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <PackageCheck className="w-3.5 h-3.5 shrink-0 text-rose-400" />
-                      <span>Divisi Finishing</span>
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* KEUANGAN & PAYROLL BORONGAN */}

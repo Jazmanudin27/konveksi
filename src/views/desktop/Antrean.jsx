@@ -4169,6 +4169,7 @@ export default function Antrean({
       <CetakSpkModal
         isOpen={Boolean(selectedCetakSpk)}
         antrean={selectedCetakSpk}
+        antreanList={antreanList}
         products={products}
         onClose={() => setSelectedCetakSpk(null)}
       />

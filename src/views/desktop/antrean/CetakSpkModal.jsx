@@ -1,77 +1,215 @@
 // src/views/desktop/antrean/CetakSpkModal.jsx
-import React from 'react';
-import {
-  Printer,
-  X,
-  QrCode,
-  Scissors,
-  CheckCircle2,
-  Calendar,
-  Layers,
-  FileText,
-  Clock,
-  Shirt,
-  ShieldCheck,
-  PackageCheck,
-  Warehouse,
-  Flame,
-} from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { Printer, X, QrCode, Layers } from 'lucide-react';
 import QRCode from '../../../components/common/QRCode';
-import Barcode from '../../../components/common/Barcode';
+import { buildUnitQrValue } from '../../../utils/qrLabel';
 
 export default function CetakSpkModal({
   isOpen,
   antrean,
+  antreanList = [],
   products = [],
   onClose,
 }) {
+  const printAreaRef = useRef(null);
+  const [includeSameSpk, setIncludeSameSpk] = useState(false);
+
+  // Cari produk lain yang masih satu SPK / satu No. Reff PO (jika ada)
+  const siblingItems = useMemo(() => {
+    if (!antrean) return [];
+    const reff = String(antrean.noReff || '').trim();
+    if (!reff || reff === '-' || !Array.isArray(antreanList) || antreanList.length === 0) {
+      return [antrean];
+    }
+    const matched = antreanList.filter(
+      (a) => String(a.noReff || '').trim().toLowerCase() === reff.toLowerCase()
+    );
+    return matched.length > 1 ? matched : [antrean];
+  }, [antrean, antreanList]);
+
+  const itemsToPrint = useMemo(() => {
+    if (!antrean) return [];
+    return includeSameSpk && siblingItems.length > 1 ? siblingItems : [antrean];
+  }, [antrean, includeSameSpk, siblingItems]);
+
+  // Generate daftar label: 1 label QR unik per 1 Pcs produk
+  const labels = useMemo(() => {
+    const list = [];
+    itemsToPrint.forEach((item) => {
+      const qty = Math.max(1, Number(item.qty) || 1);
+      const prod = products.find((p) => p.sku === item.sku) || null;
+      const noAntrian = item.noAntrian || `ANT-${item.id}`;
+      const displayName = item.namaProduk || prod?.namaProduk || item.sku || '-';
+      const displaySku = item.sku || '-';
+
+      for (let i = 1; i <= qty; i++) {
+        list.push({
+          key: `${item.id}-${item.sku}-${i}`,
+          noAntrian,
+          displayName,
+          displaySku,
+          varian: item.varian || prod?.varian || '',
+          ukuran: item.ukuran || prod?.ukuran || '',
+          pcsIndex: i,
+          totalQty: qty,
+          qrValue: buildUnitQrValue(item, i, qty),
+        });
+      }
+    });
+    return list;
+  }, [itemsToPrint, products]);
+
   if (!isOpen || !antrean) return null;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const noAntrian = antrean.noAntrian || `ANT-${antrean.id}`;
-  const prod = products.find((p) => p.sku === antrean.sku) || null;
-  const isUrgent = antrean.prioritas === 'Urgent';
 
-  const kebutuhanBahanList = React.useMemo(() => {
-    if (!antrean.kebutuhanBahan) return [];
-    if (Array.isArray(antrean.kebutuhanBahan)) return antrean.kebutuhanBahan;
-    if (typeof antrean.kebutuhanBahan === 'string') {
-      try {
-        const parsed = JSON.parse(antrean.kebutuhanBahan);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (_) {
-        return [];
-      }
+  // Cetak bersih via jendela print khusus (hanya label QR & nama, tanpa terpotong halaman)
+  const handlePrint = () => {
+    const content = printAreaRef.current?.innerHTML;
+    if (!content) {
+      window.print();
+      return;
     }
-    return [];
-  }, [antrean]);
 
-  const trackingUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}#track/${encodeURIComponent(noAntrian)}`
-    : `https://konveksi.ruangtech.com/#track/${encodeURIComponent(noAntrian)}`;
+    const printWin = window.open('', '_blank', 'width=820,height=900');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    printWin.document.write(`<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Label QR SPK - ${noAntrian}</title>
+  <style>
+    @page { size: A4 portrait; margin: 10mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #ffffff;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .label-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .label-card {
+      border: 1.5px solid #cbd5e1;
+      border-top: 4px solid #d97706;
+      border-radius: 10px;
+      padding: 12px 10px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .label-top {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .badge-spk {
+      background: #d97706;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+    .pcs-counter {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    .spk-no {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f172a;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      margin-bottom: 6px;
+    }
+    .qr-wrap {
+      padding: 4px;
+      background: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .prod-name {
+      margin-top: 6px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .prod-sku {
+      margin-top: 2px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #334155;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    .pcs-foot {
+      margin-top: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  ${content}
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 150);
+    };
+  </script>
+</body>
+</html>`);
+    printWin.document.close();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[96vh]">
-        {/* TOP TOOLBAR (HIDDEN ON PRINT) */}
-        <div className="bg-[#0b1b36] text-white px-4 py-2.5 flex items-center justify-between shrink-0 print:hidden">
-          <div className="flex items-center gap-2">
-            <QrCode className="w-4 h-4 text-emerald-400" />
-            <h3 className="font-extrabold text-xs text-white">
-              Lembar SPK & QR Code Barcode Produksi ({noAntrian})
-            </h3>
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[94vh]">
+        {/* TOP TOOLBAR */}
+        <div className="bg-[#0b1b36] text-white px-4 py-2.5 flex items-center justify-between gap-2 shrink-0 print:hidden">
+          <div className="flex items-center gap-2 min-w-0">
+            <QrCode className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="min-w-0">
+              <h3 className="font-extrabold text-xs text-white truncate">
+                Cetak Label QR Per Produk ({labels.length} Label)
+              </h3>
+              <p className="text-[10px] text-slate-300 truncate">
+                #{noAntrian} • Setiap Pcs memiliki QR unik (anti tertukar)
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handlePrint}
               className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Cetak / Cetak PDF</span>
+              <span>Cetak Label ({labels.length})</span>
             </button>
             <button
               type="button"
@@ -83,347 +221,99 @@ export default function CetakSpkModal({
           </div>
         </div>
 
-        {/* PRINTABLE SPK SHEET */}
+        {/* TOGGLE JIKA 1 SPK MEMILIKI BEBERAPA PRODUK */}
+        {siblingItems.length > 1 && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between gap-2 text-xs print:hidden">
+            <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
+              <Layers className="w-3.5 h-3.5 text-amber-600" />
+              <span>
+                Terdapat <strong>{siblingItems.length} produk</strong> dalam Reff SPK <strong>{antrean.noReff}</strong>
+              </span>
+            </div>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer font-bold text-amber-900 select-none">
+              <input
+                type="checkbox"
+                checked={includeSameSpk}
+                onChange={(e) => setIncludeSameSpk(e.target.checked)}
+                className="rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+              />
+              <span>Cetak Semua Produk 1 SPK</span>
+            </label>
+          </div>
+        )}
+
+        {/* PREVIEW & PRINTABLE LABEL GRID */}
         <div
           id="printable-spk"
-          className="p-5 sm:p-7 overflow-y-auto space-y-3.5 bg-white text-slate-800 font-sans print:p-0 print:m-0"
+          className="p-5 overflow-y-auto bg-slate-100 flex-1 print:p-0 print:bg-white"
         >
-          {/* HEADER FORMAL SPK */}
-          <div className="border-b-2 border-slate-800 pb-3 flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-lg tracking-wider text-slate-900 uppercase">
-                  RUANG KONVEKSI • EMRA PRODUCTION
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Sistem Operasional Pabrik & Manajemen Antrean Produksi Garmen
-              </p>
-              <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 mt-1 uppercase flex items-center gap-2">
-                <span>SURAT PERINTAH KERJA (SPK) & KARTU KONTROL</span>
-                {isUrgent && (
-                  <span className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <Flame className="w-3 h-3" /> URGENT
-                  </span>
-                )}
-              </h1>
-            </div>
+          <div ref={printAreaRef}>
+            <div className="label-grid grid grid-cols-2 gap-3.5 max-w-[540px] mx-auto">
+              {labels.map((lbl) => (
+                <div
+                  key={lbl.key}
+                  className="label-card bg-white border border-slate-300 border-t-4 border-t-amber-600 rounded-xl p-3 flex flex-col items-center text-center shadow-xs"
+                >
+                  {/* Top Bar: SPK Badge + Urutan Pcs */}
+                  <div className="label-top w-full flex items-center justify-between mb-1.5">
+                    <span className="badge-spk px-2 py-0.5 rounded bg-amber-600 text-white text-[10px] font-extrabold tracking-wide">
+                      SPK
+                    </span>
+                    <span className="pcs-counter font-mono text-[11px] font-bold text-slate-500">
+                      {lbl.pcsIndex}/{lbl.totalQty}
+                    </span>
+                  </div>
 
-            {/* BARCODE & QR CODE KANAN ATAS */}
-            <div className="flex items-center gap-3 shrink-0 bg-slate-50 border border-slate-300 rounded-xl p-2.5">
-              <div className="flex flex-col items-center">
-                <Barcode value={noAntrian} height={36} width={150} showText={false} />
-                <span className="font-mono font-bold text-[9px] text-slate-700 tracking-wider mt-0.5">
-                  {noAntrian}
-                </span>
-              </div>
-              <div className="border-l border-slate-200 pl-2.5 flex flex-col items-center">
-                <QRCode value={noAntrian} size={64} includeMargin={false} />
-                <span className="text-[8px] font-bold text-slate-500 uppercase mt-0.5">
-                  Scan SPK
-                </span>
-              </div>
-            </div>
-          </div>
+                  {/* No SPK */}
+                  <div className="spk-no font-mono font-extrabold text-[11px] text-slate-900 mb-1.5">
+                    #{lbl.noAntrian}
+                  </div>
 
-          {/* DOKUMEN & RINCIAN ORDER */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs border border-slate-300 rounded-xl p-3 bg-slate-50/70">
-            <div>
-              <span className="text-[9.5px] uppercase font-bold text-slate-500 block">
-                No. SPK / Antrean
-              </span>
-              <span className="font-mono font-black text-sm text-slate-900 block mt-0.5">
-                {noAntrian}
-              </span>
-            </div>
-            <div>
-              <span className="text-[9.5px] uppercase font-bold text-slate-500 block">
-                Tgl Masuk SPK
-              </span>
-              <span className="font-bold text-slate-800 block mt-0.5">
-                {antrean.tglMasuk || '-'}
-              </span>
-            </div>
-            <div>
-              <span className="text-[9.5px] uppercase font-bold text-slate-500 block">
-                Target Deadline
-              </span>
-              <span className="font-bold text-rose-700 block mt-0.5">
-                {antrean.deadline ? `${antrean.deadline}` : 'Sesuai Jadwal'}
-              </span>
-            </div>
-            <div>
-              <span className="text-[9.5px] uppercase font-bold text-slate-500 block">
-                Sumber / No. Reff PO
-              </span>
-              <span className="font-semibold text-slate-800 block mt-0.5 truncate">
-                {antrean.sumberPermintaan || 'Stok Gudang'}{' '}
-                {antrean.noReff && antrean.noReff !== '-' ? `(${antrean.noReff})` : ''}
-              </span>
-            </div>
-          </div>
+                  {/* QR Code Unik Per Pcs */}
+                  <div className="qr-wrap bg-white p-1">
+                    <QRCode value={lbl.qrValue} size={120} includeMargin={false} />
+                  </div>
 
-          {/* RINCIAN PRODUK KONVEKSI */}
-          <div className="border border-slate-300 rounded-xl p-3 bg-white">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <span className="text-[9.5px] font-black uppercase text-slate-400 tracking-wider block">
-                  Model & Varian Produk
-                </span>
-                <div className="text-sm font-black text-slate-900 leading-tight">
-                  {antrean.namaProduk}
+                  {/* Nama Produk & SKU */}
+                  <div className="prod-name mt-1.5 font-extrabold text-xs text-slate-900 leading-tight break-words">
+                    {lbl.displayName}
+                  </div>
+                  <div className="prod-sku mt-0.5 font-mono font-bold text-[10px] text-slate-600">
+                    {lbl.displaySku}
+                  </div>
+
+                  {/* Pcs Index */}
+                  <div className="pcs-foot mt-0.5 text-[10px] font-semibold text-slate-500">
+                    Pcs #{lbl.pcsIndex}
+                  </div>
                 </div>
-                <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap font-medium">
-                  <span className="font-mono font-bold text-sky-700 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
-                    SKU: {antrean.sku}
-                  </span>
-                  <span>•</span>
-                  <span>Kategori: <strong>{antrean.kategori || prod?.kategori || '-'}</strong></span>
-                  <span>•</span>
-                  <span>Varian: <strong>{antrean.varian || 'Polos'}</strong></span>
-                  <span>•</span>
-                  <span>Ukuran: <strong>{antrean.ukuran || 'All Size'}</strong></span>
-                </div>
-              </div>
-
-              {/* TOTAL TARGET JUMLAH (PCS) */}
-              <div className="text-right shrink-0 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2">
-                <span className="text-[9.5px] uppercase font-black text-emerald-800 block">
-                  Target Kuantitas
-                </span>
-                <span className="font-mono font-black text-xl text-emerald-700 block">
-                  {Number(antrean.qty || 0).toLocaleString('id-ID')}{' '}
-                  <span className="text-xs font-bold text-emerald-900">Pcs</span>
-                </span>
-              </div>
+              ))}
             </div>
-          </div>
-
-          {/* RESEP KEBUTUHAN BAHAN BAKU & AKSESORIS (BOM) */}
-          <div className="border border-slate-300 rounded-xl overflow-hidden">
-            <div className="bg-slate-100 px-3 py-1.5 border-b border-slate-300 flex items-center justify-between text-xs">
-              <span className="font-black text-slate-800 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-slate-600" />
-                Resep / Kebutuhan Bahan Baku & Aksesoris Batch ({kebutuhanBahanList.length} Bahan)
-              </span>
-              <span className="text-[10px] text-slate-500 font-medium">
-                Diambil dari Gudang Bahan oleh Divisi Cutting
-              </span>
-            </div>
-
-            {kebutuhanBahanList.length === 0 ? (
-              <div className="p-3 text-center text-xs text-slate-400 italic">
-                Tidak ada rincian bahan baku tercatat pada SPK ini.
-              </div>
-            ) : (
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-300 text-[10.5px] font-bold text-slate-700">
-                    <th className="py-1 px-2.5 w-8 text-center border-r border-slate-200">No</th>
-                    <th className="py-1 px-2.5 border-r border-slate-200">Kode & Nama Bahan</th>
-                    <th className="py-1 px-2.5 text-center w-24 border-r border-slate-200">Kebutuhan</th>
-                    <th className="py-1 px-2.5 text-center w-16 border-r border-slate-200">Satuan</th>
-                    <th className="py-1 px-2.5">Catatan Pemakaian</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
-                  {kebutuhanBahanList.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="py-1 px-2.5 text-center font-mono text-slate-500 border-r border-slate-200">
-                        {idx + 1}
-                      </td>
-                      <td className="py-1 px-2.5 border-r border-slate-200">
-                        <span className="font-bold text-slate-900 block">
-                          {item.namaBahan || item.nama || '-'}
-                        </span>
-                        {item.kodeBahan && (
-                          <span className="font-mono text-[10px] text-slate-500 block">
-                            {item.kodeBahan}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-1 px-2.5 text-center font-mono font-bold text-slate-900 border-r border-slate-200">
-                        {Number(item.qty || item.qtyDibutuhkan || 0).toLocaleString('id-ID')}
-                      </td>
-                      <td className="py-1 px-2.5 text-center text-slate-600 border-r border-slate-200">
-                        {item.satuan || 'Pcs'}
-                      </td>
-                      <td className="py-1 px-2.5 text-slate-600 text-[11px]">
-                        {item.catatan || '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* CATATAN / SOP INTRUKSI PABRIK */}
-          {antrean.catatan && (
-            <div className="border border-slate-300 rounded-xl p-2.5 bg-amber-50/50 text-xs">
-              <span className="text-[9.5px] font-black uppercase text-amber-800 tracking-wider block">
-                Catatan Khusus / Instruksi SOP Produksi:
-              </span>
-              <p className="text-slate-800 font-medium mt-0.5 text-xs leading-relaxed">
-                {antrean.catatan}
-              </p>
-            </div>
-          )}
-
-          {/* LEMBAR KONTROL CHECKPOINT & PARAF SETIAP DIVISI (SCAN SPK) */}
-          <div className="border border-slate-800 rounded-xl overflow-hidden">
-            <div className="bg-slate-900 text-white px-3 py-1.5 flex items-center justify-between text-xs">
-              <span className="font-black uppercase tracking-wider text-[10.5px]">
-                KARTU KONTROL & PARAF CEK FISIK DIVISI (CHECKPOINT SOP)
-              </span>
-              <span className="text-[9.5px] text-slate-300">
-                Wajib di-scan barcode atau diparaf oleh setiap PIC Divisi
-              </span>
-            </div>
-
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-300 text-[10.5px] font-bold text-slate-800">
-                  <th className="py-1.5 px-2.5 w-32 border-r border-slate-300">Tahapan Divisi</th>
-                  <th className="py-1.5 px-2.5 w-32 border-r border-slate-300">Petugas / Penjahit</th>
-                  <th className="py-1.5 px-2.5 w-24 border-r border-slate-300">Tanggal</th>
-                  <th className="py-1.5 px-2.5 w-24 border-r border-slate-300 text-center">Qty Selesai</th>
-                  <th className="py-1.5 px-2.5 w-28 text-center border-r border-slate-300">Status Tahapan</th>
-                  <th className="py-1.5 px-2.5 w-24 text-center">Paraf PIC</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-300 font-medium text-slate-800">
-                {/* 1. CUTTING */}
-                <tr className="h-10">
-                  <td className="py-1.5 px-2.5 font-bold text-slate-900 border-r border-slate-300">
-                    1. Divisi Cutting
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-semibold text-slate-700">
-                    {antrean.timCutting || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-mono text-[11px]">
-                    {antrean.tglSerahCutting || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center font-mono font-bold">
-                    {antrean.tglSerahCutting ? `${antrean.qty} Pcs` : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center text-[10.5px]">
-                    {antrean.tglSerahCutting ? 'Lolos Potong' : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 text-center"></td>
-                </tr>
-
-                {/* 2. JAHIT */}
-                <tr className="h-10 bg-slate-50/60">
-                  <td className="py-1.5 px-2.5 font-bold text-purple-900 border-r border-slate-300">
-                    2. Divisi Jahit
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-semibold text-purple-800">
-                    {antrean.timJahit || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-mono text-[11px]">
-                    {antrean.tglSerahJahit || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center font-mono font-bold">
-                    {antrean.tglSerahJahit ? `${antrean.qty} Pcs` : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center text-[10.5px]">
-                    {antrean.tglSerahJahit ? 'Jahitan Lengkap' : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 text-center"></td>
-                </tr>
-
-                {/* 3. QC */}
-                <tr className="h-10">
-                  <td className="py-1.5 px-2.5 font-bold text-teal-900 border-r border-slate-300">
-                    3. Divisi QC
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-semibold text-teal-800">
-                    {antrean.timQc || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-mono text-[11px]">
-                    {antrean.tglSerahQc || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center font-mono font-bold">
-                    {antrean.qtyPassQc ? `${antrean.qtyPassQc} Pcs` : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center text-[10.5px]">
-                    {antrean.statusQc || (antrean.tglSerahQc ? 'Lolos QC' : '')}
-                  </td>
-                  <td className="py-1.5 px-2.5 text-center"></td>
-                </tr>
-
-                {/* 4. FINISHING */}
-                <tr className="h-10 bg-slate-50/60">
-                  <td className="py-1.5 px-2.5 font-bold text-rose-900 border-r border-slate-300">
-                    4. Finishing & Packing
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-semibold text-rose-800">
-                    {antrean.timFinishing || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-mono text-[11px]">
-                    {antrean.tglSerahFinishing || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center font-mono font-bold">
-                    {antrean.tglSerahFinishing ? `${antrean.qty} Pcs` : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center text-[10.5px]">
-                    {antrean.tglSerahFinishing ? 'Kemas Polybag' : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 text-center"></td>
-                </tr>
-
-                {/* 5. GUDANG JADI */}
-                <tr className="h-10">
-                  <td className="py-1.5 px-2.5 font-bold text-emerald-900 border-r border-slate-300">
-                    5. Gudang Jadi (Opname)
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-semibold text-emerald-800">
-                    {antrean.petugasTerimaGudang || antrean.petugas || 'Admin Gudang'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 font-mono text-[11px]">
-                    {antrean.tglSelesai || antrean.tglSerahGudang || '-'}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center font-mono font-bold text-emerald-700">
-                    {antrean.status === 'Selesai' ? `${antrean.qty} Pcs` : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-300 text-center text-[10.5px] font-bold text-emerald-700">
-                    {antrean.status === 'Selesai' ? 'Disimpan di Rak' : ''}
-                  </td>
-                  <td className="py-1.5 px-2.5 text-center"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* FOOTER KETERANGAN PRINT */}
-          <div className="pt-2 text-[10px] text-slate-400 flex items-center justify-between border-t border-slate-200">
-            <span>
-              Dicetak pada: {new Date().toLocaleString('id-ID')} • Lembar Kerja Resmi Ruang Konveksi
-            </span>
-            <span className="font-mono">
-              Live Tracking: {trackingUrl}
-            </span>
           </div>
         </div>
 
-        {/* BOTTOM ACTION (SCREEN ONLY) */}
-        <div className="bg-slate-50 border-t border-slate-200 px-4 py-2.5 flex items-center justify-end gap-2 print:hidden">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-lg cursor-pointer"
-          >
-            Tutup
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Cetak SPK Sekarang</span>
-          </button>
+        {/* BOTTOM ACTION */}
+        <div className="bg-white border-t border-slate-200 px-4 py-2.5 flex items-center justify-between gap-2 print:hidden">
+          <span className="text-[11px] text-slate-500">
+            Total <strong>{labels.length}</strong> QR unik • Format: <code className="font-mono text-[10px]">SPK|ID|SKU|Pcs</code>
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-lg cursor-pointer"
+            >
+              Tutup
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Cetak Sekarang</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

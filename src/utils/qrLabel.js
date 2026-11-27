@@ -53,3 +53,13 @@ export function parseUnitQrValue(rawCode) {
     unitKey: null,
   };
 }
+
+/**
+ * Buka halaman Cetak Label QR di tab baru (target="_blank")
+ */
+export function openPrintLabelsTab(antrean) {
+  if (!antrean || typeof window === 'undefined') return;
+  const targetId = antrean.id || encodeURIComponent(antrean.noAntrian || '');
+  const url = `${window.location.origin}${window.location.pathname}#print-labels/${targetId}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}

@@ -17,6 +17,7 @@ import PermintaanProduksiGudang from './views/desktop/PermintaanProduksiGudang';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
 import MobileApp from './views/mobile/MobileApp';
 import CustomerTracking from './views/tracking/CustomerTracking';
+import PrintLabelsPage from './views/print/PrintLabelsPage';
 import Users from './views/desktop/Users';
 import DivisiCutting from './views/desktop/divisi/DivisiCutting';
 import DivisiJahit from './views/desktop/divisi/DivisiJahit';
@@ -105,6 +106,19 @@ export default function App() {
   };
 
   const [trackingInfo, setTrackingInfo] = useState(getTrackingInfoFromHash);
+
+  const getPrintLabelsInfoFromHash = () => {
+    try {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash.startsWith('print-labels/')) {
+        const id = decodeURIComponent(hash.slice('print-labels/'.length) || '');
+        if (id) return { isPrintLabels: true, id };
+      }
+    } catch (_) {}
+    return { isPrintLabels: false, id: '' };
+  };
+
+  const [printLabelsInfo, setPrintLabelsInfo] = useState(getPrintLabelsInfoFromHash);
 
   const getInitialMenu = () => {
     try {
@@ -195,17 +209,22 @@ export default function App() {
 
   // Proteksi Akses Menu Sesuai Role (Misal: Admin Cutting hanya boleh ke halaman Cutting)
   useEffect(() => {
+    if (printLabelsInfo.isPrintLabels || trackingInfo.isTracking) return;
     const config = USER_ROLES[userRole];
     if (config && Array.isArray(config.allowedMenus) && config.allowedMenus.length > 0) {
       if (!config.allowedMenus.includes(activeMenu)) {
         setActiveMenu(config.defaultMenu || 'dashboard');
       }
     }
-  }, [userRole, activeMenu]);
+  }, [userRole, activeMenu, printLabelsInfo.isPrintLabels, trackingInfo.isTracking]);
 
   // Sinkronisasi event navigasi URL Hash & tombol Back/Forward browser
   useEffect(() => {
     const onHashChange = () => {
+      const printLbl = getPrintLabelsInfoFromHash();
+      setPrintLabelsInfo(printLbl);
+      if (printLbl.isPrintLabels) return;
+
       const track = getTrackingInfoFromHash();
       setTrackingInfo(track);
       if (track.isTracking) return;
@@ -371,6 +390,11 @@ export default function App() {
     setCategories((prev) => prev.filter((c) => c.id !== catId));
     api.deleteCategory(catId).catch((e) => console.warn('Gagal hapus kategori dari API SQLite:', e));
   };
+
+  // Tampilan Khusus Cetak Label QR Per Produk di Tab Baru (target="_blank")
+  if (printLabelsInfo.isPrintLabels) {
+    return <PrintLabelsPage antreanId={printLabelsInfo.id} />;
+  }
 
   // Tampilan Khusus Live Tracking Pesanan Pelanggan (Public Customer Portal)
   if (trackingInfo.isTracking) {

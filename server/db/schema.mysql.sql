@@ -241,73 +241,6 @@ CREATE TABLE IF NOT EXISTS kasbon_pembayaran (
   INDEX idx_kp_upah (pembayaran_upah_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- SEED DATA MASTER KATEGORI & HARGA POTONG RESMI
-INSERT IGNORE INTO categories (kode, nama, harga_potong, status) VALUES
-  ('CAT-SAMIRA', 'SAMIRA', 700.00, 'Aktif'),
-  ('CAT-AISHA', 'AISHA', 600.00, 'Aktif'),
-  ('CAT-SHAFEA', 'SHAFEA', 1000.00, 'Aktif'),
-  ('CAT-COQUETTE', 'COQUETTE', 1000.00, 'Aktif'),
-  ('CAT-NAYYARA', 'NAYYARA', 1000.00, 'Aktif'),
-  ('CAT-ALUNA', 'ALUNA', 1000.00, 'Aktif'),
-  ('CAT-HAFSA', 'HAFSA', 1000.00, 'Aktif'),
-  ('CAT-MINA', 'MINA', 1000.00, 'Aktif'),
-  ('CAT-NAEEMA', 'NAEEMA', 1000.00, 'Aktif'),
-  ('CAT-IRANANDHA', 'IRANANDHA', 500.00, 'Aktif'),
-  ('CAT-NAOMI', 'NAOMI', 500.00, 'Aktif'),
-  ('CAT-RALINE', 'RALINE', 500.00, 'Aktif'),
-  ('CAT-AYUMI', 'AYUMI', 500.00, 'Aktif'),
-  ('CAT-VISCOSE', 'VISCOSE', 500.00, 'Aktif'),
-  ('CAT-KERUDUNG', 'KERUDUNG', 500.00, 'Aktif'),
-  ('CAT-OVAL', 'OVAL', 500.00, 'Aktif'),
-  ('CAT-RAWDA', 'RAWDA', 700.00, 'Aktif'),
-  ('CAT-LINI', 'LINI', 600.00, 'Aktif'),
-  ('CAT-ZAFIRA', 'ZAFIRA', 700.00, 'Aktif'),
-  ('CAT-NOIRA', 'NOIRA', 600.00, 'Aktif'),
-  ('CAT-ALYSSA', 'ALYSSA', 700.00, 'Aktif'),
-  ('CAT-LAVINA', 'LAVINA', 600.00, 'Aktif'),
-  ('CAT-ELVARA', 'ELVARA', 500.00, 'Aktif'),
-  ('CAT-ARUMI', 'ARUMI', 500.00, 'Aktif'),
-  ('CAT-HABIBAH', 'HABIBAH', 500.00, 'Aktif'),
-  ('CAT-FATIYA', 'FATIYA', 500.00, 'Aktif'),
-  ('CAT-HANA', 'HANA', 700.00, 'Aktif'),
-  ('CAT-LARISA', 'LARISA', 600.00, 'Aktif'),
-  ('CAT-LUNARA', 'LUNARA', 200.00, 'Aktif'),
-  ('CAT-ALIFA', 'ALIFA', 600.00, 'Aktif'),
-  ('CAT-KALUNA', 'KALUNA', 600.00, 'Aktif'),
-  ('CAT-HUMAIRA', 'HUMAIRA', 1000.00, 'Aktif'),
-  ('CAT-PASBAN-UV', 'PASBAN UV', 500.00, 'Aktif'),
-  ('CAT-ZAHWA', 'ZAHWA', 500.00, 'Aktif');
-
--- SEED MASTER UKURAN (SIZES)
-INSERT IGNORE INTO sizes (nama, urutan) VALUES
-  ('SET', 1),
-  ('TANPA', 2),
-  ('ANAK M', 3),
-  ('ANAK L', 4),
-  ('ANAK XL', 5),
-  ('ANAK XXL', 6),
-  ('STANDAR', 7),
-  ('BIG', 8),
-  ('JUMBO', 9),
-  ('ALLSIZE', 10),
-  ('TUNIK STANDAR', 11),
-  ('TUNIK JUMBO', 12),
-  ('SET ROK STANDAR', 13),
-  ('SET ROK JUMBO', 14),
-  ('M', 15),
-  ('L/XL', 16),
-  ('KEMEJA PND', 17),
-  ('KEMEJA PJ', 18),
-  ('UV', 19),
-  ('CRINKLE', 20),
-  ('L', 21),
-  ('XL', 22),
-  ('ATASAN STANDAR', 23),
-  ('ATASAN JUMBO', 24),
-  ('SET CELANA STANDAR', 25),
-  ('SET CELANA JUMBO', 26),
-  ('CAMPUR', 27);
-
 -- TABEL MANAJEMEN PENGGUNA (USERS)
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -324,12 +257,3 @@ CREATE TABLE IF NOT EXISTS users (
   INDEX idx_users_role (role),
   INDEX idx_users_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- SEED DATA DEFAULT USER UNTUK 6 ROLE OPERASIONAL
-INSERT IGNORE INTO users (username, nama, email, password, role, status, telepon) VALUES
-  ('admin', 'Super Admin Ruang Konveksi', 'admin@ruangtech.com', '123456', 'superadmin', 'Aktif', '0812-3456-7890'),
-  ('gudang', 'Admin Gudang & Restock', 'gudang@ruangtech.com', '123456', 'gudang', 'Aktif', '0813-1122-3344'),
-  ('cutting', 'Admin Divisi Cutting', 'cutting@ruangtech.com', '123456', 'cutting', 'Aktif', '0815-5566-7788'),
-  ('jahit', 'Admin Divisi Jahit', 'jahit@ruangtech.com', '123456', 'jahit', 'Aktif', '0817-9900-1122'),
-  ('qc', 'Admin Quality Control', 'qc@ruangtech.com', '123456', 'qc', 'Aktif', '0818-3344-5566'),
-  ('finishing', 'Admin Finishing & Packing', 'finishing@ruangtech.com', '123456', 'finishing', 'Aktif', '0819-7788-9900');

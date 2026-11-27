@@ -33,7 +33,9 @@ export async function verifyPassword(input, stored) {
 
   if (isHashed(saved)) {
     const bcrypt = await getBcrypt();
-    if (!bcrypt) return false;
+    if (!bcrypt) {
+      throw new Error('Paket bcryptjs belum ter-install di server. Jalankan: npm install bcryptjs && pm2 restart all');
+    }
     // $2y$ (PHP) identik algoritmanya dengan $2b$
     const normalized = saved.replace(/^\$2y\$/, '$2b$');
     try {

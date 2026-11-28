@@ -1,0 +1,86 @@
+import { Router } from 'express';
+import db from '../db/database.js';
+
+const router = Router();
+
+// GET all tim cutting
+router.get('/', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT * FROM tim_cutting ORDER BY id ASC');
+    res.json(rows.map((r) => ({
+      id: r.id,
+      kodeTim: r.kode_tim,
+      namaTim: r.nama_tim,
+      kategori: r.kategori || 'Internal',
+      spesialisasi: r.spesialisasi || 'Cutting Pola, Gelar Kain & Potong',
+      kapasitasHarian: Number(r.kapasitas_harian) || 250,
+      telepon: r.telepon || '',
+      status: r.status || 'Aktif',
+      catatan: r.catatan || '',
+      username: r.username || (r.kode_tim || r.nama_tim.replace(/\s+/g, '')).toLowerCase(),
+      password: r.password || '123456',
+      createdAt: r.created_at,
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST create tim cutting
+router.post('/', async (req, res) => {
+  const { kodeTim, namaTim, kategori, spesialisasi, kapasitasHarian, telepon, status, catatan, username, password } = req.body;
+  const autoKode = kodeTim || `CUT-${Date.now().toString().slice(-4)}`;
+  const cleanUsername = (username || autoKode || namaTim.replace(/\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  const cleanPassword = password || '123456';
+
+  try {
+    const info = await db.run(
+      'INSERT INTO tim_cutting (kode_tim, nama_tim, kategori, spesialisasi, kapasitas_harian, telepon, status, catatan, username, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [autoKode, namaTim, kategori || 'Internal', spesialisasi || 'Cutting Pola, Gelar Kain & Potong', Number(kapasitasHarian) || 250, telepon || null, status || 'Aktif', catatan || null, cleanUsername, cleanPassword]
+    );
+    res.status(201).json({
+      id: Number(info.insertId),
+      ...req.body,
+      kodeTim: autoKode,
+      username: cleanUsername,
+      password: cleanPassword,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// PUT update tim cutting
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { kodeTim, namaTim, kategori, spesialisasi, kapasitasHarian, telepon, status, catatan, username, password } = req.body;
+  const cleanUsername = (username || kodeTim || namaTim.replace(/\s+/g, '')).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  const cleanPassword = password || '123456';
+
+  try {
+    await db.run(
+      'UPDATE tim_cutting SET kode_tim = ?, nama_tim = ?, kategori = ?, spesialisasi = ?, kapasitas_harian = ?, telepon = ?, status = ?, catatan = ?, username = ?, password = ? WHERE id = ?',
+      [kodeTim, namaTim, kategori, spesialisasi, Number(kapasitasHarian) || 250, telepon || null, status || 'Aktif', catatan || null, cleanUsername, cleanPassword, id]
+    );
+    res.json({
+      success: true,
+      id: Number(id),
+      username: cleanUsername,
+      password: cleanPassword,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE tim cutting
+router.delete('/:id', async (req, res) => {
+  try {
+    await db.run('DELETE FROM tim_cutting WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+export default router;

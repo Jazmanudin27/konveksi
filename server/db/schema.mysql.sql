@@ -210,6 +210,36 @@ CREATE TABLE IF NOT EXISTS tim_finishing (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS tim_cutting (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  kode_tim VARCHAR(50) NOT NULL UNIQUE,
+  nama_tim VARCHAR(150) NOT NULL,
+  kategori VARCHAR(50) DEFAULT 'Internal',
+  spesialisasi VARCHAR(100) DEFAULT 'Cutting Pola, Gelar Kain & Potong',
+  kapasitas_harian INT DEFAULT 250,
+  telepon VARCHAR(50),
+  status VARCHAR(30) DEFAULT 'Aktif',
+  catatan TEXT,
+  username VARCHAR(100) NULL,
+  password VARCHAR(255) NOT NULL DEFAULT '123456',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS tim_qc (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  kode_tim VARCHAR(50) NOT NULL UNIQUE,
+  nama_tim VARCHAR(150) NOT NULL,
+  kategori VARCHAR(50) DEFAULT 'Internal',
+  spesialisasi VARCHAR(100) DEFAULT 'Inspeksi Jahitan, Ukuran & Mutu',
+  kapasitas_harian INT DEFAULT 250,
+  telepon VARCHAR(50),
+  status VARCHAR(30) DEFAULT 'Aktif',
+  catatan TEXT,
+  username VARCHAR(100) NULL,
+  password VARCHAR(255) NOT NULL DEFAULT '123456',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS kasbon (
   id INT AUTO_INCREMENT PRIMARY KEY,
   no_kasbon VARCHAR(60) NOT NULL UNIQUE,

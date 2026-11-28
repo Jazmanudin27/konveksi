@@ -701,7 +701,7 @@ export default function Antrean({
     sumberPermintaan: "PO Pelanggan",
     noReff: "",
     sku: "",
-    qty: 50,
+    qty: 1,
     prioritas: "Normal",
     deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -975,11 +975,10 @@ export default function Antrean({
 
   // Open Modal Create
   const handleOpenCreate = () => {
-    const defaultSku = products && products.length > 0 ? products[0].sku : "";
     setFormData({
       ...initialForm,
       noAntrian: generateNoAntrian(),
-      sku: defaultSku,
+      sku: "",
       kebutuhanBahan: [],
     });
     setModalMode("create");
@@ -3204,7 +3203,7 @@ export default function Antrean({
                       <div className="flex items-center gap-2 text-slate-400">
                         <Search className="w-4 h-4 text-slate-400" />
                         <span className="text-xs font-medium">
-                          -- Cari & Pilih Produk (SKU) --
+                          Silahkan pilih produk...
                         </span>
                       </div>
                     )}

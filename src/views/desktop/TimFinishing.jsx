@@ -354,21 +354,17 @@ export default function TimFinishing() {
             <thead>
               <tr className="bg-[#2b3a4a] text-white font-bold text-xs tracking-wider uppercase">
                 <th className="py-2.5 px-2 text-center w-10 border-r border-[#3b4c5e] text-white font-bold">NO</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px] border-r border-[#3b4c5e] text-white font-bold">KODE TIM</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[200px] border-r border-[#3b4c5e] text-white font-bold">NAMA TIM FINISHING</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[110px] border-r border-[#3b4c5e] text-white font-bold">KATEGORI</th>
-                <th className="py-2.5 px-3 min-w-[240px] border-r border-[#3b4c5e] text-white font-bold">SPESIALISASI PENGERJAAN</th>
-                <th className="py-2.5 px-3 text-right whitespace-nowrap min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KAPASITAS / HARI</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px] border-r border-[#3b4c5e] text-white font-bold">KONTAK / HP</th>
-                <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px] border-r border-[#3b4c5e] text-white font-bold">AKUN LOGIN (USER & PASS)</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[90px] border-r border-[#3b4c5e] text-white font-bold">STATUS</th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[100px] text-white font-bold">AKSI</th>
+                <th className="py-2.5 px-3 border-r border-[#3b4c5e] text-white font-bold">TIM FINISHING & KONTAK</th>
+                <th className="py-2.5 px-3 border-r border-[#3b4c5e] text-white font-bold">KATEGORI & SPESIALISASI</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap border-r border-[#3b4c5e] text-white font-bold">KAPASITAS & STATUS</th>
+                <th className="py-2.5 px-3 whitespace-nowrap border-r border-[#3b4c5e] text-white font-bold">AKUN LOGIN</th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap w-24 text-white font-bold">AKSI</th>
               </tr>
             </thead>
             <tbody className="font-medium text-slate-800 divide-y divide-slate-200">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="py-8 text-center text-slate-400">
+                  <td colSpan="6" className="py-8 text-center text-slate-400">
                     {loading ? 'Memuat tim finishing...' : 'Tidak ada data tim finishing yang sesuai.'}
                   </td>
                 </tr>
@@ -378,27 +374,46 @@ export default function TimFinishing() {
                     <td className="py-2 px-2 text-center font-bold text-slate-600 border-r border-slate-200/60">
                       {idx + 1}
                     </td>
-                    <td className="py-2 px-3 font-mono font-bold text-teal-700 bg-teal-50/50 border-r border-slate-200/60">
-                      {item.kodeTim}
-                    </td>
-                    <td className="py-2 px-3 font-bold text-slate-900 border-r border-slate-200/60">
-                      {item.namaTim}
+                    <td className="py-2 px-3 border-r border-slate-200/60">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-[11px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                          {item.kodeTim}
+                        </span>
+                        <span className="font-bold text-slate-900">
+                          {item.namaTim}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] font-mono text-slate-500 mt-0.5">
+                        <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span>{item.telepon || '-'}</span>
+                      </div>
                     </td>
                     <td className="py-2 px-3 border-r border-slate-200/60">
-                      <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                      <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200 inline-block">
                         {item.kategori}
                       </span>
+                      <div className="text-[11px] text-slate-600 mt-0.5 leading-snug">
+                        {item.spesialisasi || '-'}
+                      </div>
                     </td>
-                    <td className="py-2 px-3 text-slate-700 border-r border-slate-200/60">
-                      {item.spesialisasi}
+                    <td className="py-2 px-3 text-center border-r border-slate-200/60 whitespace-nowrap">
+                      <div className="font-mono font-bold text-slate-900">
+                        {Number(item.kapasitasHarian).toLocaleString('id-ID')}{' '}
+                        <span className="text-[10px] font-semibold text-slate-500">Pcs/Hr</span>
+                      </div>
+                      <div className="mt-0.5">
+                        <span
+                          className={`px-2 py-0.2 rounded-full text-[10px] font-bold border inline-block ${
+                            item.status === 'Aktif'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-slate-100 text-slate-500 border-slate-200'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
                     </td>
-                    <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 border-r border-slate-200/60">
-                      {Number(item.kapasitasHarian).toLocaleString('id-ID')} Pcs
-                    </td>
-                    <td className="py-2 px-3 font-mono text-slate-700 border-r border-slate-200/60">
-                      {item.telepon || '-'}
-                    </td>
-                    <td className="py-2 px-3 border-r border-slate-200/60 font-mono text-xs">
+                    <td className="py-2 px-3 border-r border-slate-200/60 font-mono text-xs whitespace-nowrap">
                       <div className="flex items-center gap-1.5 font-bold text-slate-800">
                         <User className="w-3.5 h-3.5 text-teal-600" />
                         <span>{item.username || item.kodeTim?.toLowerCase() || '-'}</span>
@@ -407,17 +422,6 @@ export default function TimFinishing() {
                         <Lock className="w-3 h-3 text-slate-400" />
                         <span>{item.password || '123456'}</span>
                       </div>
-                    </td>
-                    <td className="py-2 px-3 text-center border-r border-slate-200/60">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                          item.status === 'Aktif'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-slate-100 text-slate-500 border-slate-200'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
                     </td>
                     <td className="py-2 px-2.5 text-center">
                       <div className="flex items-center justify-center gap-1.5">

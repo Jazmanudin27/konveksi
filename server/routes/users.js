@@ -45,7 +45,71 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    // 2. Tabel tim_finishing (Tim Finishing & Packing)
+    // 2. Tabel tim_cutting (Tim Cutting & Pola)
+    const cut = await db.get(
+      `SELECT id, kode_tim, nama_tim, kategori, telepon, status, username, password
+       FROM tim_cutting
+       WHERE LOWER(COALESCE(username, '')) = ? OR LOWER(kode_tim) = ?
+       LIMIT 1`,
+      [cleanUsername, cleanUsername]
+    );
+    if (cut) {
+      foundAny = true;
+      if (await verifyPassword(inputPassword, cut.password)) {
+        if (cut.status !== 'Aktif') {
+          foundButInactive = `Akun tim cutting "${cut.nama_tim}" sedang ${cut.status}. Hubungi Admin.`;
+        } else {
+          return res.json({
+            success: true,
+            message: 'Login berhasil sebagai Tim Cutting.',
+            user: {
+              id: cut.id,
+              username: (cut.username || cut.kode_tim || cleanUsername).toLowerCase(),
+              nama: cut.nama_tim,
+              role: 'cutting',
+              status: 'Aktif',
+              telepon: cut.telepon,
+              keterangan: `Tim Cutting (${cut.kategori || 'Internal'})`,
+              source: 'tim_cutting'
+            }
+          });
+        }
+      }
+    }
+
+    // 3. Tabel tim_qc (Tim Quality Control)
+    const qc = await db.get(
+      `SELECT id, kode_tim, nama_tim, kategori, telepon, status, username, password
+       FROM tim_qc
+       WHERE LOWER(COALESCE(username, '')) = ? OR LOWER(kode_tim) = ?
+       LIMIT 1`,
+      [cleanUsername, cleanUsername]
+    );
+    if (qc) {
+      foundAny = true;
+      if (await verifyPassword(inputPassword, qc.password)) {
+        if (qc.status !== 'Aktif') {
+          foundButInactive = `Akun tim QC "${qc.nama_tim}" sedang ${qc.status}. Hubungi Admin.`;
+        } else {
+          return res.json({
+            success: true,
+            message: 'Login berhasil sebagai Tim QC.',
+            user: {
+              id: qc.id,
+              username: (qc.username || qc.kode_tim || cleanUsername).toLowerCase(),
+              nama: qc.nama_tim,
+              role: 'qc',
+              status: 'Aktif',
+              telepon: qc.telepon,
+              keterangan: `Tim Quality Control (${qc.kategori || 'Internal'})`,
+              source: 'tim_qc'
+            }
+          });
+        }
+      }
+    }
+
+    // 4. Tabel tim_finishing (Tim Finishing & Packing)
     const fin = await db.get(
       `SELECT id, kode_tim, nama_tim, kategori, telepon, status, username, password
        FROM tim_finishing

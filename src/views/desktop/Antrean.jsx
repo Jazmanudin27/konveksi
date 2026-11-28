@@ -890,8 +890,8 @@ export default function Antrean({
   const hppCalculation = useMemo(() => {
     const qtyTarget = Math.max(1, Number(formData.qty) || 1);
 
-    // 1. Total Biaya Bahan & Aksesoris
-    const totalBiayaBahan = (formData.kebutuhanBahan || []).reduce(
+    // 1. Biaya Bahan & Aksesoris per Pcs dan Total Batch
+    const biayaBahanPerPcs = (formData.kebutuhanBahan || []).reduce(
       (acc, curr) => {
         const q = Number(curr.qty) || 0;
         const h = Number(curr.hargaSatuan) || 0;
@@ -899,6 +899,8 @@ export default function Antrean({
       },
       0,
     );
+    const totalBiayaBahanBatch = Math.round(biayaBahanPerPcs * qtyTarget);
+    const totalBiayaBahan = biayaBahanPerPcs;
 
     // 2. Upah Borongan Tenaga Kerja
     const tarifCut = Number(defaultTarifCutting) || 1500;
@@ -910,7 +912,7 @@ export default function Antrean({
     const totalUpahBorongan = biayaCutting + biayaJahit + biayaFinishing;
 
     // 3. Total HPP Batch & HPP per Pcs
-    const totalHpp = totalBiayaBahan + totalUpahBorongan;
+    const totalHpp = totalBiayaBahanBatch + totalUpahBorongan;
     const hppPerPcs = Math.round(totalHpp / qtyTarget);
 
     // 4. Analisis Profit & Margin jika ada harga jual produk
@@ -920,6 +922,8 @@ export default function Antrean({
       hargaJual > 0 ? Math.round((profitPerPcs / hargaJual) * 100) : 0;
 
     return {
+      biayaBahanPerPcs: Math.round(biayaBahanPerPcs),
+      totalBiayaBahanBatch,
       totalBiayaBahan,
       tarifCut,
       tarifJht,
@@ -3251,7 +3255,7 @@ export default function Antrean({
                           filteredComboboxProducts.map((p) => {
                             const isSelected = formData.sku === p.sku;
                             const prodName = getProdName(p);
-                            const bahan = getProdBahan(p);
+                            const prodBahan = getProdBahan(p);
 
                             return (
                               <button
@@ -3296,7 +3300,7 @@ export default function Antrean({
                                   }
                                   const reconciledBahan = autoBahan.map(
                                     (r, i) => {
-                                      const match = (bahan || []).find(
+                                      const match = (Array.isArray(bahan) ? bahan : []).find(
                                         (m) =>
                                           (r.kodeBahan &&
                                             m.kodeBahan === r.kodeBahan) ||
@@ -3385,11 +3389,11 @@ export default function Antrean({
                                         {p.varian || "Polos"} (
                                         {p.ukuran || "All Size"})
                                       </span>
-                                      {bahan && bahan !== "-" && (
+                                      {prodBahan && prodBahan !== "-" && (
                                         <>
                                           <span>•</span>
                                           <span className="font-mono text-cyan-700">
-                                            Kain: {bahan}
+                                            Kain: {prodBahan}
                                           </span>
                                         </>
                                       )}
@@ -3952,7 +3956,7 @@ export default function Antrean({
                 </div>
               </div>
 
-              {/* CARD 4: KALKULATOR HPP & RINGKASAN BIAYA (COMPACT STRIP) */}
+              {/* CARD 4: KALKULATOR HPP BAHAN (HANYA HPP BAHAN SAAT INPUT SPK) */}
               <div className="bg-[#0b1329] text-white rounded-xl p-2.5 shadow-2xs border border-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -3960,7 +3964,7 @@ export default function Antrean({
                       ⚡
                     </span>
                     <h4 className="font-extrabold text-xs text-emerald-400">
-                      Kalkulator Estimasi HPP
+                      Estimasi HPP Bahan Baku
                     </h4>
                   </div>
                   <span className="px-1.5 py-0.2 rounded-full bg-white/10 text-slate-300 font-mono text-[9.5px]">
@@ -3969,39 +3973,22 @@ export default function Antrean({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div className="bg-white/5 rounded-lg p-2">
                     <span className="text-[9.5px] text-slate-400 block">
-                      Biaya Bahan Baku
+                      Total Biaya Bahan Batch ({Number(formData.qty || 0).toLocaleString("id-ID")} Pcs)
                     </span>
-                    <span className="font-mono font-bold text-xs text-sky-300 block mt-0.5">
+                    <span className="font-mono font-bold text-sm text-sky-300 block mt-0.5">
                       Rp{" "}
-                      {hppCalculation.totalBiayaBahan.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-2">
-                    <span className="text-[9.5px] text-slate-400 block">
-                      Upah Borongan Pabrik
-                    </span>
-                    <span className="font-mono font-bold text-xs text-amber-300 block mt-0.5">
-                      Rp{" "}
-                      {hppCalculation.totalUpahBorongan.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-2">
-                    <span className="text-[9.5px] text-slate-400 block">
-                      Total Biaya Batch
-                    </span>
-                    <span className="font-mono font-bold text-xs text-slate-100 block mt-0.5">
-                      Rp {hppCalculation.totalHpp.toLocaleString("id-ID")}
+                      {hppCalculation.totalBiayaBahanBatch.toLocaleString("id-ID")}
                     </span>
                   </div>
                   <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-2 flex flex-col justify-between">
                     <span className="text-[9px] uppercase font-black text-emerald-300 tracking-wider">
-                      ★ ESTIMASI HPP / PCS
+                      ★ HPP BAHAN / PCS
                     </span>
                     <span className="font-mono font-black text-sm text-emerald-400 mt-0.5">
-                      Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")}
+                      Rp {hppCalculation.biayaBahanPerPcs.toLocaleString("id-ID")}
                     </span>
                   </div>
                 </div>
@@ -4027,9 +4014,9 @@ export default function Antrean({
               </div>
               <span className="text-slate-300 hidden sm:inline">•</span>
               <div className="text-slate-700">
-                Estimasi HPP:{" "}
+                HPP Bahan:{" "}
                 <strong className="text-emerald-700 font-mono font-bold">
-                  Rp {hppCalculation.hppPerPcs.toLocaleString("id-ID")} / Pcs
+                  Rp {hppCalculation.biayaBahanPerPcs.toLocaleString("id-ID")} / Pcs
                 </strong>
               </div>
             </div>

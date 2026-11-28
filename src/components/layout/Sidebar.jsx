@@ -387,23 +387,14 @@ export default function Sidebar({
                   )}
                 </button>
 
-                {/* Sub Menu Data Master */}
+                {/* Sub Menu Data Master (Terurut: Barang & Bahan, lalu Tim sesuai Alur Produksi) */}
                 {isDataMasterOpen && (
                   <div className="mt-1 space-y-0.5 border-l border-slate-800 ml-4 pl-2">
-                    {/* 1. Produk */}
-                    <button
-                      onClick={() => handleMenuClick("products")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "products"
-                          ? "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <Package className="w-3.5 h-3.5 shrink-0" />
-                      <span>Produk & Varian</span>
-                    </button>
+                    {/* --- MASTER BARANG & BAHAN --- */}
+                    <div className="px-2.5 pt-1 pb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                      Barang & Bahan
+                    </div>
 
-                    {/* 2. Kategori Produk */}
                     <button
                       onClick={() => handleMenuClick("categories")}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
@@ -412,76 +403,22 @@ export default function Sidebar({
                           : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                       }`}
                     >
-                      <Tag className="w-3.5 h-3.5 shrink-0" />
+                      <Tag className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
                       <span>Kategori Produk</span>
                     </button>
 
-                    {/* 3. Data Tim Cutting */}
                     <button
-                      onClick={() => handleMenuClick("tim-cutting")}
+                      onClick={() => handleMenuClick("products")}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "tim-cutting"
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <Scissors className="w-3.5 h-3.5 shrink-0 text-blue-400" />
-                      <span>Data Tim Cutting</span>
-                    </button>
-
-                    {/* 4. Data Penjahit (Terpisah) */}
-                    <button
-                      onClick={() => handleMenuClick("penjahit")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "penjahit"
-                          ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm shadow-purple-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <Scissors className="w-3.5 h-3.5 shrink-0 text-purple-400" />
-                      <span>Data Penjahit</span>
-                    </button>
-
-                    {/* 5. Data Tim QC */}
-                    <button
-                      onClick={() => handleMenuClick("tim-qc")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "tim-qc"
-                          ? "bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-sm shadow-cyan-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
-                      <span>Data Tim QC</span>
-                    </button>
-
-                    {/* 6. Data Tim Finishing */}
-                    <button
-                      onClick={() => handleMenuClick("tim-finishing")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "tim-finishing"
-                          ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm shadow-teal-950"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <PackageCheck className="w-3.5 h-3.5 shrink-0 text-teal-400" />
-                      <span>Data Tim Finishing</span>
-                    </button>
-
-                    {/* 5. Semua Karyawan */}
-                    <button
-                      onClick={() => handleMenuClick("employees")}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                        activeMenu === "employees"
+                        activeMenu === "products"
                           ? "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950"
                           : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                       }`}
                     >
-                      <Users className="w-3.5 h-3.5 shrink-0" />
-                      <span>Semua Karyawan</span>
+                      <Package className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                      <span>Produk & Varian</span>
                     </button>
 
-                    {/* 6. Bahan Baku */}
                     <button
                       onClick={() => handleMenuClick("bahan")}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
@@ -493,28 +430,81 @@ export default function Sidebar({
                       <Boxes className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
                       <span>Bahan Baku (Kain)</span>
                     </button>
+
+                    {/* --- MASTER TIM & SDM (URUTAN ALUR PRODUKSI) --- */}
+                    <div className="px-2.5 pt-2 pb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                      Tim Produksi & SDM
+                    </div>
+
+                    <button
+                      onClick={() => handleMenuClick("tim-cutting")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "tim-cutting"
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-950"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <Scissors className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                      <span>1. Tim Cutting</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleMenuClick("penjahit")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "penjahit"
+                          ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm shadow-purple-950"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <Shirt className="w-3.5 h-3.5 shrink-0 text-purple-400" />
+                      <span>2. Tim Penjahit</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleMenuClick("tim-qc")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "tim-qc"
+                          ? "bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-sm shadow-cyan-950"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                      <span>3. Tim QC</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleMenuClick("tim-finishing")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "tim-finishing"
+                          ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm shadow-teal-950"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <PackageCheck className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                      <span>4. Tim Finishing</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleMenuClick("employees")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "employees"
+                          ? "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                      <span>Semua Karyawan</span>
+                    </button>
                   </div>
                 )}
               </div>
 
-              {/* PRODUKSI & ORDER GROUP */}
+              {/* OPERASIONAL & GUDANG (URUTAN ALUR KERJA) */}
               <div className="pt-2 border-t border-slate-800/60">
                 <div className="px-3 pb-1 text-[9.5px] font-bold uppercase tracking-wider text-slate-500">
-                  PRODUKSI & ORDER
+                  OPERASIONAL & GUDANG
                 </div>
                 <div className="space-y-0.5">
-                  <button
-                    onClick={() => handleMenuClick("antrean")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
-                      activeMenu === "antrean"
-                        ? "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <ListOrdered className="w-4 h-4 shrink-0 text-cyan-400" />
-                    <span>SPK</span>
-                  </button>
-
                   <button
                     onClick={() => handleMenuClick("permintaan-produksi")}
                     className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
@@ -524,7 +514,19 @@ export default function Sidebar({
                     }`}
                   >
                     <Warehouse className="w-4 h-4 shrink-0 text-amber-400" />
-                    <span>Permintaan Gudang</span>
+                    <span>1. Permintaan Gudang</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleMenuClick("antrean")}
+                    className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                      activeMenu === "antrean"
+                        ? "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <ListOrdered className="w-4 h-4 shrink-0 text-cyan-400" />
+                    <span>2. SPK Produksi</span>
                   </button>
 
                   <button
@@ -535,20 +537,20 @@ export default function Sidebar({
                         : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                     }`}
                   >
-                    <ArrowLeftRight className="w-4 h-4 shrink-0" />
-                    <span>Mutasi Bahan Baku</span>
+                    <ArrowLeftRight className="w-4 h-4 shrink-0 text-sky-400" />
+                    <span>3. Mutasi Bahan Baku</span>
                   </button>
 
                   <button
                     onClick={() => handleMenuClick("mutasi-gudang-jadi")}
                     className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
                       activeMenu === "mutasi-gudang-jadi"
-                        ? "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-sm shadow-cyan-950"
+                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm shadow-emerald-950"
                         : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                     }`}
                   >
-                    <PackageCheck className="w-4 h-4 shrink-0" />
-                    <span>Mutasi Gudang Jadi</span>
+                    <PackageCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span>4. Mutasi Gudang Jadi</span>
                   </button>
                 </div>
               </div>

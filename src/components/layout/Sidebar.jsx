@@ -416,7 +416,20 @@ export default function Sidebar({
                       <span>Kategori Produk</span>
                     </button>
 
-                    {/* 3. Data Penjahit (Terpisah) */}
+                    {/* 3. Data Tim Cutting */}
+                    <button
+                      onClick={() => handleMenuClick("tim-cutting")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "tim-cutting"
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-950"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <Scissors className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                      <span>Data Tim Cutting</span>
+                    </button>
+
+                    {/* 4. Data Penjahit (Terpisah) */}
                     <button
                       onClick={() => handleMenuClick("penjahit")}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
@@ -429,7 +442,20 @@ export default function Sidebar({
                       <span>Data Penjahit</span>
                     </button>
 
-                    {/* 4. Data Tim Finishing */}
+                    {/* 5. Data Tim QC */}
+                    <button
+                      onClick={() => handleMenuClick("tim-qc")}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
+                        activeMenu === "tim-qc"
+                          ? "bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-sm shadow-cyan-950"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                      <span>Data Tim QC</span>
+                    </button>
+
+                    {/* 6. Data Tim Finishing */}
                     <button
                       onClick={() => handleMenuClick("tim-finishing")}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer text-xs ${

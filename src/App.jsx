@@ -12,6 +12,8 @@ import LaporanStokGudang from './views/desktop/LaporanStokGudang';
 import PembayaranUpah from './views/desktop/pembayaran';
 import Kasbon from './views/desktop/Kasbon';
 import Penjahit from './views/desktop/Penjahit';
+import TimCutting from './views/desktop/TimCutting';
+import TimQc from './views/desktop/TimQc';
 import TimFinishing from './views/desktop/TimFinishing';
 import PermintaanProduksiGudang from './views/desktop/PermintaanProduksiGudang';
 import DashboardWelcome from './views/desktop/DashboardWelcome';
@@ -72,6 +74,8 @@ export default function App() {
     'products',
     'categories',
     'penjahit',
+    'tim-cutting',
+    'tim-qc',
     'tim-finishing',
     'employees',
     'bahan',
@@ -517,6 +521,12 @@ export default function App() {
               employees={employees}
               setEmployees={setEmployees}
             />
+          )}
+          {activeMenu === 'tim-cutting' && (
+            <TimCutting />
+          )}
+          {activeMenu === 'tim-qc' && (
+            <TimQc />
           )}
           {activeMenu === 'tim-finishing' && <TimFinishing />}
           {activeMenu === 'employees' && (

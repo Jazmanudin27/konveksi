@@ -109,6 +109,18 @@ export const api = {
   updatePenjahit: (id, data) => request(`/penjahit/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletePenjahit: (id) => request(`/penjahit/${id}`, { method: 'DELETE' }),
 
+  // Tim Cutting (Terpisah)
+  getTimCutting: () => request('/tim-cutting'),
+  createTimCutting: (data) => request('/tim-cutting', { method: 'POST', body: JSON.stringify(data) }),
+  updateTimCutting: (id, data) => request(`/tim-cutting/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTimCutting: (id) => request(`/tim-cutting/${id}`, { method: 'DELETE' }),
+
+  // Tim QC (Terpisah)
+  getTimQc: () => request('/tim-qc'),
+  createTimQc: (data) => request('/tim-qc', { method: 'POST', body: JSON.stringify(data) }),
+  updateTimQc: (id, data) => request(`/tim-qc/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTimQc: (id) => request(`/tim-qc/${id}`, { method: 'DELETE' }),
+
   // Tim Finishing & Packing (Terpisah Murni dari Penjahit)
   getTimFinishing: () => request('/tim-finishing'),
   createTimFinishing: (data) => request('/tim-finishing', { method: 'POST', body: JSON.stringify(data) }),

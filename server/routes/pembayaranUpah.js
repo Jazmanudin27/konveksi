@@ -14,6 +14,15 @@ function generateNoPembayaran() {
 // List seluruh data upah dengan filter tahapan, status bayar, petugas, pencarian, dan rentang tanggal
 router.get("/", async (req, res) => {
   try {
+    // Sinkronkan otomatis: hapus tagihan yatim (orphan) yang SPK/antreannya sudah dihapus dari tabel antrean
+    try {
+      await db.run(`
+        DELETE pu FROM pembayaran_upah pu
+        LEFT JOIN antrean a ON pu.antrean_id = a.id
+        WHERE a.id IS NULL
+      `);
+    } catch (_) {}
+
     const { tahapan, status_bayar, petugas, search, startDate, endDate } = req.query;
 
     let sql = `
@@ -45,6 +54,7 @@ router.get("/", async (req, res) => {
         pu.created_at as createdAt,
         pu.updated_at as updatedAt
       FROM pembayaran_upah pu
+      INNER JOIN antrean a ON pu.antrean_id = a.id
       LEFT JOIN products p ON pu.sku = p.sku
       WHERE 1=1
     `;
@@ -98,13 +108,14 @@ router.get("/rekap", async (req, res) => {
   try {
     const rows = await db.all(`
       SELECT 
-        tahapan,
-        status_bayar as statusBayar,
+        pu.tahapan,
+        pu.status_bayar as statusBayar,
         COUNT(*) as countItems,
-        COALESCE(SUM(qty), 0) as totalQty,
-        COALESCE(SUM(total_upah), 0) as totalNominal
-      FROM pembayaran_upah
-      GROUP BY tahapan, status_bayar
+        COALESCE(SUM(pu.qty), 0) as totalQty,
+        COALESCE(SUM(pu.total_upah), 0) as totalNominal
+      FROM pembayaran_upah pu
+      INNER JOIN antrean a ON pu.antrean_id = a.id
+      GROUP BY pu.tahapan, pu.status_bayar
     `);
 
     let totalTagihan = 0;
@@ -469,13 +480,20 @@ router.post("/sync-from-antrean", async (req, res) => {
         }
       }
 
-    // Auto-heal nilai total_bersih untuk transaksi belum lunas
-    await connection.query(`
-      UPDATE pembayaran_upah 
-      SET total_bersih = total_upah 
-      WHERE (total_bersih IS NULL OR total_bersih = 0) AND (potongan_kasbon IS NULL OR potongan_kasbon = 0)
-    `);
+      // Auto-heal nilai total_bersih untuk transaksi belum lunas
+      await connection.query(`
+        UPDATE pembayaran_upah 
+        SET total_bersih = total_upah 
+        WHERE (total_bersih IS NULL OR total_bersih = 0) AND (potongan_kasbon IS NULL OR potongan_kasbon = 0)
+      `);
     }
+
+    // Bersihkan tagihan yatim (orphan) yang SPK/antreannya sudah tidak ada di tabel antrean
+    await connection.query(`
+      DELETE pu FROM pembayaran_upah pu
+      LEFT JOIN antrean a ON pu.antrean_id = a.id
+      WHERE a.id IS NULL
+    `);
 
     await connection.commit();
     res.json({

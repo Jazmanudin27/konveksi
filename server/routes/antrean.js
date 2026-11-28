@@ -1164,10 +1164,12 @@ router.delete('/:id', async (req, res) => {
           }
           await db.run('DELETE FROM mutasi_bahan WHERE no_reff = ?', [item.no_antrian]);
           await db.run('DELETE FROM mutasi_gudang_jadi WHERE no_antrian = ?', [item.no_antrian]);
+          await db.run('DELETE FROM pembayaran_upah WHERE antrean_id = ? OR no_antrian = ?', [req.params.id, item.no_antrian]);
         } catch (_) {}
       }
     }
 
+    await db.run('DELETE FROM pembayaran_upah WHERE antrean_id = ?', [req.params.id]);
     await db.run('DELETE FROM antrean WHERE id = ?', [req.params.id]);
     res.json({ success: true, id: Number(req.params.id) });
   } catch (err) {
